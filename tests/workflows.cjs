@@ -201,6 +201,44 @@ test("PASS uses a confirmation step and keeps the selected contract flow", () =>
   assert.equal(chat.choose("본인인증 확인").screen.id, "S02");
 });
 
+test("a verified identity follows the conversation across menu workflows until reset", () => {
+  const chat = begin(1);
+  approvePass(chat);
+  const charges = chat.start(2);
+  assert.equal(charges.screen.id, "S02");
+  assert.ok(charges.actions.some(({ label }) => label === "직수 정수기 선택"));
+
+  chat.reset({ preserveIdentity: true });
+  const service = chat.start(13);
+  assert.equal(service.screen.id, "S02");
+  assert.equal(service.verification, null);
+  assert.ok(service.actions.some(({ label }) => label === "직수 정수기 접수 선택"));
+
+  const home = chat.reset();
+  assert.equal(home.scenario, null);
+  assert.equal(home.messages.length, 1);
+  assert.ok(chat.start(1).actions.some(({ label }) => label === "PASS 본인인증"));
+});
+
+test("verified phone identity skips repeated prompts but keeps destination lookup rules", () => {
+  const owner = begin(13);
+  verifyPhone(owner);
+  const billing = owner.start(1);
+  assert.equal(billing.screen.id, "S02");
+  assert.equal(billing.verification, null);
+  const documents = owner.start(21);
+  assert.equal(documents.screen.id, "returnContractLookup");
+  assert.ok(documents.actions.some(({ label }) => label === "계약 확인"));
+
+  const alternate = begin(13);
+  const rejected = verifyPhone(alternate, "010-0000-0002");
+  assert.equal(rejected.screen.id, "S07");
+  const delivery = alternate.start(16);
+  assert.equal(delivery.screen.id, "S05");
+  assert.ok(delivery.actions.every(({ label }) => !label.includes("주문 선택")));
+  assert.notEqual(alternate.start(1).screen.id, "S02");
+});
+
 test("billing links keep the authenticated contract and require separate authorization for a new bank account", () => {
   const openDetails = () => {
     const chat = begin(1);
@@ -511,8 +549,10 @@ test("care scheduling resumes on the same contract only after completed payment"
   const entry = chat.getState();
   const link = entry.actions.find(({ label }) => /납부/.test(label));
   assert.ok(link);
-  assert.equal(chat.choose(link.id).scenario.no, 4);
-  assert.equal(approvePass(chat).screen.id, "paymentScope");
+  const payment = chat.choose(link.id);
+  assert.equal(payment.scenario.no, 4);
+  assert.equal(payment.screen.id, "paymentScope");
+  assert.ok(payment.actions.every(({ label }) => label !== "PASS 본인인증"));
   chooseAvailable(chat, "미납요금만 납부");
   chooseAvailable(chat, "등록 결제수단");
   chooseAvailable(chat, "KB국민은행 선택");

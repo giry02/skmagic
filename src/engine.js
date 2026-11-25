@@ -2,6 +2,7 @@
   'use strict';
 
   const demoPhone = '010-0000-1234';
+  const demoIdentity = { name: '김매직', phone: demoPhone };
   const demoAddress = '서울 영등포구 문래동';
   const welcome = '안녕하세요. SK매직 상담 챗봇입니다. 궁금한 내용을 입력하거나 상담 메뉴에서 선택해 주세요.';
   const defaultPlaceholder = '메시지를 입력하세요';
@@ -189,6 +190,12 @@
     3: { S04: 'S07', S05: 'S07' }, 4: { S01: 'S09', S04: 'S09', S05: 'S09' },
     5: { S01: 'S09', S05: 'S09', S05T: 'S09' }, 7: { S01: 'S08' }, 10: { S01: 'S09' },
     12: { regAddrPass: 'S09' }, 28: { s2: 'passRetry', passRetry: 's3' }, 39: { reuse006Pass: 's3' }
+  };
+  const freshPassScreens = {
+    3: ['S04'],
+    4: ['S04', 'installmentCard', '$registeredPaymentApproval'],
+    5: ['S05', 'installmentCard', '$registeredPaymentApproval'],
+    28: ['s2', 'passRetry'], 45: ['prepaidCardConfirm']
   };
 
   const phoneSuccess = { 8: 'S02', 9: 'S02', 12: 'S04', 13: 'S02', 14: 'S01', 15: 'S02', 16: 'S02', 17: 'S02', 49: 's4' };
@@ -401,6 +408,8 @@
   }
 
   class SKIXChat {
+    #sessionIdentity = null;
+    #pendingIdentity = null;
     static inboundReviewReply(message) {
       const text = normalize(String(message ?? ''));
       if (!/(?:구독|렌탈|계약).{0,25}심사|심사.{0,12}(?:구독|렌탈|계약)/u.test(text)) return '';
@@ -424,7 +433,8 @@
       this.reset();
     }
 
-    reset() {
+    reset({ preserveIdentity = false } = {}) {
+      if (!preserveIdentity) this.#sessionIdentity = null;
       this.history = [];
       this.messages = [{ role: 'bot', text: welcome }];
       this.clearWorkflow();
@@ -433,6 +443,7 @@
     }
 
     clearWorkflow() {
+      this.#pendingIdentity = null;
       this.scenario = null;
       this.screen = null;
       this.context = {};
@@ -449,7 +460,8 @@
         messages: [...this.messages],
         actions: this.actionList().map(({ target, ...action }) => action),
         fields: this.fields.map((field) => ({ ...field })),
-        verification: this.context.otpCode && this.fields.some((field) => field.label === '인증번호')
+        verification: this.context.otpCode && this.#pendingIdentity?.code === this.context.otpCode
+          && this.fields.some((field) => field.label === '인증번호')
           ? { kind: 'sms', code: this.context.otpCode } : null,
         placeholder: this.screen?.placeholder || defaultPlaceholder,
         secure: Boolean(this.screen?.secure || this.screen?.id === '$auth' || this.fields.some((field) => field.type === 'password')),
@@ -497,6 +509,7 @@
       const scenario = this.scenarios.find((item) => item.no === Number(no));
       if (!scenario) return;
       const previous = this.context;
+      this.#pendingIdentity = null;
       const previousNo = this.scenario?.no;
       const reuseServiceDetails = previousNo === 11 && scenario.no === 12
         && previous.serviceProduct && previous.serviceSymptom;
@@ -609,6 +622,17 @@
       const collectsIdentity = screen.id === 'phoneInput'
         || screen.options?.some((label) => /인증번호 받기/.test(label))
         || screen.explicitActions?.some(([, target]) => target === '$sendOtp');
+      const sharedSms = screen.explicitActions?.some(([, target]) => target === '$auditSms');
+      if (this.#sessionIdentity && !properties.demo && (collectsIdentity || sharedSms)) {
+        const next = sharedSms ? screen.auth?.success
+          : auditFlows[this.scenario.no]?.screens?.phoneConfirm?.auth?.success ?? phoneSuccess[this.scenario.no];
+        if (next) {
+          this.screen = screen;
+          this.applyVerifiedIdentity();
+          this.execute(next);
+          return;
+        }
+      }
       if (collectsIdentity && !this.context.nativeSmsConsent) {
         this.context.nativeSmsReturn = screen.id;
         const firstPhase = this.scenario.phase === '1차';
@@ -630,6 +654,16 @@
       }
       this.candidates = [];
       this.fields = this.buildFields(screen);
+      if (!this.fields.length && !properties.demo && this.#sessionIdentity && this.isReusablePass(screen.id)) {
+        const targets = optionTargets[this.scenario.no]?.[screen.id] ?? [];
+        const choices = screen.explicitActions
+          ?? (screen.options ?? []).map((label, index) => [label, targets[index] ?? this.graphTarget(label)]);
+        const lookup = choices.find(([label, target]) => this.passMethod(label) === 'PASS 본인인증' && target !== screen.id);
+        if (lookup) {
+          this.completePass({ method: 'PASS 본인인증', target: lookup[1], source: screen.id, failure: screen.auth?.failure });
+          return;
+        }
+      }
       this.sayScreen(properties);
     }
 
@@ -1392,8 +1426,11 @@
         this.sayBot('날짜를 먼저 선택해 주세요.');
         return this.getState();
       }
-      if (/PASS/.test(action.label) && /인증|서명|재시도|다시 시도/.test(action.label)) {
-        this.openAuth(/서명/.test(action.label) ? 'PASS 전자서명' : 'PASS 본인인증', action.target);
+      const method = this.passMethod(action.label);
+      if (method === 'PASS 본인인증' && this.isReusablePass(this.screen.id) && this.#sessionIdentity) {
+        this.completePass({ method, target: action.target, source: this.screen.id, failure: this.screen.auth?.failure });
+      } else if (method) {
+        this.openAuth(method, action.target);
       } else {
         this.execute(action.target, action.label, values);
       }
@@ -1411,20 +1448,6 @@
       if (visitListScreens[no]) {
         const visitKey = actionId.startsWith('visit:') ? actionId.slice(6) : '';
         if (serviceVisits[visitKey]) this.context.serviceVisit = visitKey;
-        if (label === '인증번호 받기' && values['휴대폰 번호']) {
-          const digits = values['휴대폰 번호'].replace(/\D/g, '');
-          this.context.sameDayVisit = digits === '01000000001';
-          this.context.subscriptionVisit = digits === '01000000007';
-          this.context.visitProfile = { '01000000008': 'single', '01000000009': 'multiple' }[digits];
-          this.context.visitAddressNeedsDate = digits === '01000000011';
-        }
-      }
-      if ([16, 17].includes(no) && label === '인증번호 받기' && values['휴대폰 번호']) {
-        const digits = values['휴대폰 번호'].replace(/\D/g, '');
-        this.context.deliveryProfile = digits === '01000000001' ? 'multiple' : undefined;
-        this.context.deliveryType = { '01000000003': 'subscription', '01000000004': 'dispatched',
-          '01000000006': 'created', '01000000007': 'package', '01000000009': 'unavailable',
-          '01000000011': 'reschedule' }[digits];
       }
       if ([16, 17].includes(no) && actionId.startsWith('delivery:')) {
         this.context.deliveryOrderKey = actionId.slice(9);
@@ -1598,10 +1621,9 @@
       if (no === 17 && screen === 'S06') this.context.deliveryNote = values['전달 요청 사항'];
     }
 
-    captureRouteMatches(label, values) {
+    captureRouteMatches(label, values, editable = new Set(this.fields.filter((field) => !field.readonly).map((field) => field.label))) {
       const previous = this.context.routeMatches ?? {};
       const matches = { ...previous };
-      const editable = new Set(this.fields.filter((field) => !field.readonly).map((field) => field.label));
       for (const [id, data] of Object.entries(auditFlows[this.scenario.no]?.screens ?? {})) {
         for (const [index, rule] of (data.resolve?.rules ?? []).entries()) {
           const key = id + ':' + index;
@@ -1622,6 +1644,71 @@
         }
       }
       this.context.routeMatches = matches;
+    }
+
+    passMethod(label) {
+      if (!/PASS/.test(label) || !/인증|서명|재시도|다시 시도/.test(label)) return undefined;
+      return /서명/.test(label) ? 'PASS 전자서명' : 'PASS 본인인증';
+    }
+
+    isReusablePass(source) {
+      return !freshPassScreens[this.scenario.no]?.includes(source);
+    }
+
+    isKnownSessionOwner() {
+      return this.#sessionIdentity?.name === demoIdentity.name
+        && normalize(this.#sessionIdentity.phone) === normalize(demoIdentity.phone);
+    }
+
+    applyVerifiedIdentity() {
+      const { name, phone } = this.#sessionIdentity;
+      const no = this.scenario.no;
+      const digits = phone.replace(/\D/g, '');
+      this.context.phoneVerified = true;
+      this.context.maskedPhone = maskNumber(phone);
+      const values = { 이름: name, '휴대폰 번호': phone };
+      this.captureRouteMatches('', values, new Set(Object.keys(values)));
+      if ([8, 9, 12].includes(no)) this.context.visitApplicant = Array.from(name)[0] + '○○';
+      if (visitListScreens[no]) {
+        this.context.sameDayVisit = digits === '01000000001';
+        this.context.subscriptionVisit = digits === '01000000007';
+        this.context.visitProfile = { '01000000008': 'single', '01000000009': 'multiple' }[digits];
+        this.context.visitAddressNeedsDate = digits === '01000000011';
+      }
+      if ([16, 17].includes(no)) {
+        this.context.deliveryProfile = digits === '01000000001' ? 'multiple' : undefined;
+        this.context.deliveryType = { '01000000003': 'subscription', '01000000004': 'dispatched',
+          '01000000006': 'created', '01000000007': 'package', '01000000009': 'unavailable',
+          '01000000011': 'reschedule' }[digits];
+      }
+    }
+
+    completePass({ method, target, source, failure }) {
+      const no = this.scenario.no;
+      if (method === 'PASS 본인인증' && this.isReusablePass(source)) {
+        this.#sessionIdentity ??= { ...demoIdentity };
+        // The demo contract holder and a service address's eligibility are separate checks.
+        if (!this.isKnownSessionOwner() && ![8, 9, 12].includes(no)) {
+          const rejected = failure ?? authFailures[no]?.[source];
+          if (rejected && rejected !== source) {
+            this.execute(rejected);
+          } else {
+            this.synthetic('이 상담에서 확인한 고객 정보로 조회할 수 있는 계약이 없어요. 계약 정보를 확인하려면 상담사에게 문의해 주세요.', {
+              id: '$identityNoMatch', kind: 'exception',
+              actions: [['상담사 연결', '$handoff'], ['다른 문의', '$menu']]
+            });
+          }
+          return;
+        }
+        this.applyVerifiedIdentity();
+        if (target === billingLookupTarget(no)) this.context.billingVerified = true;
+      }
+      if (no === 4 && target === 'chargeContract' && this.context.carePaymentReturn) {
+        this.context.product = carePaymentProduct;
+        this.execute('paymentScope');
+      } else {
+        this.execute(target);
+      }
     }
 
     openAuth(method, target) {
@@ -1653,6 +1740,7 @@
       this.context.otpCode = nextOtp(this.context.otpCode);
       this.context.otpExpiresAt = Date.now() + otpValidityMs;
       this.context.phoneVerified = false;
+      this.#pendingIdentity.code = this.context.otpCode;
     }
 
     command(target, label, values) {
@@ -1665,6 +1753,7 @@
       const screen = this.screen.id;
       switch (target) {
         case '$finish':
+          this.#pendingIdentity = null;
           this.context = {};
           this.synthetic('상담을 마쳤어요. 이용해 주셔서 감사합니다.', { kind: 'closed', demo: false });
           break;
@@ -1697,15 +1786,9 @@
           });
           break;
         case '$authSuccess': {
-          const { target: next, method } = this.context.auth;
-          if (method === 'PASS 본인인증' && next === billingLookupTarget(no)) this.context.billingVerified = true;
+          const auth = this.context.auth;
           this.context.auth = undefined;
-          if (no === 4 && next === 'chargeContract' && this.context.carePaymentReturn) {
-            this.context.product = carePaymentProduct;
-            this.execute('paymentScope');
-            break;
-          }
-          this.execute(next);
+          this.completePass(auth);
           break;
         }
         case '$resumeCareVisit':
@@ -1746,6 +1829,11 @@
           this.execute('deliveryBusinessInput');
           break;
         case '$auditSms':
+          if (this.#sessionIdentity && this.screen.auth?.success) {
+            this.applyVerifiedIdentity();
+            this.execute(this.screen.auth.success);
+            break;
+          }
           this.context.auditAuth = this.screen.auth;
           this.synthetic(phoneConsent, {
             id: '$auditSmsConsent',
@@ -1761,6 +1849,7 @@
           this.form('확인에 사용할 이름과 휴대폰 번호를 알려 주세요.', ['name', 'phone'], '$auditSendOtp', '인증번호 받기');
           break;
         case '$auditSendOtp':
+          this.#pendingIdentity = { name: values.이름, phone: values['휴대폰 번호'] };
           this.context.otpTries = 0;
           this.issueOtp();
           this.synthetic('인증 문자에 있는 6자리 번호를 3분 안에 입력해 주세요.', {
@@ -1769,6 +1858,7 @@
           });
           break;
         case '$sendOtp':
+          this.#pendingIdentity = { name: values.이름, phone: values['휴대폰 번호'] };
           this.context.otpTries = 0;
           this.issueOtp();
           if (this.scenario.screens.some((item) => item.id === 'phoneConfirm')) {
@@ -1782,6 +1872,10 @@
           }
           break;
         case '$resendOtp':
+          if (this.#pendingIdentity?.code !== this.context.otpCode || !this.#pendingIdentity) {
+            this.openScenario(no, '휴대폰 다시 확인', false);
+            break;
+          }
           this.issueOtp();
           this.fields = this.fields.map((field) => field.label === '인증번호'
             ? { ...field, sample: this.context.otpCode, error: undefined } : field);
@@ -1790,20 +1884,34 @@
         case '$auditVerifyOtp':
         case '$verifyOtp':
           const shared = target === '$auditVerifyOtp';
+          if (this.#pendingIdentity?.code !== this.context.otpCode || !this.#pendingIdentity) {
+            const next = shared ? this.context.auditAuth?.success : this.screen.auth?.success ?? phoneSuccess[no];
+            if (this.#sessionIdentity && next) {
+              this.applyVerifiedIdentity();
+              this.execute(next);
+            } else {
+              this.openScenario(no, '휴대폰 다시 확인', false);
+            }
+            break;
+          }
           if (this.context.otpExpiresAt && Date.now() >= this.context.otpExpiresAt) {
             this.fields = this.fields.map((field) => field.label === '인증번호'
               ? { ...field, error: '인증번호의 유효 시간이 지났어요. 인증번호를 다시 받아 주세요.' } : field);
             break;
           }
           if (this.context.otpCode && values['인증번호'] === this.context.otpCode) {
+            const { name, phone } = this.#pendingIdentity;
+            this.#sessionIdentity = { name, phone };
+            this.#pendingIdentity = null;
             this.context.otpCode = undefined;
             this.context.otpExpiresAt = undefined;
-            this.context.phoneVerified = true;
+            this.applyVerifiedIdentity();
             this.execute(shared ? this.context.auditAuth?.success ?? '$finish' : this.screen.auth?.success ?? phoneSuccess[no]);
           } else {
             this.context.otpTries = (this.context.otpTries ?? 0) + 1;
             const attempts = [16, 17].includes(no) ? 3 : otpAttemptLimit;
             if (this.context.otpTries >= attempts) {
+              this.#pendingIdentity = null;
               this.context.otpCode = undefined;
               this.context.otpExpiresAt = undefined;
               if ([16, 17].includes(no)) {
@@ -1848,6 +1956,7 @@
           const account = kind === 'transfer';
           this.context.payment = account ? { account: true, bank: title, masked } : { title, masked };
           this.synthetic('등록된 본인 명의의 결제수단으로 납부하시겠어요?', {
+            id: '$registeredPaymentApproval',
             actions: [[account ? 'PASS 전자서명' : 'PASS 본인인증', 'S07'], ['나가기', '$paymentOptions']],
             items: [
               { title: '납부 방법', detail: `${title} · ${masked}` },

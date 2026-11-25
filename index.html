@@ -108,10 +108,10 @@ p, h1, h2, h3 { margin: 0; }
 .mode-label[data-mode="live"]::before { background: #23856c; }
 
 .new-chat {
+  width: 38px;
   min-height: 38px;
   justify-content: center;
-  gap: 6px;
-  padding: 0 12px 0 10px;
+  padding: 0;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--white);
@@ -120,7 +120,7 @@ p, h1, h2, h3 { margin: 0; }
   white-space: nowrap;
 }
 .new-chat:hover { background: var(--paper); border-color: #d7d0cb; }
-.new-chat .icon { width: 16px; height: 16px; }
+.new-chat .icon { width: 18px; height: 18px; }
 
 .workspace {
   position: relative;
@@ -170,7 +170,7 @@ p, h1, h2, h3 { margin: 0; }
   font-weight: 700;
   white-space: nowrap;
 }
-.catalog-all:hover, .catalog-all[aria-pressed="true"] {
+.catalog-all:hover {
   background: var(--accent-soft);
   color: var(--accent-ink);
 }
@@ -236,7 +236,8 @@ p, h1, h2, h3 { margin: 0; }
   font-weight: 700;
   letter-spacing: -.022em;
 }
-.catalog-group:hover, .catalog-group[aria-expanded="true"] { background: var(--paper); }
+button.catalog-group:hover, .catalog-group[aria-expanded="true"] { background: var(--paper); }
+.catalog-phase-note { color: var(--quiet); font-size: 11px; font-weight: 500; }
 .catalog-group-icon {
   flex: none;
   width: 17px;
@@ -814,8 +815,7 @@ a.choice-card { color: inherit; text-decoration: none; }
   .header-actions { gap: 9px; }
   .mode-label { font-size: 11px; }
   .mode-label::before { margin-right: 4px; }
-  .new-chat { width: 36px; min-height: 35px; padding: 0; }
-  .new-chat span { display: none; }
+  .new-chat { width: 36px; min-height: 35px; }
   .chat-inner, .composer-inner, .starters { width: min(var(--chat-width), 100% - 28px); }
   .chat-inner { padding-block: 27px; }
   .is-empty .conversation { grid-template-rows: minmax(30px, .77fr) auto auto auto minmax(32px, 1.23fr); }
@@ -855,7 +855,7 @@ noscript { position: fixed; inset: 73px 0 auto; padding: 10px; background: var(-
 <body>
   <svg class="icon-library" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
     <symbol id="i-chat" viewBox="0 0 24 24"><path d="M6 5h12a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3h-6l-5 3v-3H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3Z"/><path d="M7.5 10h9m-9 4H13"/></symbol>
-    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 1.2 6.7M4 5v5h5"/></symbol>
     <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 20V4M5 11l7-7 7 7"/></symbol>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
     <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></symbol>
@@ -890,9 +890,8 @@ noscript { position: fixed; inset: 73px 0 auto; padding: 10px; background: var(-
       </div>
       <div class="header-actions">
         <span class="mode-label" id="mode-label" title=""></span>
-        <button class="new-chat" id="new-chat" type="button" aria-label="새 대화">
-          <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg>
-          <span>새 대화</span>
+        <button class="new-chat" id="new-chat" type="button" aria-label="초기화" title="대화 초기화">
+          <svg class="icon" aria-hidden="true"><use href="#i-reset"></use></svg>
         </button>
       </div>
     </header>
@@ -902,7 +901,7 @@ noscript { position: fixed; inset: 73px 0 auto; padding: 10px; background: var(-
         <div class="catalog-heading">
           <h2 id="catalog-title">상담 메뉴</h2>
           <div class="catalog-tools">
-            <button id="catalog-all" class="catalog-all" type="button" aria-pressed="false">전체 보기</button>
+            <button id="catalog-all" class="catalog-all" type="button" aria-controls="catalog-list">전체 펼치기</button>
             <button id="catalog-close" class="catalog-icon-button catalog-close" type="button" aria-label="상담 메뉴 닫기">
               <svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg>
             </button>
@@ -15122,6 +15121,7 @@ window.SKIX_PARTNER_CARDS = [
   'use strict';
 
   const demoPhone = '010-0000-1234';
+  const demoIdentity = { name: '김매직', phone: demoPhone };
   const demoAddress = '서울 영등포구 문래동';
   const welcome = '안녕하세요. SK매직 상담 챗봇입니다. 궁금한 내용을 입력하거나 상담 메뉴에서 선택해 주세요.';
   const defaultPlaceholder = '메시지를 입력하세요';
@@ -15309,6 +15309,12 @@ window.SKIX_PARTNER_CARDS = [
     3: { S04: 'S07', S05: 'S07' }, 4: { S01: 'S09', S04: 'S09', S05: 'S09' },
     5: { S01: 'S09', S05: 'S09', S05T: 'S09' }, 7: { S01: 'S08' }, 10: { S01: 'S09' },
     12: { regAddrPass: 'S09' }, 28: { s2: 'passRetry', passRetry: 's3' }, 39: { reuse006Pass: 's3' }
+  };
+  const freshPassScreens = {
+    3: ['S04'],
+    4: ['S04', 'installmentCard', '$registeredPaymentApproval'],
+    5: ['S05', 'installmentCard', '$registeredPaymentApproval'],
+    28: ['s2', 'passRetry'], 45: ['prepaidCardConfirm']
   };
 
   const phoneSuccess = { 8: 'S02', 9: 'S02', 12: 'S04', 13: 'S02', 14: 'S01', 15: 'S02', 16: 'S02', 17: 'S02', 49: 's4' };
@@ -15521,6 +15527,8 @@ window.SKIX_PARTNER_CARDS = [
   }
 
   class SKIXChat {
+    #sessionIdentity = null;
+    #pendingIdentity = null;
     static inboundReviewReply(message) {
       const text = normalize(String(message ?? ''));
       if (!/(?:구독|렌탈|계약).{0,25}심사|심사.{0,12}(?:구독|렌탈|계약)/u.test(text)) return '';
@@ -15544,7 +15552,8 @@ window.SKIX_PARTNER_CARDS = [
       this.reset();
     }
 
-    reset() {
+    reset({ preserveIdentity = false } = {}) {
+      if (!preserveIdentity) this.#sessionIdentity = null;
       this.history = [];
       this.messages = [{ role: 'bot', text: welcome }];
       this.clearWorkflow();
@@ -15553,6 +15562,7 @@ window.SKIX_PARTNER_CARDS = [
     }
 
     clearWorkflow() {
+      this.#pendingIdentity = null;
       this.scenario = null;
       this.screen = null;
       this.context = {};
@@ -15569,7 +15579,8 @@ window.SKIX_PARTNER_CARDS = [
         messages: [...this.messages],
         actions: this.actionList().map(({ target, ...action }) => action),
         fields: this.fields.map((field) => ({ ...field })),
-        verification: this.context.otpCode && this.fields.some((field) => field.label === '인증번호')
+        verification: this.context.otpCode && this.#pendingIdentity?.code === this.context.otpCode
+          && this.fields.some((field) => field.label === '인증번호')
           ? { kind: 'sms', code: this.context.otpCode } : null,
         placeholder: this.screen?.placeholder || defaultPlaceholder,
         secure: Boolean(this.screen?.secure || this.screen?.id === '$auth' || this.fields.some((field) => field.type === 'password')),
@@ -15617,6 +15628,7 @@ window.SKIX_PARTNER_CARDS = [
       const scenario = this.scenarios.find((item) => item.no === Number(no));
       if (!scenario) return;
       const previous = this.context;
+      this.#pendingIdentity = null;
       const previousNo = this.scenario?.no;
       const reuseServiceDetails = previousNo === 11 && scenario.no === 12
         && previous.serviceProduct && previous.serviceSymptom;
@@ -15729,6 +15741,17 @@ window.SKIX_PARTNER_CARDS = [
       const collectsIdentity = screen.id === 'phoneInput'
         || screen.options?.some((label) => /인증번호 받기/.test(label))
         || screen.explicitActions?.some(([, target]) => target === '$sendOtp');
+      const sharedSms = screen.explicitActions?.some(([, target]) => target === '$auditSms');
+      if (this.#sessionIdentity && !properties.demo && (collectsIdentity || sharedSms)) {
+        const next = sharedSms ? screen.auth?.success
+          : auditFlows[this.scenario.no]?.screens?.phoneConfirm?.auth?.success ?? phoneSuccess[this.scenario.no];
+        if (next) {
+          this.screen = screen;
+          this.applyVerifiedIdentity();
+          this.execute(next);
+          return;
+        }
+      }
       if (collectsIdentity && !this.context.nativeSmsConsent) {
         this.context.nativeSmsReturn = screen.id;
         const firstPhase = this.scenario.phase === '1차';
@@ -15750,6 +15773,16 @@ window.SKIX_PARTNER_CARDS = [
       }
       this.candidates = [];
       this.fields = this.buildFields(screen);
+      if (!this.fields.length && !properties.demo && this.#sessionIdentity && this.isReusablePass(screen.id)) {
+        const targets = optionTargets[this.scenario.no]?.[screen.id] ?? [];
+        const choices = screen.explicitActions
+          ?? (screen.options ?? []).map((label, index) => [label, targets[index] ?? this.graphTarget(label)]);
+        const lookup = choices.find(([label, target]) => this.passMethod(label) === 'PASS 본인인증' && target !== screen.id);
+        if (lookup) {
+          this.completePass({ method: 'PASS 본인인증', target: lookup[1], source: screen.id, failure: screen.auth?.failure });
+          return;
+        }
+      }
       this.sayScreen(properties);
     }
 
@@ -16512,8 +16545,11 @@ window.SKIX_PARTNER_CARDS = [
         this.sayBot('날짜를 먼저 선택해 주세요.');
         return this.getState();
       }
-      if (/PASS/.test(action.label) && /인증|서명|재시도|다시 시도/.test(action.label)) {
-        this.openAuth(/서명/.test(action.label) ? 'PASS 전자서명' : 'PASS 본인인증', action.target);
+      const method = this.passMethod(action.label);
+      if (method === 'PASS 본인인증' && this.isReusablePass(this.screen.id) && this.#sessionIdentity) {
+        this.completePass({ method, target: action.target, source: this.screen.id, failure: this.screen.auth?.failure });
+      } else if (method) {
+        this.openAuth(method, action.target);
       } else {
         this.execute(action.target, action.label, values);
       }
@@ -16531,20 +16567,6 @@ window.SKIX_PARTNER_CARDS = [
       if (visitListScreens[no]) {
         const visitKey = actionId.startsWith('visit:') ? actionId.slice(6) : '';
         if (serviceVisits[visitKey]) this.context.serviceVisit = visitKey;
-        if (label === '인증번호 받기' && values['휴대폰 번호']) {
-          const digits = values['휴대폰 번호'].replace(/\D/g, '');
-          this.context.sameDayVisit = digits === '01000000001';
-          this.context.subscriptionVisit = digits === '01000000007';
-          this.context.visitProfile = { '01000000008': 'single', '01000000009': 'multiple' }[digits];
-          this.context.visitAddressNeedsDate = digits === '01000000011';
-        }
-      }
-      if ([16, 17].includes(no) && label === '인증번호 받기' && values['휴대폰 번호']) {
-        const digits = values['휴대폰 번호'].replace(/\D/g, '');
-        this.context.deliveryProfile = digits === '01000000001' ? 'multiple' : undefined;
-        this.context.deliveryType = { '01000000003': 'subscription', '01000000004': 'dispatched',
-          '01000000006': 'created', '01000000007': 'package', '01000000009': 'unavailable',
-          '01000000011': 'reschedule' }[digits];
       }
       if ([16, 17].includes(no) && actionId.startsWith('delivery:')) {
         this.context.deliveryOrderKey = actionId.slice(9);
@@ -16718,10 +16740,9 @@ window.SKIX_PARTNER_CARDS = [
       if (no === 17 && screen === 'S06') this.context.deliveryNote = values['전달 요청 사항'];
     }
 
-    captureRouteMatches(label, values) {
+    captureRouteMatches(label, values, editable = new Set(this.fields.filter((field) => !field.readonly).map((field) => field.label))) {
       const previous = this.context.routeMatches ?? {};
       const matches = { ...previous };
-      const editable = new Set(this.fields.filter((field) => !field.readonly).map((field) => field.label));
       for (const [id, data] of Object.entries(auditFlows[this.scenario.no]?.screens ?? {})) {
         for (const [index, rule] of (data.resolve?.rules ?? []).entries()) {
           const key = id + ':' + index;
@@ -16742,6 +16763,71 @@ window.SKIX_PARTNER_CARDS = [
         }
       }
       this.context.routeMatches = matches;
+    }
+
+    passMethod(label) {
+      if (!/PASS/.test(label) || !/인증|서명|재시도|다시 시도/.test(label)) return undefined;
+      return /서명/.test(label) ? 'PASS 전자서명' : 'PASS 본인인증';
+    }
+
+    isReusablePass(source) {
+      return !freshPassScreens[this.scenario.no]?.includes(source);
+    }
+
+    isKnownSessionOwner() {
+      return this.#sessionIdentity?.name === demoIdentity.name
+        && normalize(this.#sessionIdentity.phone) === normalize(demoIdentity.phone);
+    }
+
+    applyVerifiedIdentity() {
+      const { name, phone } = this.#sessionIdentity;
+      const no = this.scenario.no;
+      const digits = phone.replace(/\D/g, '');
+      this.context.phoneVerified = true;
+      this.context.maskedPhone = maskNumber(phone);
+      const values = { 이름: name, '휴대폰 번호': phone };
+      this.captureRouteMatches('', values, new Set(Object.keys(values)));
+      if ([8, 9, 12].includes(no)) this.context.visitApplicant = Array.from(name)[0] + '○○';
+      if (visitListScreens[no]) {
+        this.context.sameDayVisit = digits === '01000000001';
+        this.context.subscriptionVisit = digits === '01000000007';
+        this.context.visitProfile = { '01000000008': 'single', '01000000009': 'multiple' }[digits];
+        this.context.visitAddressNeedsDate = digits === '01000000011';
+      }
+      if ([16, 17].includes(no)) {
+        this.context.deliveryProfile = digits === '01000000001' ? 'multiple' : undefined;
+        this.context.deliveryType = { '01000000003': 'subscription', '01000000004': 'dispatched',
+          '01000000006': 'created', '01000000007': 'package', '01000000009': 'unavailable',
+          '01000000011': 'reschedule' }[digits];
+      }
+    }
+
+    completePass({ method, target, source, failure }) {
+      const no = this.scenario.no;
+      if (method === 'PASS 본인인증' && this.isReusablePass(source)) {
+        this.#sessionIdentity ??= { ...demoIdentity };
+        // The demo contract holder and a service address's eligibility are separate checks.
+        if (!this.isKnownSessionOwner() && ![8, 9, 12].includes(no)) {
+          const rejected = failure ?? authFailures[no]?.[source];
+          if (rejected && rejected !== source) {
+            this.execute(rejected);
+          } else {
+            this.synthetic('이 상담에서 확인한 고객 정보로 조회할 수 있는 계약이 없어요. 계약 정보를 확인하려면 상담사에게 문의해 주세요.', {
+              id: '$identityNoMatch', kind: 'exception',
+              actions: [['상담사 연결', '$handoff'], ['다른 문의', '$menu']]
+            });
+          }
+          return;
+        }
+        this.applyVerifiedIdentity();
+        if (target === billingLookupTarget(no)) this.context.billingVerified = true;
+      }
+      if (no === 4 && target === 'chargeContract' && this.context.carePaymentReturn) {
+        this.context.product = carePaymentProduct;
+        this.execute('paymentScope');
+      } else {
+        this.execute(target);
+      }
     }
 
     openAuth(method, target) {
@@ -16773,6 +16859,7 @@ window.SKIX_PARTNER_CARDS = [
       this.context.otpCode = nextOtp(this.context.otpCode);
       this.context.otpExpiresAt = Date.now() + otpValidityMs;
       this.context.phoneVerified = false;
+      this.#pendingIdentity.code = this.context.otpCode;
     }
 
     command(target, label, values) {
@@ -16785,6 +16872,7 @@ window.SKIX_PARTNER_CARDS = [
       const screen = this.screen.id;
       switch (target) {
         case '$finish':
+          this.#pendingIdentity = null;
           this.context = {};
           this.synthetic('상담을 마쳤어요. 이용해 주셔서 감사합니다.', { kind: 'closed', demo: false });
           break;
@@ -16817,15 +16905,9 @@ window.SKIX_PARTNER_CARDS = [
           });
           break;
         case '$authSuccess': {
-          const { target: next, method } = this.context.auth;
-          if (method === 'PASS 본인인증' && next === billingLookupTarget(no)) this.context.billingVerified = true;
+          const auth = this.context.auth;
           this.context.auth = undefined;
-          if (no === 4 && next === 'chargeContract' && this.context.carePaymentReturn) {
-            this.context.product = carePaymentProduct;
-            this.execute('paymentScope');
-            break;
-          }
-          this.execute(next);
+          this.completePass(auth);
           break;
         }
         case '$resumeCareVisit':
@@ -16866,6 +16948,11 @@ window.SKIX_PARTNER_CARDS = [
           this.execute('deliveryBusinessInput');
           break;
         case '$auditSms':
+          if (this.#sessionIdentity && this.screen.auth?.success) {
+            this.applyVerifiedIdentity();
+            this.execute(this.screen.auth.success);
+            break;
+          }
           this.context.auditAuth = this.screen.auth;
           this.synthetic(phoneConsent, {
             id: '$auditSmsConsent',
@@ -16881,6 +16968,7 @@ window.SKIX_PARTNER_CARDS = [
           this.form('확인에 사용할 이름과 휴대폰 번호를 알려 주세요.', ['name', 'phone'], '$auditSendOtp', '인증번호 받기');
           break;
         case '$auditSendOtp':
+          this.#pendingIdentity = { name: values.이름, phone: values['휴대폰 번호'] };
           this.context.otpTries = 0;
           this.issueOtp();
           this.synthetic('인증 문자에 있는 6자리 번호를 3분 안에 입력해 주세요.', {
@@ -16889,6 +16977,7 @@ window.SKIX_PARTNER_CARDS = [
           });
           break;
         case '$sendOtp':
+          this.#pendingIdentity = { name: values.이름, phone: values['휴대폰 번호'] };
           this.context.otpTries = 0;
           this.issueOtp();
           if (this.scenario.screens.some((item) => item.id === 'phoneConfirm')) {
@@ -16902,6 +16991,10 @@ window.SKIX_PARTNER_CARDS = [
           }
           break;
         case '$resendOtp':
+          if (this.#pendingIdentity?.code !== this.context.otpCode || !this.#pendingIdentity) {
+            this.openScenario(no, '휴대폰 다시 확인', false);
+            break;
+          }
           this.issueOtp();
           this.fields = this.fields.map((field) => field.label === '인증번호'
             ? { ...field, sample: this.context.otpCode, error: undefined } : field);
@@ -16910,20 +17003,34 @@ window.SKIX_PARTNER_CARDS = [
         case '$auditVerifyOtp':
         case '$verifyOtp':
           const shared = target === '$auditVerifyOtp';
+          if (this.#pendingIdentity?.code !== this.context.otpCode || !this.#pendingIdentity) {
+            const next = shared ? this.context.auditAuth?.success : this.screen.auth?.success ?? phoneSuccess[no];
+            if (this.#sessionIdentity && next) {
+              this.applyVerifiedIdentity();
+              this.execute(next);
+            } else {
+              this.openScenario(no, '휴대폰 다시 확인', false);
+            }
+            break;
+          }
           if (this.context.otpExpiresAt && Date.now() >= this.context.otpExpiresAt) {
             this.fields = this.fields.map((field) => field.label === '인증번호'
               ? { ...field, error: '인증번호의 유효 시간이 지났어요. 인증번호를 다시 받아 주세요.' } : field);
             break;
           }
           if (this.context.otpCode && values['인증번호'] === this.context.otpCode) {
+            const { name, phone } = this.#pendingIdentity;
+            this.#sessionIdentity = { name, phone };
+            this.#pendingIdentity = null;
             this.context.otpCode = undefined;
             this.context.otpExpiresAt = undefined;
-            this.context.phoneVerified = true;
+            this.applyVerifiedIdentity();
             this.execute(shared ? this.context.auditAuth?.success ?? '$finish' : this.screen.auth?.success ?? phoneSuccess[no]);
           } else {
             this.context.otpTries = (this.context.otpTries ?? 0) + 1;
             const attempts = [16, 17].includes(no) ? 3 : otpAttemptLimit;
             if (this.context.otpTries >= attempts) {
+              this.#pendingIdentity = null;
               this.context.otpCode = undefined;
               this.context.otpExpiresAt = undefined;
               if ([16, 17].includes(no)) {
@@ -16968,6 +17075,7 @@ window.SKIX_PARTNER_CARDS = [
           const account = kind === 'transfer';
           this.context.payment = account ? { account: true, bank: title, masked } : { title, masked };
           this.synthetic('등록된 본인 명의의 결제수단으로 납부하시겠어요?', {
+            id: '$registeredPaymentApproval',
             actions: [[account ? 'PASS 전자서명' : 'PASS 본인인증', 'S07'], ['나가기', '$paymentOptions']],
             items: [
               { title: '납부 방법', detail: `${title} · ${masked}` },
@@ -17398,14 +17506,11 @@ window.SKIX_PARTNER_CARDS = [
   const catalogBackdrop = byId("catalog-backdrop");
   const chatPanel = byId("chat-panel");
   const mobileCatalog = matchMedia("(max-width: 840px)");
-  const categories = [
-    ["결제·납부", "결제·납부", "card"],
-    ["배송·설치", "배송·설치", "truck"],
-    ["AS·케어", "A/S·케어", "tool"],
-    ["계약·해약", "계약·해지", "folder"],
-    ["고객정보·동의", "고객정보", "user"],
-    ["문서발송", "증빙서류", "file"],
-    ["가입·심사", "구독·멤버십", "bag"],
+  const catalogPhases = [
+    { id: 1, label: "1차", phase: "1차" },
+    { id: 2, label: "2차", phase: "2차" },
+    { id: 3, label: "3차", phase: "3차" },
+    { id: 4, label: "4차", phase: "별도 검토", note: "별도 검토" },
   ];
   const recordPickers = new Map([
     [["1:S02", "2:S02", "3:changeContract", "4:chargeContract", "5:arrearsContract", "7:S02", "7:S04", "10:S03"], ["contract", "계약 선택"]],
@@ -17424,8 +17529,7 @@ window.SKIX_PARTNER_CARDS = [
     address: "truck", date: "calendar", channel: "chat", document: "file", term: "file", consent: "lock",
     payment: "wallet", reason: "file",
   };
-  const openCategories = new Set();
-  let allCatalogItems = false;
+  const openPhases = new Set();
   let drawerOpen = false;
 
   let demoMode = localFile;
@@ -17484,49 +17588,45 @@ window.SKIX_PARTNER_CARDS = [
     }
   }
 
-  function renderCatalog(focusGroup) {
+  function renderCatalog(focusPhase) {
     const term = catalogSearch.value.trim();
+    const matches = term ? engine.find(term) : [...scenarios.values()];
     const content = document.createDocumentFragment();
-    if (term || allCatalogItems) {
-      const matches = term ? engine.find(term) : [...scenarios.values()];
-      const text = !matches.length
-        ? "해당 업무를 찾지 못했어요."
-        : term ? `검색 결과 ${matches.length}개` : `전체 ${matches.length}개 업무`;
+    if (term) {
+      const text = matches.length ? `검색 결과 ${matches.length}개` : "해당 업무를 찾지 못했어요.";
       const count = element("p", "catalog-results", text);
       count.setAttribute("role", "status");
       content.append(count);
-      for (const scenario of matches) content.append(catalogItem(scenario));
-    } else {
-      for (const [category, label, symbol] of categories) {
-        const toggle = button("", "catalog-group");
-        const expanded = openCategories.has(category);
-        const groupId = `catalog-group-${symbol}`;
-        toggle.dataset.category = category;
-        toggle.setAttribute("aria-expanded", String(expanded));
-        toggle.setAttribute("aria-controls", groupId);
-        const mark = icon(symbol);
-        mark.classList.add("catalog-group-icon");
+    }
+    for (const { id, label, phase, note } of catalogPhases) {
+      const phaseMatches = matches.filter((scenario) => scenario.phase === phase);
+      if (term && !phaseMatches.length) continue;
+      const expanded = Boolean(term) || openPhases.has(id);
+      const groupId = `catalog-phase-${id}`;
+      const heading = term ? element("h3", "catalog-group") : button("", "catalog-group");
+      const mark = icon("folder");
+      mark.classList.add("catalog-group-icon");
+      heading.append(mark, element("span", "", label));
+      if (note) heading.append(element("span", "catalog-phase-note", note));
+      if (!term) {
+        heading.dataset.phase = String(id);
+        heading.setAttribute("aria-expanded", String(expanded));
+        heading.setAttribute("aria-controls", groupId);
         const chevron = icon("chevron");
         chevron.classList.add("catalog-chevron");
-        toggle.append(mark, element("span", "", label), chevron);
-        const items = element("div", "catalog-items");
-        items.id = groupId;
-        items.hidden = !expanded;
-        if (expanded) {
-          for (const scenario of scenarios.values()) {
-            if (scenario.category === category) items.append(catalogItem(scenario));
-          }
-        }
-        content.append(toggle, items);
+        heading.append(chevron);
       }
+      const items = element("div", "catalog-items");
+      items.id = groupId;
+      items.hidden = !expanded;
+      if (expanded) for (const scenario of phaseMatches) items.append(catalogItem(scenario));
+      content.append(heading, items);
     }
     catalogList.replaceChildren(content);
-    catalogAll.textContent = allCatalogItems ? "분류 보기" : "전체 보기";
-    catalogAll.setAttribute("aria-pressed", String(allCatalogItems));
+    catalogAll.textContent = !term && openPhases.size === catalogPhases.length ? "전체 접기" : "전체 펼치기";
     syncCatalogSelection(demoMode || workflow ? engine.getState() : null);
-    if (focusGroup) {
-      [...catalogList.querySelectorAll("[data-category]")]
-        .find((node) => node.dataset.category === focusGroup)?.focus({ preventScroll: true });
+    if (focusPhase) {
+      catalogList.querySelector(`[data-phase="${focusPhase}"]`)?.focus({ preventScroll: true });
     }
   }
 
@@ -17743,7 +17843,7 @@ window.SKIX_PARTNER_CARDS = [
       retry.addEventListener("click", () => requestReply(failedRequest.message, true));
       useDemo.addEventListener("click", () => {
         const question = failedRequest.message;
-        clearConversation();
+        clearConversation({ preserveIdentity: true });
         demoMode = true;
         engine.submit(question);
         update({ focus: true });
@@ -18230,7 +18330,7 @@ window.SKIX_PARTNER_CARDS = [
     byId("secure-message").hidden = !blocked;
     byId("secure-message").querySelector("span").textContent = flow?.screen?.kind === "internal-only"
       ? "이 업무의 고객 채팅 절차는 검토 중이에요."
-      : flow?.screen?.kind === "closed" ? "새 대화를 시작할 수 있어요." : "대화 안의 안내에 따라 계속해 주세요.";
+      : flow?.screen?.kind === "closed" ? "상단의 초기화 버튼으로 새 대화를 시작할 수 있어요." : "대화 안의 안내에 따라 계속해 주세요.";
     input.hidden = privateEntry;
     secureInput.hidden = !privateEntry;
     const ready = progressive && !field;
@@ -18259,23 +18359,32 @@ window.SKIX_PARTNER_CARDS = [
     });
   }
 
+  function clearWorkflowDraft() {
+    inputProgress = null;
+    revealedCode = null;
+    input.value = "";
+    secureInput.value = "";
+  }
+
   function archiveWorkflow() {
-    if (!workflow) return;
+    if (!workflow) return false;
     lastScenario = engine.getState().scenario?.no ?? lastScenario;
     liveRows.push(...getEngineRows());
-    engine.reset();
+    engine.reset({ preserveIdentity: true });
     inputMessages = [];
-    inputProgress = null;
+    clearWorkflowDraft();
     workflow = false;
+    return true;
   }
 
   function startWorkflow(scenario, fromMenu = false) {
     if (!scenario || activeRequest) return;
     setDrawer(false, false);
     if (demoMode) {
+      clearWorkflowDraft();
       engine.start(scenario.no);
     } else {
-      archiveWorkflow();
+      if (!archiveWorkflow()) clearWorkflowDraft();
       workflow = true;
       lastScenario = scenario.no;
       engine.start(scenario.no);
@@ -18286,7 +18395,7 @@ window.SKIX_PARTNER_CARDS = [
     update({ focus: true });
   }
 
-  function clearConversation() {
+  function clearConversation({ preserveIdentity = false } = {}) {
     if (activeRequest) {
       clearTimeout(activeRequest.timer);
       activeRequest.controller.abort();
@@ -18299,11 +18408,9 @@ window.SKIX_PARTNER_CARDS = [
     failedRequest = null;
     lastScenario = null;
     inputMessages = [];
-    inputProgress = null;
-    revealedCode = null;
-    input.value = "";
-    secureInput.value = "";
-    engine.reset();
+    clearWorkflowDraft();
+    if (preserveIdentity) engine.reset({ preserveIdentity: true });
+    else engine.reset();
   }
 
   async function refreshConnection() {
@@ -18428,6 +18535,11 @@ window.SKIX_PARTNER_CARDS = [
   });
   byId("new-chat").addEventListener("click", () => {
     clearConversation();
+    setDrawer(false, false);
+    openPhases.clear();
+    catalogSearch.value = "";
+    catalogList.scrollTop = 0;
+    renderCatalog();
     update({ focus: true });
   });
   catalogToggle.addEventListener("click", () => setDrawer(true));
@@ -18435,7 +18547,9 @@ window.SKIX_PARTNER_CARDS = [
   catalogBackdrop.addEventListener("click", () => setDrawer(false));
   mobileCatalog.addEventListener("change", () => setDrawer(false, false));
   catalogAll.addEventListener("click", () => {
-    allCatalogItems = !allCatalogItems;
+    const collapse = !catalogSearch.value.trim() && openPhases.size === catalogPhases.length;
+    openPhases.clear();
+    if (!collapse) for (const { id } of catalogPhases) openPhases.add(id);
     catalogSearch.value = "";
     catalogList.scrollTop = 0;
     renderCatalog();
@@ -18445,15 +18559,20 @@ window.SKIX_PARTNER_CARDS = [
     renderCatalog();
   });
   catalogSearch.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") catalogList.querySelector("[data-scenario]:not(:disabled)")?.focus();
+    if (event.key !== "Enter") return;
+    const [match] = engine.find(catalogSearch.value.trim());
+    if (match) {
+      event.preventDefault();
+      catalogList.querySelector(`[data-scenario="${match.no}"]:not(:disabled)`)?.focus();
+    }
   });
   catalogList.addEventListener("click", (event) => {
-    const toggle = event.target.closest("[data-category]");
+    const toggle = event.target.closest("[data-phase]");
     if (toggle) {
-      const category = toggle.dataset.category;
-      if (openCategories.has(category)) openCategories.delete(category);
-      else openCategories.add(category);
-      renderCatalog(category);
+      const id = Number(toggle.dataset.phase);
+      if (openPhases.has(id)) openPhases.delete(id);
+      else openPhases.add(id);
+      renderCatalog(id);
       return;
     }
     const item = event.target.closest("[data-scenario]");
