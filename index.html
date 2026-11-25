@@ -554,6 +554,7 @@ p, h1, h2, h3 { margin: 0; }
   padding: 9px 11px;
   background: var(--white);
 }
+a.choice-card { color: inherit; text-decoration: none; }
 .choice-card:hover { background: #fff9f9; }
 .choice-card-icon {
   display: grid;
@@ -953,6 +954,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 1,
     "title": "정보변경_결제정보(출금유형/이체일) 문의",
+    "consultationCode": "75",
+    "firstPhaseScenario": "02-8_006 [챗봇] 결제(납부)정보 문의",
     "displayTitle": "결제정보 문의",
     "phase": "1차",
     "category": "결제·납부",
@@ -1232,6 +1235,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 2,
     "title": "수납 단순문의_구독/멤버십료 문의",
+    "consultationCode": "76",
+    "firstPhaseScenario": "02-8_007 [챗봇] 구독/멤버십료 문의",
     "displayTitle": "구독료·멤버십료 문의",
     "phase": "1차",
     "category": "결제·납부",
@@ -1450,6 +1455,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 3,
     "title": "정보변경_결제정보(출금유형/이체일) 변경",
+    "consultationCode": "84",
+    "firstPhaseScenario": "02-8_015 [챗봇] 결제(납부)정보 변경",
     "displayTitle": "결제정보 변경",
     "phase": "1차",
     "category": "결제·납부",
@@ -1726,6 +1733,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 4,
     "title": "요금 납부_렌탈료/멤버십료결제",
+    "consultationCode": "92",
+    "firstPhaseScenario": "02-8_014 [챗봇] 구독/멤버십료 결제",
     "displayTitle": "요금 납부",
     "phase": "1차",
     "category": "결제·납부",
@@ -2061,6 +2070,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 5,
     "title": "수납 단순문의_미납요금문의",
+    "consultationCode": "78",
+    "firstPhaseScenario": "02-8_008 [챗봇] 미납요금 문의",
     "displayTitle": "미납요금 문의",
     "phase": "1차",
     "category": "결제·납부",
@@ -2383,6 +2394,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 6,
     "title": "수납 단순문의_제휴카드 문의",
+    "consultationCode": "80",
+    "firstPhaseScenario": "02-8_009 [챗봇/콜봇] 제휴카드 문의",
     "displayTitle": "제휴카드 문의",
     "phase": "1차",
     "category": "결제·납부",
@@ -2537,6 +2550,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 7,
     "title": "계약기간/위약금 문의",
+    "consultationCode": "127",
+    "firstPhaseScenario": "02-8_010 [챗봇] 계약기간/위약금 문의",
     "displayTitle": "계약기간·위약금 문의",
     "phase": "1차",
     "category": "계약·해약",
@@ -2788,6 +2803,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 8,
     "title": "분리/재설치 접수_분리접수",
+    "consultationCode": "17",
+    "firstPhaseScenario": "02-8_012 [챗봇] 분리/재설치 서비스 접수",
     "displayTitle": "제품 분리 접수",
     "phase": "1차",
     "category": "배송·설치",
@@ -3083,6 +3100,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 9,
     "title": "분리/재설치 접수_재설치접수",
+    "consultationCode": "18",
+    "firstPhaseScenario": "02-8_013 [챗봇] 재설치 서비스 접수",
     "displayTitle": "제품 재설치 접수",
     "phase": "1차",
     "category": "배송·설치",
@@ -3391,6 +3410,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 10,
     "title": "명의변경 문의 / 명의변경 신청 (선납취소·면제취소 포함)",
+    "consultationCode": "108 / 109",
+    "firstPhaseScenario": "02-8_016 [챗봇] 명의변경 문의/신청",
     "displayTitle": "명의변경 문의·신청",
     "phase": "1차",
     "category": "계약·해약",
@@ -3642,6 +3663,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 11,
     "title": "고장상담_일반(기술상담)",
+    "consultationCode": "16",
+    "firstPhaseScenario": "02-8_001 [챗봇] 고장상담",
     "displayTitle": "제품 고장 상담",
     "phase": "1차",
     "category": "AS·케어",
@@ -3883,6 +3906,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 12,
     "title": "고장상담_AS접수_일반",
+    "consultationCode": "12",
+    "firstPhaseScenario": "02-8_002 [챗봇] AS 서비스 접수",
     "displayTitle": "AS 방문 접수",
     "phase": "1차",
     "category": "AS·케어",
@@ -4196,6 +4221,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 13,
     "title": "단순상담_AS 접수/일정/방문 확인",
+    "consultationCode": "1",
+    "firstPhaseScenario": "02-8_003 [챗봇/콜봇] 서비스 접수 정보 확인",
     "displayTitle": "AS 일정·방문 조회",
     "phase": "1차",
     "category": "AS·케어",
@@ -4474,6 +4501,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 14,
     "title": "AS접수 수정_접수수정",
+    "consultationCode": "9",
+    "firstPhaseScenario": "02-8_004 [챗봇] 서비스 접수 정보 수정",
     "displayTitle": "AS 접수 수정",
     "phase": "1차",
     "category": "AS·케어",
@@ -4829,6 +4858,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 15,
     "title": "AS서비스 상담/접수_접수취소",
+    "consultationCode": "10",
+    "firstPhaseScenario": "02-8_005 [챗봇/콜봇] 서비스 취소",
     "displayTitle": "AS 접수 취소",
     "phase": "1차",
     "category": "AS·케어",
@@ -5103,6 +5134,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 16,
     "title": "배송 단순문의_배송/설치일정/방문시간 문의",
+    "consultationCode": "65",
+    "firstPhaseScenario": "02-8_011 [챗봇/콜봇] 배송 설치 문의",
     "displayTitle": "배송·설치 일정 문의",
     "phase": "1차",
     "category": "배송·설치",
@@ -5363,6 +5396,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 17,
     "title": "배송 단순문의_고객정보확인/변경",
+    "consultationCode": "64",
+    "firstPhaseScenario": "02-8_017 [챗봇] 배송 설치 변경",
     "displayTitle": "배송정보 확인·변경",
     "phase": "1차",
     "category": "배송·설치",
@@ -12711,23 +12746,51 @@ window.SKIX_PARTNER_CARDS = [
     ({ ...choice(message, actions), kind: 'handoff' });
   const item = (title, detail) => ({ title, detail });
   const close = [['다른 문의', '$menu'], ['상담 종료', '$finish']];
-  const paymentMethods = (card, transfer) => choice(
+  const bank = { label: '은행', placeholder: '은행 선택', sample: 'KB국민은행', options: [
+    'KB국민은행', '신한은행', '우리은행', '하나은행', 'NH농협은행', 'IBK기업은행'
+  ] };
+  const account = { label: '계좌번호', placeholder: '계좌번호 입력', type: 'password', sample: '000000001234' };
+  const birthday = { label: '생년월일', placeholder: 'YYMMDD', type: 'password', sample: '900101' };
+  const transferFields = [bank, account, birthday];
+  const cardFields = [
+    { label: '카드번호', placeholder: '숫자 15~16자리', type: 'password', sample: '0000000000001234' },
+    { label: '유효기간', placeholder: 'MM / YY', type: 'password', sample: '12 / 30' },
+    birthday
+  ];
+  const paymentMethods = (transfer, virtual) => choice(
     '어떤 방법으로 납부할까요? 카드와 실시간 계좌이체는 본인 명의의 수단만 사용할 수 있어요.',
-    [['카드', card], ['실시간 계좌이체', transfer], ['가상계좌', 'S06']],
+    [['카드', '$issuerPicker'], ['실시간 계좌이체', transfer], ['가상계좌', virtual], ['뒤로', '$paymentOptions']],
     [item('납부 금액', '[납부 금액]')]
   );
   const invoiceWarning = '출금이 이미 요청된 요금은 등록한 계좌나 카드에서 한 번 더 결제될 수 있어요.';
   const paymentStatus = [
     ['결제정보 변경', '@3'], ['미납요금 조회', '@5'], ['상담사 연결', '$handoff'], ['다른 문의', '$menu']
   ];
+  const contractedProduct = (name, code, method, masked, start, end, months, monthly, overdue, paid) => [
+    item(name, `제품코드 ${code}\n사용자 주소 서울 영등포구 문래동`),
+    item('결제정보', `출금유형 ${method}\n${masked}\n이체일·결제일 매월 25일`),
+    item('계약기간', `계약일 ${start}\n계약종료일 ${end}\n의무사용기간 36개월\n전체계약기간 60개월\n사용개월수 ${months}개월`),
+    item('청구·납부', `구독료 월 ${monthly}\n미납금(당월 미포함) ${overdue}\n당월 요금 납부 여부 ${paid ? '납부 완료' : '납부 미완료'}`)
+  ];
+  const waterDetails = (overdue = '0원', paid = true) => contractedProduct('직수 정수기', 'WPU-1000', '신용카드 자동납부',
+    '신한카드 · ••••-••••-••••-1234', '2025.06.01', '2030.05.31', 17, '29,900원', overdue, paid);
+  const airDetails = () => contractedProduct('공기청정기', 'ACL-1000', '계좌 자동이체',
+    'KB국민은행 · ••••-••••-4321', '2025.09.01', '2030.08.31', 14, '19,900원', '59,700원', false);
   const paymentUnavailable = (returnTo) => notice('일치하는 계약을 찾지 못했어요. 설치 전이나 설치 당일에는 계약이 조회되지 않을 수 있어요.', [
     ['다시 조회하기', returnTo], ['상담사 연결', '$handoff'], ['다른 문의', '$menu']
   ]);
   const resolved = (fallback, rules = []) => ({ resolve: { default: fallback, rules } });
-  const paymentDay = new Date().getDate();
+  const today = new Intl.DateTimeFormat('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Seoul' }).format(new Date());
+  const paymentDay = Number(today.slice(-2));
+  const penaltyDate = { label: '해약접수 예정일', type: 'date', sample: today, required: false };
   const choosePayment = (registered, oneTime) => [['등록 결제수단', registered], ['일회성 납부수단', oneTime], ['나가기', '$finish']];
-  const platformPayment = () => notice('네이버 구독 계약은 미납금 납부 전에 결제정보 등록이 필요해요. 네이버에서 등록 방법을 확인해 주세요.', [
-    ['결제정보 변경 안내', '@3'], ['다른 문의', '$menu']
+  const platformPayment = (list, needsRegistration) => notice(needsRegistration
+    ? '네이버를 통해 구독 신청하신 경우 미납금 납부 전 결제정보 등록이 필요해요.'
+    : '네이버를 통해 구독 신청하신 경우 네이버에서 납부해 주세요.', [
+    ...(needsRegistration ? [['결제정보 등록 안내', '@3']] : []), ['다른 계약 확인', list], ['다른 문의', '$menu']
+  ]);
+  const individualReceiptNotice = (next) => choice('납부하면 고객님의 등록된 휴대폰 번호로 현금영수증이 자동 발급돼요.', [
+    ['납부 진행하기', next], ['뒤로', 'oneTimeMethods']
   ]);
 
   Object.assign(window.SKIX_FLOW_OVERLAYS ??= {}, {
@@ -12735,8 +12798,8 @@ window.SKIX_PARTNER_CARDS = [
       screens: {
         S01: { actions: [['PASS 본인인증', 'exampleLookup']], auth: { failure: 'S08' } },
         S02: { actions: [['직수 정수기 선택', 'paymentPurpose'], ['공기청정기 선택', 'airPaymentPurpose']] },
-        S03: { addActions: [['당월 납부 결과 확인', 'S04'], ['다른 계약 확인', 'S02']] },
-        S04: { actions: [...paymentStatus, ['다른 계약 확인', 'S02']] },
+        S03: { items: waterDetails(), addActions: [['당월 납부 결과 확인', 'S04'], ['다른 계약 확인', 'S02']] },
+        S04: { actions: [['다른 계약 확인', 'S02'], ['다른 문의', '$menu']] },
         S05: { actions: [...paymentStatus, ['다른 계약 확인', 'S02']], items: [item('이체·결제 예정일', '매월 25일')] },
         S06: { actions: [...paymentStatus, ['다른 계약 확인', 'S02']] },
         S07: paymentUnavailable('S01'),
@@ -12748,12 +12811,7 @@ window.SKIX_PARTNER_CARDS = [
         airPaymentPurpose: choice('공기청정기의 어떤 결제 정보를 확인할까요?', [['결제정보 상세 조회', 'airPaymentDetails'], ['당월 납부 결과', 'airPaymentStatus']]),
         airPaymentDetails: result('선택하신 공기청정기 계약의 결제정보예요.', [
           ['결제정보 변경', '@3'], ['위약금 문의', '@7'], ['당월 납부 결과 확인', 'airPaymentStatus'], ['다른 계약 확인', 'S02']
-        ], [
-          item('공기청정기', '제품코드 ACL-1000\n사용 주소 서울 영등포구 문래동'),
-          item('결제정보', '출금 유형 계좌 자동이체\n은행 KB국민은행\n계좌번호 ••••-••••-4321\n이체일 매월 25일'),
-          item('계약', '계약일 2025.09.01\n의무 사용 36개월 · 전체 계약 60개월'),
-          item('청구·납부', '구독료 월 19,900원\n미납금(당월 제외) 59,700원\n당월 납부 미완료')
-        ]),
+        ], airDetails()),
         airPaymentStatus: resolved(paymentDay < 25 ? 'airPaymentBefore' : paymentDay === 25 ? 'S06' : 'S05'),
         airPaymentBefore: result('아직 이번 달 결제일 전이라 당월 요금이 납부되지 않았어요.', [
           ...paymentStatus, ['다른 계약 확인', 'S02']
@@ -12765,16 +12823,10 @@ window.SKIX_PARTNER_CARDS = [
         S01: { actions: [['PASS 본인인증', 'exampleLookup']], auth: { failure: 'S06' } },
         S02: {
           actions: [['직수 정수기 선택', 'S03'], ['공기청정기 선택', 'S04']],
-          items: [item('직수 정수기', '월 29,900원 · 문래동'), item('공기청정기', '월 19,900원 · 문래동')]
+          items: [item('직수 정수기', 'WPU-1000 · 문래동 · 월 29,900원'), item('공기청정기', 'ACL-1000 · 문래동 · 월 19,900원')]
         },
-        S03: { addActions: [['다른 계약 확인', 'S02']], items: [
-          item('월 이용료', '29,900원'), item('결제정보', '신한카드 · ••••-••••-••••-1234 · 매월 25일'),
-          item('계약일', '2025.06.01'), item('당월 납부 상태', '납부 완료')
-        ] },
-        S04: { message: '선택하신 공기청정기의 월 이용료와 지난달까지의 미납금이에요.', addActions: [['다른 계약 확인', 'S02']], items: [
-          item('월 이용료', '19,900원'), item('결제정보', 'KB국민은행 · ••••-••••-4321 · 매월 25일'),
-          item('계약일', '2025.09.01'), item('미납금(당월 제외)', '59,700원')
-        ] },
+        S03: { addActions: [['다른 계약 확인', 'S02']], items: waterDetails() },
+        S04: { message: '선택하신 공기청정기의 구독료와 지난달까지의 미납금이에요.', addActions: [['다른 계약 확인', 'S02']], items: airDetails() },
         S05: paymentUnavailable('S01'),
         S06: { actions: [['PASS 본인인증', 'exampleLookup']], auth: { failure: 'S07' } },
         exampleLookup: resolved('S02'),
@@ -12783,21 +12835,36 @@ window.SKIX_PARTNER_CARDS = [
     3: {
       screens: {
         S01: { actions: [['PASS 본인인증', 'changeContract']], auth: { failure: 'S07' } },
-        S02: { actions: [['일괄 변경', 'S03'], ['상담사 연결', '$handoff'], ['다른 계약 확인', 'changeContract']] },
+        S02: {
+          message: '결제정보를 변경하면 동일한 묶음 번호의 상품 전체에 적용돼요. 결제정보를 일괄 변경하시겠어요?',
+          actions: [['일괄 변경', 'S03'], ['아니오 · 상담사 연결', '$handoff'], ['다른 계약 확인', 'changeContract']]
+        },
+        S03: { message: '등록할 납부수단을 선택해 주세요. 본인 명의의 결제수단만 등록할 수 있어요.' },
+        S04: { fields: cardFields },
+        S05: { fields: transferFields },
         S08: {
-          message: '결제수단 변경 내용을 확인했어요. 이번 달 요금을 이미 납부했다면 다음 달부터 변경한 수단이 적용돼요. 미납 상태라면 이번 달부터 적용되며, 당일 처리 결과는 반영까지 시간이 걸릴 수 있어요. 변경 시점에 따라 제휴 할인 적용 여부가 달라질 수 있어요.',
+          message: '신청하신 정보로 결제수단 변경을 처리했어요.',
           actions: [['다른 계약 변경', 'changeContract'], ['다른 문의', '$menu']]
         },
         changeContract: choice('변경할 계약을 선택해 주세요.', [
-          ['직수 정수기 선택', 'ordinaryPaymentDetails'], ['정수기·공기청정기 묶음 선택', 'S02'], ['비데 선택', 'naverContract']
+          ['직수 정수기 선택', 'ordinaryPaymentDetails'], ['정수기·공기청정기 묶음 선택', 'bundlePaymentDetails'], ['비데 선택', 'naverContract']
         ], [
           item('직수 정수기', 'WPU-1000 · 개별 결제 · 신한카드'),
           item('정수기·공기청정기 묶음', '묶음 결제 · 대표 계약 결제일 매월 25일'),
           item('비데', 'BID-1000 · 네이버 구독')
         ]),
         ordinaryPaymentDetails: result('직수 정수기에 등록된 결제정보를 확인해 주세요.', [
-          ['결제정보 변경', 'S03'], ['위약금 조회', '@7'], ['다른 계약 확인', 'changeContract']
-        ], [item('결제 정보', '신한카드 · ••••-••••-••••-1234 · 매월 25일'), item('결제 범위', '선택한 개별 계약')]),
+          ['결제정보 변경', 'applyNextMonth'], ['위약금 조회', '@7'], ['다른 계약 확인', 'changeContract']
+        ], waterDetails()),
+        bundlePaymentDetails: result('묶음 계약에 등록된 결제정보를 확인해 주세요.', [
+          ['결제정보 변경', 'applyThisMonth'], ['위약금 조회', '@7'], ['다른 계약 확인', 'changeContract']
+        ], [...airDetails(), item('결제 적용 범위', '같은 묶음 번호의 상품 전체')]),
+        applyNextMonth: choice('이번 달 요금을 이미 납부하셔서 다음 달부터 변경한 결제정보로 결제돼요.', [
+          ['결제정보 변경 진행', 'S03'], ['다른 계약 확인', 'changeContract']
+        ]),
+        applyThisMonth: choice('이번 달부터 변경한 결제정보로 결제돼요. 오늘 결제내역은 반영까지 시간이 걸릴 수 있어요. 정확한 납부 결과는 다음 날 확인할 수 있고, 변경 시점에 따라 제휴카드 혜택이 적용되지 않을 수 있어요.', [
+          ['결제정보 변경 진행', 'S02'], ['다른 계약 확인', 'changeContract']
+        ]),
         naverContract: result('네이버에서 구독한 계약의 결제정보는 네이버에서 변경하실 수 있어요.', [['다른 계약 확인', 'changeContract'], ...close])
       }
     },
@@ -12810,64 +12877,60 @@ window.SKIX_PARTNER_CARDS = [
           actions: choosePayment('$savedPicker', 'oneTimeMethods')
         },
         S03: { actions: [['가상계좌', 'receiptVirtual'], ['상담사 연결', '$handoff']] },
-        S04: { fields: [
-          { label: '카드번호', placeholder: '숫자 16자리', type: 'password', sample: '0000000000001234' },
-          { label: '유효기간', placeholder: 'MM / YY', type: 'password', sample: '12 / 30' },
-          { label: '생년월일', placeholder: 'YYMMDD', type: 'password', sample: '900101' }
-        ], items: [item('할부 기간', '일시불 · 5만원 미만'), item('납부 금액', '[납부 금액]')] },
-        S05: { items: [item('납부 금액', '[납부 금액]')] },
-        S06: { message: '가상계좌를 발급받을 은행과 안내받을 휴대폰 번호를 입력해 주세요.', items: [item('납부 금액', '[납부 금액]')] },
-        S07: { message: '[납부 금액]이 납부됐어요. 아래에서 처리 결과를 확인해 주세요.', items: [item('처리 상태', '납부 완료'), item('납부 금액', '[납부 금액]')] },
-        S07V: { addActions: [['입금 확인 안내', '@39'], ['다른 계약 확인', 'chargeContract']] },
+        S04: { fields: cardFields, items: [item('할부 기간', '일시불'), item('납부 금액', '[납부 금액]')] },
+        S05: { fields: transferFields, items: [item('납부 금액', '[납부 금액]')] },
+        S06: { message: '가상계좌를 발급받을 은행을 선택하고 안내를 받을 휴대폰 번호를 입력해 주세요.', fields: [bank, 'phone'], items: [item('납부 금액', '[납부 금액]')] },
+        S07: { message: '[납부 금액]이 납부됐어요. 아래에서 처리 결과를 확인해 주세요.', items: [item('처리 상태', '납부 완료'), item('납부 금액', '[납부 금액]')], actions: [['다른 계약 보기', 'chargeContract'], ['다른 문의', '$menu']] },
+        S07V: { actions: [['다른 계약 보기', 'chargeContract'], ['다른 문의', '$menu']] },
+        S09: { actions: [['다른 계약 보기', 'chargeContract'], ['상담사 연결', '$handoff'], ['다른 문의', '$menu']] },
         chargeContract: choice('납부할 계약을 선택해 주세요.', [
           ['직수 정수기 선택', 'chargeDetails'], ['공기청정기 선택', 'paymentScope'], ['비데 선택', 'chargePaid'], ['매트리스 선택', 'naverPayment']
-        ], [item('직수 정수기', '당월 29,900원 · 이전 미납금 0원'), item('공기청정기', '당월 19,900원 · 이전 미납금 59,700원'), item('비데', '당월 납부 완료'), item('매트리스', '네이버 구독')]),
+        ], [item('직수 정수기', 'WPU-1000 · 문래동 · 월 29,900원'), item('공기청정기', 'ACL-1000 · 문래동 · 월 19,900원'), item('비데', 'BID-1000 · 문래동 · 당월 납부 완료'), item('매트리스', 'MAT-1000 · 문래동 · 네이버 구독')]),
         chargeDetails: result('직수 정수기의 이번 달 요금이 아직 납부되지 않았어요.', [
           ['요금 납부', 'S02'], ['결제정보 변경', '@3'], ['위약금 조회', '@7'], ['다른 계약 확인', 'chargeContract']
-        ], [item('당월 요금', '29,900원'), item('미납금(당월 제외)', '0원'), item('등록 결제정보', '신한카드 · ••••-••••-••••-1234 · 매월 25일')]),
+        ], waterDetails('0원', false)),
         paymentScope: choice('공기청정기의 지난 미납요금과 이번 달 요금이 남아 있어요. 납부할 범위를 선택해 주세요.', [
           ['미납요금만 납부', 'chargePast'], ['미납요금과 당월 요금 납부', 'chargeCombined'], ['다른 계약 확인', 'chargeContract']
         ], [item('미납요금만 납부', '59,700원'), item('미납요금과 당월 요금 납부', '79,600원')]),
         chargePast: { ...choice('계약의 지난 미납요금 전체를 납부해요. ' + invoiceWarning, choosePayment('S03', 'receiptPaymentMethods'), [item('납부 금액', '[납부 금액]')]), paymentAmount: 59700 },
         chargeCombined: { ...choice('지난 미납요금과 이번 달 요금을 함께 납부해요. ' + invoiceWarning, choosePayment('S03', 'receiptPaymentMethods'), [item('납부 금액', '[납부 금액]')]), paymentAmount: 79600 },
         chargePaid: result('비데의 이번 달 요금은 이미 납부됐어요.', [['결제정보 변경', '@3'], ['위약금 조회', '@7'], ['다른 계약 확인', 'chargeContract']], [item('당월 납부 상태', '납부 완료')]),
-        naverPayment: platformPayment(),
+        naverPayment: platformPayment('chargeContract', false),
         chargeNotFound: paymentUnavailable('S01'),
-        oneTimeMethods: paymentMethods('$issuerPicker', 'S05')
+        oneTimeMethods: paymentMethods('personalTransferReceipt', 'personalVirtualReceipt'),
+        personalTransferReceipt: individualReceiptNotice('S05'),
+        personalVirtualReceipt: individualReceiptNotice('S06')
       }
     },
     5: {
       screens: {
         S01: { actions: [['PASS 본인인증', 'arrearsContract']], auth: { failure: 'S09' } },
-        S02: { addActions: [['결제정보 변경', '@3'], ['다른 계약 확인', 'arrearsContract']], items: [
-          item('미납금(당월 제외)', '29,900원'), item('월 이용료', '29,900원'), item('등록 결제정보', '신한카드 · ••••-••••-••••-1234 · 매월 25일')
-        ] },
+        S02: { addActions: [['결제정보 변경', '@3'], ['다른 계약 확인', 'arrearsContract']], items: waterDetails('29,900원', false) },
         S03: { addActions: [['결제정보 변경', '@3'], ['다른 계약 확인', 'arrearsContract']] },
         S04: {
           message: '계약 건별 미납요금 전체를 납부할 수 있어요. ' + invoiceWarning,
           paymentAmount: 29900,
           actions: choosePayment('$savedPicker', 'oneTimeMethods')
         },
-        S05: { fields: [
-          { label: '카드번호', placeholder: '숫자 16자리', type: 'password', sample: '0000000000001234' },
-          { label: '유효기간', placeholder: 'MM / YY', type: 'password', sample: '12 / 30' },
-          { label: '생년월일', placeholder: 'YYMMDD', type: 'password', sample: '900101' }
-        ], items: [item('할부 기간', '일시불 · 5만원 미만'), item('납부 금액', '[납부 금액]')] },
-        S05T: { items: [item('납부 금액', '[납부 금액]')] },
-        S06: { message: '가상계좌를 발급받을 은행과 안내받을 휴대폰 번호를 입력해 주세요.', items: [item('납부 금액', '[납부 금액]')] },
-        S07: { message: '미납요금 [납부 금액]이 납부됐어요.', items: [item('처리 상태', '납부 완료'), item('납부 금액', '[납부 금액]')] },
-        S08: { addActions: [['입금 확인 안내', '@39'], ['다른 계약 확인', 'arrearsContract']] },
+        S05: { fields: cardFields, items: [item('할부 기간', '일시불'), item('납부 금액', '[납부 금액]')] },
+        S05T: { fields: transferFields, items: [item('납부 금액', '[납부 금액]')] },
+        S06: { message: '가상계좌를 발급받을 은행을 선택하고 안내를 받을 휴대폰 번호를 입력해 주세요.', fields: [bank, 'phone'], items: [item('납부 금액', '[납부 금액]')] },
+        S07: { message: '미납요금 [납부 금액]이 납부됐어요.', items: [item('처리 상태', '납부 완료'), item('납부 금액', '[납부 금액]')], actions: [['다른 계약 보기', 'arrearsContract'], ['다른 문의', '$menu']] },
+        S08: { actions: [['다른 계약 보기', 'arrearsContract'], ['다른 문의', '$menu']] },
+        S09: { actions: [['다른 계약 보기', 'arrearsContract'], ['상담사 연결', '$handoff'], ['다른 문의', '$menu']] },
         arrearsContract: choice('미납요금을 조회할 계약을 선택해 주세요.', [
           ['직수 정수기 선택', 'S02'], ['공기청정기 선택', 'airArrears'], ['비데 선택', 'S03'], ['매트리스 선택', 'naverPayment']
-        ], [item('직수 정수기', '미납요금 29,900원'), item('공기청정기', '미납요금 59,700원'), item('비데', '미납요금 0원'), item('매트리스', '네이버 구독')]),
+        ], [item('직수 정수기', 'WPU-1000 · 문래동 · 29,900원 (당월 미포함)'), item('공기청정기', 'ACL-1000 · 문래동 · 59,700원 (당월 미포함)'), item('비데', 'BID-1000 · 문래동 · 0원 (당월 미포함)'), item('매트리스', 'MAT-1000 · 문래동 · 네이버 구독')]),
         airArrears: result('공기청정기의 지난달까지 미납요금을 확인했어요.', [
           ['미납금 납부', 'highArrearsPayment'], ['결제정보 변경', '@3'], ['다른 계약 확인', 'arrearsContract']
-        ], [item('미납금(당월 제외)', '59,700원'), item('월 이용료', '19,900원'), item('결제정보', 'KB국민은행 · ••••-••••-4321 · 매월 25일')]),
+        ], airDetails()),
         highArrearsPayment: { ...choice('계약의 지난 미납요금 전체를 납부해요. ' + invoiceWarning, choosePayment('otherPayer', 'receiptPaymentMethods'), [item('납부 금액', '[납부 금액]')]), paymentAmount: 59700 },
         otherPayer: choice('등록된 결제수단은 다른 분 명의예요. 가상계좌로 입금하거나 상담사를 통해 납부 방법을 확인해 주세요.', [['가상계좌', 'receiptVirtual'], ['상담사 연결', '$handoff']]),
-        naverPayment: platformPayment(),
+        naverPayment: platformPayment('arrearsContract', true),
         arrearsNotFound: paymentUnavailable('S01'),
-        oneTimeMethods: paymentMethods('$issuerPicker', 'S05T')
+        oneTimeMethods: paymentMethods('personalTransferReceipt', 'personalVirtualReceipt'),
+        personalTransferReceipt: individualReceiptNotice('S05T'),
+        personalVirtualReceipt: individualReceiptNotice('S06')
       }
     },
     6: {
@@ -12878,12 +12941,20 @@ window.SKIX_PARTNER_CARDS = [
     7: {
       screens: {
         S01: { actions: [['PASS 본인인증', 'S02']], auth: { failure: 'S08' } },
-        S03: { addActions: [['결제정보 변경', '@3'], ['다른 문의', '$menu']] },
+        S02: { items: [item('직수 정수기', 'WPU-1000 · 문래동 · 신한카드')] },
+        S03: { items: waterDetails().map((entry) => ({ ...entry, detail: entry.detail.replace('당월 미포함', '당일 미포함') })), addActions: [['결제정보 변경', '@3'], ['다른 문의', '$menu']] },
         S04: {
           actions: [['직수 정수기 선택', 'S05'], ['비데 선택', 'packageEstimate'], ['공기청정기 선택', 'crossPackageEstimate'], ['매트리스 선택', 'S07']],
           items: [item('직수 정수기', 'WPU-1000 · 개별 계약'), item('비데', 'BID-1000 · 패키지 할인'), item('공기청정기', 'ACL-1000 · 크로스 패키지 할인'), item('매트리스', 'MT-1000 · 패키지 유형 중복')]
         },
-        S06: { addActions: [['위약금 내역서 안내', '@20'], ['다른 계약 확인', 'S04']] },
+        S05: {
+          message: '해약접수 예정일을 입력해 주세요. 입력하지 않으면 오늘을 기준으로 조회해요. 날짜는 오늘부터 한 달 이내로 선택할 수 있고 실제 해약접수일에 따라 위약금이 달라질 수 있어요.',
+          items: [], fields: [penaltyDate], actions: [['위약금 조회', 'S06'], ['뒤로', 'S04']]
+        },
+        S06: { message: '선택하신 계약의 위약금과 상세 해약금을 확인해 주세요. 실제 해약접수일에 따라 금액이 달라질 수 있어요.',
+          items: [item('계약번호', 'CT-250601-001'), item('제품명', '직수 정수기'), item('해약 예정일', '11월 30일'), item('위약금', '99,000원'), item('해약금', '119,000원')],
+          actions: [['다른 계약 확인', 'S04'], ['다른 문의', '$menu']]
+        },
         S07: { addActions: [['다른 계약 확인', 'S04']] },
         packageEstimate: choice('패키지 상품의 위약금을 함께 조회할까요, 선택한 제품만 조회할까요?', [
           ['패키지 묶음 조회', 'S05'], ['선택한 계약만 조회', 'packageSingleNotice']
@@ -12919,9 +12990,17 @@ window.SKIX_PARTNER_CARDS = [
   const close = [['다른 문의', '$menu'], ['상담 종료', '$finish']];
   const unrestrictedService = [['다른 분리·재설치 접수', '@8'], ['고장 상담', '@11'], ['추가 문의', '$menu']];
   const moveDate = (label, sample) => ({ label, placeholder: '방문 날짜 선택', type: 'date', sample });
-  const birthdate = { label: '생년월일', placeholder: 'YYMMDD', type: 'password', sample: '900101' };
+  const visitPhone = { label: '서비스 당일 연락받으실 휴대폰 번호', placeholder: '휴대폰 번호', type: 'tel', sample: '010-0000-1234' };
+  const birthdate = { label: '양수인 생년월일', placeholder: '생년월일', type: 'date', minAge: 19, sample: '1990-01-01' };
   const businessRegistrationNumber = { label: '사업자등록번호', placeholder: '사업자등록번호', type: 'password', sample: '000-00-00000' };
   const changedDates = [['11월 27일(금) 선택', '$date'], ['더보기', '$moreDates']];
+  const bookingDetails = (service, number, product, date, address) => [
+    item('서비스 종류', service), item('접수번호', number), item('접수제품', product), item('방문 예정일', date),
+    item('담당 매니저', '방문 담당 매니저'), item('이름', '[받으실 분]'), item('연락처', '[방문 연락처]'), item('주소', address)
+  ];
+  const visitUnavailable = (retry) => notice('입력하신 주소로는 방문 서비스를 접수하기 어려워요. 주소를 다시 입력하거나 상담사에게 문의해 주세요.', [
+    ['주소 다시 입력', retry], ['상담사 연결', '$handoff']
+  ]);
 
   function moveService(isSplit) {
     const service = isSplit ? '분리' : '재설치';
@@ -12929,9 +13008,16 @@ window.SKIX_PARTNER_CARDS = [
     const addressPrompt = isSplit
       ? '분리할 주소와 방문 당일 연락받으실 번호를 입력해 주세요.'
       : '새로 설치할 주소와 방문 당일에 연락받을 번호를 입력해 주세요.';
+    const moveEligibility = [
+      { target: 'moveMultipleCustomers', fields: ['휴대폰 번호'], match: '^010-?0000-?0002$' },
+      { target: 'S07', fields: ['휴대폰 번호'], match: '^010-?0000-?0003$' }
+    ];
+    const duplicateVisit = { fields: ['휴대폰 번호'], match: '^010-?0000-?0004$' };
+    const alternateOwner = { fields: ['휴대폰 번호'], match: '^010-?0000-?0006$' };
+    const consent = (target, confirmed) => choice('접수하신 제품의 사용자와 계약자가 같아요. 계약자 주소도 함께 변경할까요?', [['네', confirmed], ['아니오', target]]);
     const splitAuth = {
       ...choice('분리와 재설치를 함께 접수할 수 있어요. 휴대폰으로 신청자를 확인해 주세요.', [['휴대폰 확인', '$auditSms']]),
-      auth: { success: 'pairSplitAddress', failure: 'S08' }
+      auth: { success: 'pairLookup', failure: 'S08' }
     };
     return {
       screens: {
@@ -12939,9 +13025,7 @@ window.SKIX_PARTNER_CARDS = [
         phoneConfirm: { auth: { success: 'moveLookup', failure: 'S08' } },
         moveLookup: { resolve: { default: 'S02', rules: [
           { target: 'customMoveProduct', fields: ['휴대폰 번호'], match: '^010-?0000-?0000$' },
-          { target: 'moveMultipleCustomers', fields: ['휴대폰 번호'], match: '^010-?0000-?0002$' },
-          { target: 'S07', fields: ['휴대폰 번호'], match: '^010-?0000-?0003$' },
-          { target: 'S03', fields: ['휴대폰 번호'], match: '^010-?0000-?0004$' }
+          ...moveEligibility
         ] } },
         moveMultipleCustomers: handoff('같은 연락처로 여러 고객번호가 확인됐어요. 상담사가 접수할 제품을 확인해 드려요.'),
         S02: {
@@ -12949,47 +13033,107 @@ window.SKIX_PARTNER_CARDS = [
             ['직수 정수기 선택', 'addressOptions'], ['다른 제품', 'customMoveProduct'], ['이미 신청한 접수 확인', '@13']
           ]
         },
-        S03: { actions: [['기존 접수 확인', '@13'], ['다른 주소 또는 접수로 계속하기', 'addressOptions'], ['상담사 연결', '$handoff']] },
+        S03: {
+          message: '같은 제품과 주소로 이미 접수한 방문이 있어요. 접수 내역을 보거나 새로 접수할 수 있어요.',
+          items: [item('접수번호', 'ES-261125-002'), item('방문 예정일', '11월 30일(월)')],
+          actions: [['접수내역 보기', '@13'], ['새로 접수하기', 'moveAddressPass'], ['상담사 연결', '$handoff']]
+        },
         S04: {
           message: addressPrompt,
-          actions: [['주소 검색', '$address'], ['다음', 'moveAddressPass']]
+          fields: ['address', visitPhone],
+          actions: [['주소 검색', '$address'], ['예약 가능일자 확인', 'moveAddressCheck']]
         },
+        moveAddressCheck: { resolve: { default: 'moveAddressPass', rules: [
+          { ...unsupportedAddress, target: 'moveAddressUnavailable' }, { ...duplicateVisit, target: 'S03' }
+        ] } },
+        moveAddressUnavailable: visitUnavailable('S04'),
         moveAddressPass: { ...choice('구독 제품의 새 방문 주소를 확인하려면 PASS 인증이 필요해요.', [
-          ['PASS 본인인증', scheduled], ['주소 다시 입력', 'S04']
+          ['PASS 본인인증', 'moveAddressOwner'], ['주소 다시 입력', 'S04']
         ]), auth: { failure: 'movePassFailed' } },
+        moveAddressOwner: { resolve: { default: 'moveAddressConsent', rules: [{ ...alternateOwner, target: scheduled }] } },
+        moveAddressConsent: consent(scheduled, 'moveContractAddressConfirmed'),
+        moveContractAddressConfirmed: result('새 주소를 계약자 주소에도 반영하도록 선택하셨어요. 방문 일정을 확인해 주세요.', [['계속', scheduled]]),
         movePassFailed: handoff('새 방문 주소를 확인하지 못했어요.', [
-          ['PASS 본인인증 다시 시도', scheduled], ['상담사 연결', '$handoff']
+          ['PASS 본인인증 다시 시도', 'moveAddressOwner'], ['상담사 연결', '$handoff']
         ]),
         customMoveProduct: field('접수하실 제품명이나 모델명을 입력해 주세요.', ['product'], [['다음', 'customMoveStatus']]),
         customMoveStatus: choice('이사 또는 제품 이동은 어느 단계인가요?', [
           ['이사 예정', 'customMoveDate'], ['이사·이동 완료', 'customMoveAddress'], ['기타 · 공사 등', 'customMoveAddress']
         ]),
         customMoveDate: field('이사 예정일을 입력해 주세요.', [moveDate('이사 예정일', '2026-11-30')], [['다음', 'customMoveAddress'], ['뒤로', 'customMoveStatus']]),
-        customMoveAddress: field(addressPrompt, ['address', 'phone'], [['주소 검색', '$address'], ['다음', 'S05']]),
+        customMoveAddress: field(addressPrompt, ['address', visitPhone], [['주소 검색', '$address'], ['예약 가능일자 확인', 'customAddressCheck']]),
+        customAddressCheck: { resolve: { default: 'S05', rules: [
+          { ...unsupportedAddress, target: 'customAddressUnavailable' },
+          ...(!isSplit ? [{ fields: ['제품명 또는 모델명'], match: '정수기|WPU', target: 'valveOption' }] : [])
+        ] } },
+        customAddressUnavailable: visitUnavailable('customMoveAddress'),
         S05: {
           message: (isSplit ? '이사 예정일 전날까지 방문할 수 있는 날짜를 선택해 주세요.' : '새 주소에서 재설치할 수 있는 날짜를 선택해 주세요.') +
             ' 실제 비용은 제품과 설치 환경에 따라 달라질 수 있어요.',
           actions: [...changedDates, ['접수 요청', 'S06']]
         },
-        S06: { addActions: unrestrictedService, items: [item('접수번호', 'AS-261125-001'), item('제품', '[방문 제품]'), item('방문 예정일', '11월 27일(금)')] },
+        S06: { actions: unrestrictedService, items: bookingDetails(service, isSplit ? 'ES-261125-001' : 'ES-261125-002', '[방문 제품]', '11월 27일(금)', '[방문 주소]') },
         addressOptions: isSplit
           ? choice('기존 등록 주소에서 분리할까요, 다른 주소에서 분리할까요?', [
             ['등록 주소 사용', 'registeredAddress'], ['다른 주소 입력', 'S04']
           ], [item('등록 주소', '서울 영등포구 문래동')])
           : choice('재설치할 새 주소와 희망일을 확인해 주세요.', [['주소 입력', 'S04']]),
-        ...(isSplit && { registeredAddress: field('방문 당일 연락받으실 전화번호를 입력해 주세요.', ['phone'], [['다음', 'S05']]) }),
+        ...(isSplit && {
+          registeredAddress: field('등록된 주소로 방문할 때 연락받으실 번호를 입력해 주세요.', [visitPhone], [['예약 가능일자 확인', 'registeredMoveCheck']]),
+          registeredMoveCheck: { resolve: { default: 'S05', rules: [{ ...duplicateVisit, target: 'registeredMoveDuplicate' }] } },
+          registeredMoveDuplicate: choice('같은 제품과 주소로 이미 접수한 방문이 있어요. 접수 내역을 보거나 새로 접수할 수 있어요.', [
+            ['접수내역 보기', '@13'], ['새로 접수하기', 'S05'], ['상담사 연결', '$handoff']
+          ], [item('접수번호', 'ES-261125-002'), item('방문 예정일', '11월 30일(월)')])
+        }),
         pairAuth: splitAuth,
-        pairSplitAddress: field('제품명, 분리할 주소와 방문에 필요한 정보를 차례로 입력해 주세요. 이사 예정일 전날까지 분리할 수 있어요.', [
-          'product', 'address', 'phone', moveDate('이사 예정일', '2026-11-30'), moveDate('분리 방문 희망일', '2026-11-27')
-        ], [['재설치 주소 입력', 'pairInstallAddress']]),
-        pairInstallAddress: field('이사 후 재설치할 주소와 방문 정보를 입력해 주세요. 분리 접수 주소와 별도로 확인해요.', [
-          'address', 'phone', moveDate('재설치 방문 희망일', '2026-12-02')
-        ], [['입력 확인', 'pairReview']]),
-        pairReview: choice('두 방문을 함께 신청할까요? 분리·재설치 환경에 따라 비용이 추가될 수 있어요.', [
-          ['분리·재설치 접수 요청', 'pairResult'], ['뒤로', 'pairSplitAddress']
+        pairLookup: { resolve: { default: 'pairMoveStatus', rules: moveEligibility } },
+        pairMoveStatus: choice('분리와 재설치를 진행할 제품의 이사 상태를 선택해 주세요.', [
+          ['이사 예정', 'pairSplitAddress'], ['이사·이동 완료', 'pairCompletedSplitAddress'], ['기타 · 공사 등', 'pairCompletedSplitAddress']
         ]),
-        pairResult: result('분리와 재설치 두 건의 방문 접수를 확인했어요.', unrestrictedService, [
-          item('접수 유형', '분리 방문과 재설치 방문'), item('처리 상태', '접수 완료')
+        pairSplitAddress: field('먼저 분리 방문 정보를 입력해 주세요. 이사 예정일 전날까지 분리할 수 있어요.', [
+          'product', 'address', visitPhone, moveDate('이사 예정일', '2026-11-30'), moveDate('분리 방문 희망일', '2026-11-27')
+        ], [['재설치 주소 입력', 'pairSplitCheck'], ['뒤로', 'pairMoveStatus']], { validate: { dateOrder: [['분리 방문 희망일', '이사 예정일']] } }),
+        pairCompletedSplitAddress: field('먼저 분리 방문 정보를 입력해 주세요.', [
+          'product', 'address', visitPhone, moveDate('분리 방문 희망일', '2026-11-27')
+        ], [['재설치 주소 입력', 'pairCompletedSplitCheck'], ['뒤로', 'pairMoveStatus']]),
+        pairSplitCheck: { resolve: { default: 'pairInstallAddress', rules: [
+          { ...unsupportedAddress, target: 'pairSplitUnavailable' }, { ...duplicateVisit, target: 'pairDuplicate' }
+        ] } },
+        pairCompletedSplitCheck: { resolve: { default: 'pairInstallAddress', rules: [
+          { ...unsupportedAddress, target: 'pairCompletedSplitUnavailable' }, { ...duplicateVisit, target: 'pairDuplicate' }
+        ] } },
+        pairSplitUnavailable: visitUnavailable('pairSplitAddress'),
+        pairCompletedSplitUnavailable: visitUnavailable('pairCompletedSplitAddress'),
+        pairDuplicate: choice('같은 제품과 주소로 이미 접수한 분리 방문이 있어요. 새로 분리와 재설치를 접수할까요?', [
+          ['접수내역 보기', '@13'], ['새로 접수하기', 'pairInstallAddress'], ['상담사 연결', '$handoff']
+        ], [item('접수번호', 'ES-261125-002'), item('방문 예정일', '11월 30일(월)')]),
+        pairInstallAddress: field('이사 후 재설치할 주소와 방문 정보를 입력해 주세요. 분리 접수 주소와 별도로 확인해요.', [
+          'address', visitPhone, moveDate('재설치 방문 희망일', '2026-12-02')
+        ], [['입력 확인', 'pairInstallCheck'], ['뒤로', 'pairMoveStatus']]),
+        pairInstallCheck: { resolve: { default: 'pairPass', rules: [
+          { ...unsupportedAddress, target: 'pairInstallUnavailable' },
+          { fields: ['휴대폰 번호'], match: '^010-?0000-?0000$', target: 'pairValveCheck' }
+        ] } },
+        pairInstallUnavailable: visitUnavailable('pairInstallAddress'),
+        pairPass: { ...choice('구독 제품의 새 방문 주소를 확인하려면 PASS 인증이 필요해요.', [
+          ['PASS 본인인증', 'pairAddressOwner'], ['주소 다시 입력', 'pairInstallAddress']
+        ]), auth: { failure: 'pairPassFailed' } },
+        pairPassFailed: handoff('새 방문 주소를 확인하지 못했어요.', [['다시 시도', 'pairPass'], ['상담사 연결', '$handoff']]),
+        pairAddressOwner: { resolve: { default: 'pairAddressConsent', rules: [{ ...alternateOwner, target: 'pairValveCheck' }] } },
+        pairAddressConsent: consent('pairValveCheck', 'pairContractAddressConfirmed'),
+        pairContractAddressConfirmed: result('새 주소를 계약자 주소에도 반영하도록 선택하셨어요.', [['계속', 'pairValveCheck']]),
+        pairValveCheck: { resolve: { default: 'pairReview', rules: [
+          { fields: ['제품명 또는 모델명'], match: '정수기|WPU', target: 'pairValveOption' }
+        ] } },
+        pairValveOption: choice('재설치할 정수기에 조리수 밸브도 설치할까요?', [
+          ['조리수 밸브 포함', 'pairReview'], ['기본 재설치만', 'pairReview']
+        ]),
+        pairReview: choice('두 방문을 함께 신청할까요? 분리·재설치 환경에 따라 비용이 추가될 수 있어요.', [
+          ['분리·재설치 접수 요청', 'pairResult'], ['뒤로', 'pairMoveStatus']
+        ]),
+        pairResult: result('분리와 재설치 두 건의 방문 접수가 완료됐어요.', unrestrictedService, [
+          ...bookingDetails('분리', 'ES-261125-003', '[방문 제품]', '[분리 방문일]', '[분리 방문 주소]'),
+          ...bookingDetails('재설치', 'ES-261125-004', '[방문 제품]', '[재설치 방문일]', '[재설치 방문 주소]')
         ])
       }
     };
@@ -12999,14 +13143,15 @@ window.SKIX_PARTNER_CARDS = [
     8: moveService(true),
     9: moveService(false),
     10: {
+      entry: 'transferPurpose',
       screens: {
-        S01: { actions: [['PASS 본인인증', 'transferPurpose']], auth: { failure: 'S09' } },
+        S01: { actions: [['PASS 본인인증', 'S03']], auth: { failure: 'S09' } },
         transferPurpose: choice('어떤 명의변경 업무를 도와드릴까요?', [
-          ['신청 방법 문의', 'S02'], ['명의변경 신청', 'S03'], ['신청 상태 조회', 'transferPending'], ['신청 취소', 'transferCancelCheck']
+          ['명의변경 신청방법 문의', 'S02'], ['명의변경 신청', 'S01'], ['신청 상태 조회', 'transferStatusAuth'], ['신청 취소', 'transferCancelAuth']
         ]),
         S02: {
-          message: '명의변경은 현재 계약자가 직접 신청해 주세요. 새 계약자의 성함, 연락처와 생년월일을 준비해 주세요. 개인사업자는 사업자번호도 필요해요.',
-          addActions: [['필요한 서류 보기', 'transferDocuments'], ['명의변경 신청', 'S03']]
+          message: '명의변경은 현재 계약자가 직접 신청해 주세요. 새 계약자의 성함과 연락처가 필요해요. 개인은 생년월일, 개인사업자는 사업자번호도 준비해 주세요. 구독료가 청구됐거나 미납 요금이 있으면 먼저 요금을 납부해 주세요.',
+          actions: [['명의변경 신청 서류', 'transferDocuments'], ['명의변경 신청하기', 'S01'], ['다른 문의', '$menu']]
         },
         S04: { actions: [['미납요금 조회·납부', '@5'], ['당월 요금 납부', '@4'], ['뒤로', 'S03']] },
         S03: {
@@ -13016,11 +13161,12 @@ window.SKIX_PARTNER_CARDS = [
         S05: {
           message: '선납 할인을 받고 있거나 묶음·크로스 패키지로 할인받는 계약은 명의변경 조건을 먼저 확인해 주세요. 묶음 중 일부만 변경하면 할인 반환금이나 구독료 조정이 발생할 수 있어요.'
         },
-        S06: { fields: [], kind: 'choice', actions: [
+        S06: { fields: [], kind: 'choice', message: '명의를 넘겨받을 분의 유형을 선택해 주세요.', actions: [
           ['개인', 'transfereePersonal'], ['개인사업자', 'transfereeBusiness'],
-          ['귀화·등록번호 정정 등', 'transfereePapers']
+          ['귀화', 'transfereePapers'], ['주민등록번호 정정', 'transfereePapers']
         ] },
-        S07: { addActions: [['서류 안내', 'transferDocuments'], ['상담사 연결', '$handoff']] },
+        S07: { message: '명의변경 신청을 접수했어요. 현재 계약자에게 전달되는 알림톡 안내에서 구비 서류와 제출 방법을 확인할 수 있어요.',
+          items: [item('접수번호', 'NC-261125-001')], actions: [['서류 안내', 'transferDocuments'], ['상담사 연결', '$handoff'], ['다른 문의', '$menu']] },
         S08: {
           message: '명의변경 신청 내용을 확인했어요. 새 계약자는 알림톡에서 후속 절차를 확인할 수 있어요.',
           items: [item('접수번호', 'NC-261125-001'), item('진행 상태', '신청 접수')],
@@ -13030,22 +13176,45 @@ window.SKIX_PARTNER_CARDS = [
           ['상담사 연결', '$handoff'], ['뒤로', 'S03']
         ]),
         transfereePersonal: field('새 계약자의 정보를 입력해 주세요. 만 19세 미만은 명의변경이 제한돼요.',
-          ['name', 'phone', birthdate], [['신청 접수', 'S08'], ['뒤로', 'S06']], { secure: true }),
+          ['name', 'phone', birthdate], [['확인', 'transfereeConsent'], ['뒤로', 'S06']], { secure: true }),
         transfereeBusiness: field('새 개인사업자의 정보를 입력해 주세요. 휴업·폐업 상태일 때는 명의변경이 제한돼요.',
-          ['name', 'phone', birthdate, businessRegistrationNumber], [['신청 접수', 'S08'], ['뒤로', 'S06']], { secure: true }),
-        transfereePapers: field('서류 안내를 받을 연락처를 입력해 주세요. 접수 후 준비할 서류와 제출 경로를 안내해요.',
-          ['phone'], [['서류 안내 확인', 'S07'], ['뒤로', 'S06']], { secure: true }),
+          ['name', 'phone', businessRegistrationNumber], [['확인', 'transfereeConsent'], ['뒤로', 'S06']], { secure: true }),
+        transfereeConsent: choice('명의변경 신청을 위해 새 계약자 정보의 수집 및 이용 동의가 필요해요.', [
+          ['동의하고 신청하기', 'S08'], ['동의하지 않음', 'transfereeDeclined']
+        ]),
+        transfereeDeclined: notice('동의하지 않으면 명의변경 신청을 계속할 수 없어요.', [['신청 조건 다시 확인', 'S06'], ['다른 문의', '$menu']]),
+        transfereePapers: choice('이 유형은 접수 후 현재 계약자에게 필요한 서류와 제출 방법을 안내해요.', [
+          ['신청 접수', 'S07'], ['뒤로', 'S06']
+        ]),
         transferDocuments: result('신청 유형에 따라 명의변경 신청서, 사업자 확인 서류 등 대상 서류가 달라요. 서류 안내를 먼저 확인해 주세요.', [
-          ['명의변경 신청', 'S03'], ['서류 상세 문의', '$handoff'], ['뒤로', 'S02']
+          ['명의변경 신청하기', 'S01'], ['서류 상세 문의', '$handoff'], ['뒤로', 'S02']
         ], [
           item('신청 주체', '양도인인 현재 계약자'), item('추가 서류가 필요한 유형', '개인사업자·명의 정정 등')
         ]),
+        transferStatusAuth: { ...choice('명의변경 신청 상태를 조회하려면 현재 계약자의 PASS 본인인증이 필요해요.', [['PASS 본인인증', 'transferStatusList']]), auth: { failure: 'S09' } },
+        transferCancelAuth: { ...choice('명의변경 신청을 취소하려면 현재 계약자의 PASS 본인인증이 필요해요.', [['PASS 본인인증', 'transferCancelCheck']]), auth: { failure: 'S09' } },
         transferTracking: choice('접수번호를 기준으로 진행 상태를 확인해요. 이미 진행된 신청은 취소할 수 없는 상태일 수 있어요.', [
-          ['진행 상태 확인', 'transferPending'], ['명의변경 신청 취소', 'transferCancelCheck'], ['상담사 연결', '$handoff']
+          ['진행 상태 확인', 'transferStatusList'], ['명의변경 신청 취소', 'transferCancelCheck'], ['상담사 연결', '$handoff']
         ]),
-        transferPending: result('신청이 접수되어 후속 확인을 기다리고 있어요.', [
-          ['취소 가능 여부 확인', 'transferCancelCheck'], ['뒤로', 'transferTracking']
-        ], [item('접수번호', 'NC-261125-001'), item('대상 계약', '직수 정수기 · WPU-1000')]),
+        transferStatusList: choice('진행 중인 신청을 선택해 주세요. 접수번호로도 확인할 수 있어요.', [
+          ['직수 정수기 명의변경 신청 선택', 'transferPending'], ['접수번호로 조회', 'transferStatusNumber'], ['뒤로', 'transferPurpose']
+        ], [item('직수 정수기 명의변경 신청', 'NC-261125-001 · WPU-1000 · 신청 접수')]),
+        transferStatusNumber: field('확인할 명의변경 접수번호를 입력해 주세요.', [
+          { label: '명의변경 접수번호', placeholder: '접수번호 입력', sample: 'NC-261125-001' }
+        ], [['접수 확인', 'transferStatusLookup'], ['뒤로', 'transferStatusList']]),
+        transferStatusLookup: { resolve: { default: 'transferStatusUnavailable', rules: [
+          { target: 'transferPending', fields: ['명의변경 접수번호'], match: '^NC-261125-001$' },
+          { target: 'transferUnderReview', fields: ['명의변경 접수번호'], match: '^NC-261125-002$' }
+        ] } },
+        transferStatusUnavailable: notice('진행 중인 신청이 조회되지 않아요. 완료됐거나 홈페이지에서 직접 신청한 내역은 서비스센터에서 확인해 주세요.', [
+          ['접수번호 다시 입력', 'transferStatusNumber'], ['상담사 연결', '$handoff'], ['다른 문의', '$menu']
+        ]),
+        transferUnderReview: result('명의변경 신청을 처리하고 있어요.', [
+          ['다른 접수 조회', 'transferStatusList'], ['상담사 연결', '$handoff']
+        ], [item('접수번호', 'NC-261125-002'), item('진행 상태', '명의변경 완료 대기')]),
+        transferPending: result('명의변경 신청이 접수되어 후속 확인을 기다리고 있어요.', [
+          ['취소 가능 여부 확인', 'transferCancelCheck'], ['다른 접수 조회', 'transferStatusList']
+        ], [item('접수번호', 'NC-261125-001'), item('대상 계약', '직수 정수기 · WPU-1000'), item('진행 상태', '신청 접수')]),
         transferCancelCheck: choice('취소하려는 신청을 선택해 주세요. 완료되거나 이미 취소된 신청은 목록에 표시되지 않아요.', [
           ['직수 정수기 명의변경 신청 선택', 'transferCancelConfirm'], ['다른 접수번호 입력', 'transferCancelNumber'], ['뒤로', 'transferPurpose']
         ], [item('직수 정수기 명의변경 신청', 'NC-261125-001 · WPU-1000 · 신청 접수')]),
@@ -13074,7 +13243,11 @@ window.SKIX_PARTNER_CARDS = [
           ['서비스 대행업체 확인', '@41'], ['목록에 없는 제품', 'unlistedProduct']
         ] },
         S02: { items: [] },
-        S04: { actions: [['상담사 연결', '$handoff'], ['운영시간 외 전화 상담', 'S07']] },
+        S04: {
+          message: '긴급한 증상으로 확인돼요. 빠른 조치를 위해 상담사에게 연결해 드릴까요? 상담 운영시간 외에는 연결이 어려울 수 있어요.',
+          actions: [['상담사 연결', '$handoff'], ['서비스 접수', '@12'], ['운영시간 외 전화 상담', 'S07']]
+        },
+        S05: { addActions: [['서비스 접수', '@12'], ['상담사 연결', '$handoff']] },
         S07: {
           message: '상담 운영시간 외에는 전화 상담을 예약하실 수 있어요.',
           actions: [['상담사 전화 예약', 'callback'], ['다른 문의', '$menu']]
@@ -13082,7 +13255,7 @@ window.SKIX_PARTNER_CARDS = [
         unlistedProduct: field('제품군과 모델명을 입력해 주세요. 확인이 어려우면 제품을 다시 찾거나 상담에서 확인할 수 있어요.', ['product'], [
           ['제품 확인', '$identifyServiceProduct'], ['뒤로', 'S01']
         ]),
-        customSymptom: field('어떤 증상인지 알려 주세요.', ['symptom'], [['증상 확인', '$symptom'], ['뒤로', '$symptom']]),
+        customSymptom: field('어떤 증상인지 알려 주세요.', ['symptom'], [['증상 확인', '$symptom'], ['뒤로', 'S02']]),
         callback: field('전화 상담을 받을 연락처를 입력해 주세요.', ['phone'], [
           ['예약 요청', 'callbackResult'], ['뒤로', 'S07']
         ]),
@@ -13098,46 +13271,70 @@ window.SKIX_PARTNER_CARDS = [
         unlistedProduct: field('서비스를 받을 제품명이나 모델명을 입력해 주세요.', ['product'], [
           ['제품 확인', '$identifyServiceProduct'], ['뒤로', 'S01']
         ]),
-        customSymptom: field('접수할 증상을 알려 주세요.', ['symptom'], [['증상 확인', '$symptom'], ['뒤로', '$symptom']]),
+        customSymptom: field('접수할 증상을 알려 주세요.', ['symptom'], [['증상 확인', '$symptom'], ['뒤로', 'serviceSymptom']]),
         serviceModel: field('제품 라벨에서 모델명을 확인해 입력해 주세요.', [
           { label: '모델명', placeholder: '제품 모델명 입력', sample: 'WPU-1000' }
         ], [['다음', 'S02'], ['뒤로', 'serviceSymptom']]),
-        serviceSafety: handoff('안전을 확인할 수 있도록 먼저 상담사에게 연결해 드릴까요?', [
-          ['상담사 연결', '$handoff'], ['증상 다시 선택', '$symptom']
+        serviceSafety: handoff('긴급한 증상으로 확인돼요. 빠른 조치를 위해 상담사에게 연결해 드릴까요? 상담 운영시간 외에는 연결이 어려울 수 있어요.', [
+          ['상담사 연결', '$handoff'], ['서비스 접수', '$continueServiceRegistration'], ['증상 다시 선택', 'serviceSymptom']
         ]),
         phoneConfirm: { auth: { success: 'serviceLookup', failure: 'S09' } },
         serviceLookup: { resolve: { default: 'S04', rules: [
           { target: 'S09', fields: ['휴대폰 번호'], match: '^010-?0000-?0002$' },
           { target: 'S03', fields: ['휴대폰 번호'], match: '^010-?0000-?0003$' },
           { target: 'S07', fields: ['휴대폰 번호'], match: '^010-?0000-?0007$' },
-          { target: 'serviceCases', fields: ['휴대폰 번호'], match: '^010-?0000-?(1234|0006)$' }
+          { target: 'serviceCases', fields: ['휴대폰 번호'], match: '^010-?0000-?(1234|0006|0008)$' }
         ] } },
-        S03: { actions: [['기존 접수 확인', '@13'], ['새로 접수', 'serviceCases'], ['상담사 연결', '$handoff']] },
-        S04: { actions: [['주소 검색', '$address'], ['다음', 'serviceAddressCheck']] },
-        serviceAddressCheck: { resolve: { default: 'S05', rules: [{ ...unsupportedAddress, target: 'S08' }] } },
+        S03: {
+          message: '같은 제품과 증상으로 이미 접수한 방문이 있어요. 기존 접수 내역을 확인하거나 새로 접수할 수 있어요.',
+          actions: [['접수내역 보기', '@13'], ['새로 접수하기', 'serviceCases'], ['상담사 연결', '$handoff']]
+        },
+        S04: { fields: ['address', visitPhone], actions: [['주소 검색', '$address'], ['예약 가능일자 확인', 'serviceAddressCheck']] },
+        serviceAddressCheck: { resolve: { default: 'serviceAvailability', rules: [{ ...unsupportedAddress, target: 'S08' }] } },
+        serviceAvailability: { resolve: { default: 'S05', rules: [
+          { target: 'serviceNoAppointments', fields: ['휴대폰 번호'], match: '^010-?0000-?0008$' }
+        ] } },
+        serviceNoAppointments: handoff('예약 가능한 방문일자가 없어요. 서비스 접수를 계속하시려면 상담사에게 문의해 주세요.', [
+          ['상담사 연결', '$handoff'], ['주소 다시 입력', 'serviceCases']
+        ]),
         S05: {
-          items: [item('방문 비용', '유상 점검 시 출장점검비 30,000원에 수리·부품 비용이 추가될 수 있어요.')],
+          message: '희망 방문일을 선택한 뒤 접수해 주세요. 유상 방문 수리 시 추가 요금이 청구될 수 있어요.',
+          items: [item('서비스 비용 미리보기', '유상 점검 시 출장점검비 30,000원에 수리·부품 비용이 추가될 수 있어요.')],
           actions: [...changedDates, ['접수 요청', 'S06']]
         },
-        S06: { addActions: [['접수 내역 확인', '@13'], ['다른 문의', '$menu']] },
+        S06: {
+          message: 'AS 방문 접수가 완료됐어요.',
+          items: bookingDetails('AS', 'AS-261125-001', '[접수 제품]', '11월 27일(금)', '[방문 주소]'),
+          actions: [['분리·재설치 추가접수', '@8'], ['고장상담', '@11'], ['접수 내역 확인', '@13'], ['다른 문의', '$menu']]
+        },
         regAddrPass: { auth: { failure: 'S09' }, actions: [['PASS 본인인증', 'serviceAddressOwner']] },
-        serviceAddressOwner: { resolve: { default: 'S05', rules: [
-          { target: 'serviceAddressMismatch', fields: ['휴대폰 번호'], match: '^010-?0000-?0006$' }
+        serviceAddressOwner: { resolve: { default: 'serviceContractAddress', rules: [
+          { target: 'serviceUserAddressOnly', fields: ['휴대폰 번호'], match: '^010-?0000-?0006$' }
         ] } },
-        serviceAddressMismatch: handoff('계약자와 제품 사용자가 다른 구독 제품의 새 주소는 상담사가 확인해요.'),
+        serviceContractAddress: choice('접수하신 제품의 사용자와 계약자가 같아요. 계약자 주소도 함께 변경할까요?', [
+          ['네', 'serviceContractAddressConfirmed'], ['아니오', 'serviceAvailability']
+        ]),
+        serviceContractAddressConfirmed: result('새 주소를 계약자 주소에도 반영하도록 선택하셨어요. 방문 일정을 확인해 주세요.', [
+          ['계속', 'serviceAvailability']
+        ]),
+        serviceUserAddressOnly: result('입력하신 주소는 제품 사용자의 방문 주소에만 적용해요.', [['계속', 'serviceAvailability']]),
         serviceCases: choice('제품과 신청자 정보를 확인했어요. 방문 주소를 선택해 주세요.', [
           ['등록된 방문 주소', 'registeredServiceAddress'], ['새 주소', 'newServiceAddress']
         ], [item('등록 주소', '서울 영등포구 문래동')]),
         newServiceAddress: {
           resolve: { default: 'subscriptionAddress', rules: [
-            { target: 'S04', fields: ['제품명 또는 모델명'], match: '^(일시불 구매 제품|미등록 제품)$' }
+            { target: 'S04', fields: ['제품명 또는 모델명'], match: '^(일시불 구매 제품|미등록 제품)$' },
+            { target: 'servicePackageAddress', fields: ['제품명 또는 모델명'], match: '패키지|묶음' }
           ] }
         },
-        registeredServiceAddress: field('등록 주소로 방문할 때 연락받을 전화번호를 입력해 주세요.', ['phone'], [
-          ['가능한 날짜 확인', 'S05'], ['뒤로', 'serviceCases']
+        servicePackageAddress: handoff('패키지 상품은 제품 하나의 주소만 따로 변경할 수 없어요. 묶음 전체의 주소 변경은 상담에서 확인해 주세요.', [
+          ['등록된 방문 주소 사용', 'registeredServiceAddress'], ['상담사 연결', '$handoff'], ['뒤로', 'serviceCases']
         ]),
-        subscriptionAddress: field('구독 제품이 설치된 새 주소와 방문 당일 연락받을 번호를 입력해 주세요. 새 주소는 PASS 확인이 필요해요.', ['address', 'phone'], [
-          ['다음', 'subscriptionAddressCheck'], ['뒤로', 'serviceCases']
+        registeredServiceAddress: field('등록 주소로 방문할 때 연락받을 전화번호를 입력해 주세요.', [visitPhone], [
+          ['예약 가능일자 확인', 'serviceAvailability'], ['뒤로', 'serviceCases']
+        ]),
+        subscriptionAddress: field('구독 제품이 설치된 새 주소와 방문 당일 연락받을 번호를 입력해 주세요. 새 주소는 PASS 확인이 필요해요.', ['address', visitPhone], [
+          ['예약 가능일자 확인', 'subscriptionAddressCheck'], ['뒤로', 'serviceCases']
         ]),
         subscriptionAddressCheck: { resolve: { default: 'regAddrPass', rules: [{ ...unsupportedAddress, target: 'subscriptionAddressUnavailable' }] } },
         subscriptionAddressUnavailable: notice('입력하신 주소로는 서비스를 접수하기 어려워요.', [
@@ -13148,74 +13345,60 @@ window.SKIX_PARTNER_CARDS = [
     13: {
       screens: {
         phoneConfirm: { auth: { success: 'visitLookup', failure: 'S07' } },
-        visitLookup: { resolve: { default: 'S02', rules: [
+        visitLookup: { resolve: { default: '$visitResults', rules: [
           { target: 'S05', fields: ['휴대폰 번호'], match: '^010-?0000-?0000$' },
           { target: 'S07', fields: ['휴대폰 번호'], match: '^010-?0000-?0002$' },
           { target: 'S06', fields: ['휴대폰 번호'], match: '^010-?0000-?0003$' }
         ] } },
-        S02: {
-          message: '방문일이 가까운 접수부터 최대 5건을 확인할 수 있어요. 상세 정보를 볼 접수를 선택해 주세요.',
-          actions: [
-            ['직수 정수기 접수 선택', 'S03'], ['비데 재설치 접수 선택', 'S04']
-          ],
-          items: [
-            item('직수 정수기 · AS', '출수 안 됨 · 11월 27일(금)'),
-            item('비데 · 재설치', '재설치 접수 · 12월 2일(수)')
-          ]
-        },
-        S03: { items: [
-          item('접수번호', 'AS-261125-001'), item('접수 증상', '정수 출수 안 됨'), item('방문 예정일', '2026년 11월 27일(금)'),
-          item('담당 매니저', '방문 담당 매니저'), item('방문 연락처', '010-••••-1234'), item('방문 주소', '서울 영등포구 문래동')
-        ] },
-        S04: { items: [
-          item('접수번호', 'ES-261125-002'), item('서비스 종류', '비데 재설치'), item('방문 예정일', '2026년 12월 2일(수)'), item('담당 매니저', '방문 담당 매니저'),
-          item('방문 연락처', '010-••••-1234'), item('방문 주소', '서울 영등포구 문래동')
-        ] },
+        S03: { message: '선택하신 AS 접수 내역이에요.' },
+        S04: { message: '선택하신 분리·재설치 접수 내역이에요.' },
         S06: { addActions: [['AS 방문 접수', '@12'], ['다른 문의', '$menu']] },
       }
     },
     14: {
       screens: {
         phoneConfirm: { auth: { success: 'visitLookup', failure: 'S11' } },
-        visitLookup: { resolve: { default: 'S01', rules: [
+        visitLookup: { resolve: { default: '$visitResults', rules: [
           { target: 'missingCustomer', fields: ['휴대폰 번호'], match: '^010-?0000-?0000$' },
           { target: 'S11', fields: ['휴대폰 번호'], match: '^010-?0000-?0002$' },
           { target: 'S09', fields: ['휴대폰 번호'], match: '^010-?0000-?0003$' }
         ] } },
-        S01: {
-          message: '방문일이 가까운 미처리 접수를 최대 5건까지 보여드려요. 수정할 접수를 선택해 주세요.',
-          actions: [['직수 정수기 접수 선택', '$visitChange'], ['비데 재설치 접수 선택', '$visitChange']]
-        },
-        S02: { actions: [
+        S02: { message: '선택하신 접수 내역이에요. 변경할 항목을 선택해 주세요.', actions: [
           ['방문주소', '$changeVisitAddress'], ['방문예정일', 'moveDateForChange'], ['접수 증상', '$editSymptom'], ['방문 연락처', '$editPhone']
         ] },
         S03: { actions: [['주소 검색', '$address'], ['변경 요청', 'visitAddressCheck'],
           ['예약일을 변경해 계속하기', 'visitAddressDateCheck'], ['나가기', 'S02']] },
-        visitAddressCheck: { resolve: { default: 'S10', rules: [{ ...unsupportedAddress, target: 'S08' }] } },
+        visitAddressCheck: { resolve: { default: '$commitVisitChange', rules: [{ ...unsupportedAddress, target: 'S08' }] } },
         visitAddressDateCheck: { resolve: { default: 'moveDateForChange', rules: [{ ...unsupportedAddress, target: 'S08' }] } },
-        S04: { actions: [...changedDates, ['변경 요청', 'S10']] },
+        S04: { actions: [...changedDates, ['변경 요청', '$commitVisitChange']] },
+        S05: field('서비스 당일에 연락받으실 전화번호를 입력해 주세요.', [
+          { label: '연락요청번호', placeholder: '휴대폰 번호 또는 지역번호 포함', type: 'tel', sample: '010-0000-1234' }
+        ], [['변경 요청', '$commitVisitChange'], ['뒤로', 'S02']], { secure: true }),
         S09: { addActions: [['AS 방문 접수', '@12'], ['다른 문의', '$menu']] },
+        S10: { actions: [['접수취소', '@15'], ['접수내용 변경', '$visitChange'], ['접수 내역 확인', '@13'], ...close] },
         moveDateForChange: field('이사와 관련된 방문이면 이사 예정일을 입력해 주세요.', [
           { label: '이사 예정일', placeholder: 'YYYY-MM-DD', type: 'date', sample: '2026-11-30', required: false }
         ], [['다음', 'S04'], ['뒤로', 'S02']]),
         editSymptomPicker: choice('변경할 접수 증상의 분류를 선택해 주세요.', []),
         customSymptom: field('변경할 증상을 입력해 주세요.', ['symptom'], [['증상 확인', '$symptom'], ['뒤로', '$symptom']]),
-        editSymptomConfirm: choice('선택한 증상으로 변경할까요?', [['변경 요청', 'S10'], ['다시 선택', '$symptom']]),
+        editSymptomConfirm: choice('선택한 증상으로 변경할까요?', [['변경 요청', '$commitVisitChange'], ['다시 선택', '$symptom']]),
         missingCustomer: noMatch('phoneInput')
       }
     },
     15: {
       screens: {
         phoneConfirm: { auth: { success: 'visitLookup', failure: 'S08' } },
-        visitLookup: { resolve: { default: 'S02', rules: [
+        visitLookup: { resolve: { default: '$visitResults', rules: [
           { target: 'missingCustomer', fields: ['휴대폰 번호'], match: '^010-?0000-?0000$' },
           { target: 'S08', fields: ['휴대폰 번호'], match: '^010-?0000-?0002$' },
           { target: 'S06', fields: ['휴대폰 번호'], match: '^010-?0000-?0003$' }
         ] } },
-        S02: {
-          message: '방문일이 가까운 미처리 접수를 최대 5건까지 보여드려요. 취소할 접수를 선택해 주세요.',
-          actions: [['직수 정수기 접수 선택', '$visitCancel'], ['비데 재설치 접수 선택', '$visitCancel']]
-        },
+        visitDetails: choice('선택하신 접수 내역이에요.', [['접수취소', '$visitCancel'], ['다른 접수 확인', '@13']]),
+        S03: { actions: [
+          ['개인 일정으로 다음에 다시 신청', 'S04'], ['정상 작동 또는 직접 처리', 'S04'],
+          ['미사용 또는 새 제품 구입 예정', 'S04'], ['비용 부담', 'S04'], ['기타', 'S04']
+        ] },
+        S04: { message: '이 사유로 서비스 접수를 취소할까요?', actions: [['취소 요청', '$commitVisitCancellation'], ['나가기', 'visitDetails']] },
         S05: { addActions: [['접수 내역 확인', '@13'], ['상담 종료', '$finish']] },
         missingCustomer: noMatch('S01')
       }
@@ -13230,19 +13413,14 @@ window.SKIX_PARTNER_CARDS = [
         deliveryLookup: { resolve: { default: 'S02', rules: [
           { target: 'S04', fields: ['휴대폰 번호'], match: '^010-?0000-?0000$' },
           { target: 'S05', fields: ['휴대폰 번호'], match: '^010-?0000-?0002$' },
-          { target: 'pending5', fields: ['휴대폰 번호'], match: '^010-?0000-?0005$' }
+          { target: 'pending5', fields: ['휴대폰 번호'], match: '^010-?0000-?0005$' },
+          { target: 'S05', fields: ['휴대폰 번호'], match: '^010-?0000-?0008$' }
         ] } },
         S03: {
-          message: '선택하신 주문의 배송·설치 정보예요. 방문 시간은 설치마스터가 방문 당일 오전 10시 전에 연락해 조율해요.',
-          items: [
-            item('제품명·주문번호', '직수 정수기 · DL-261125-001'),
-            item('수령인·연락처', '김○○ · 010-••••-1234'),
-            item('배송 예정일', '2026년 11월 30일(월)'),
-            item('배송지', '서울 영등포구 문래동'),
-            item('주문 상태·판매 유형', '납품대기 · 일시불')
-          ],
+          message: '선택하신 주문의 배송 정보예요. 방문 시간은 설치마스터가 방문 당일 오전 10시 전에 연락해 조율해요.',
           addActions: [['배송 주소·일정 변경 문의', '@17']]
         },
+        pending5: { ...handoff('배송 주문을 확인하려면 상담사에게 문의해 주세요.'), condition: '배송 주문 상담 확인' }
       }
     },
     17: {
@@ -13251,63 +13429,51 @@ window.SKIX_PARTNER_CARDS = [
         deliveryBusinessInput: field('개인사업자 주문을 조회할 신청자 정보와 사업자등록번호를 입력해 주세요.', [
           'name', 'phone', businessRegistrationNumber
         ], [['인증번호 받기', '$sendOtp']], { secure: true }),
-        S02: {
-          message: '변경할 주문을 선택해 주세요. 주문의 판매 유형과 진행 상태에 따라 처리 방법이 달라요.',
-          actions: [
-            ['직수 정수기 주문 선택', '$deliveryOrder']
-          ],
-          items: [item('직수 정수기 · DL-261125-001', '일시불 · 납품대기 · 11월 30일(월)')]
-        },
+        S02: { message: '배송 정보를 변경하거나 설치마스터에게 요청을 전달할 주문을 선택해 주세요.' },
         phoneConfirm: { auth: { success: 'deliveryLookup', failure: 'S10' } },
         deliveryLookup: { resolve: { default: 'S02', rules: [
           { target: 'S11', fields: ['휴대폰 번호'], match: '^010-?0000-?0000$' },
           { target: 'S10', fields: ['휴대폰 번호'], match: '^010-?0000-?0002$' },
-          { target: 'pending5', fields: ['휴대폰 번호'], match: '^010-?0000-?0005$' }
+          { target: 'createdOrder', fields: ['휴대폰 번호'], match: '^010-?0000-?0004$' },
+          { target: 'pending5', fields: ['휴대폰 번호'], match: '^010-?0000-?0005$' },
+          { target: 'S10', fields: ['휴대폰 번호'], match: '^010-?0000-?0008$' }
         ] } },
-        S03: { actions: [['배송주소 수정', 'S04'], ['배송일정 수정', 'requestedDeliveryDate'], ['설치마스터 전달', 'S06']] },
-        S04: { actions: [['주소 검색', '$address'], ['주소 확인', 'deliveryAddressCheck'], ['나가기', 'S03']] },
-        deliveryAddressCheck: { resolve: { default: 'deliveryAddressSchedule', rules: [
-          { ...unsupportedAddress, target: 'S09' }
+        S03: {
+          message: '선택하신 주문의 배송 정보예요. 어떤 정보를 바꾸거나 전달할까요?',
+          actions: [['배송주소 수정', '$deliveryEditAddress'], ['배송일정 수정', '$deliveryEditDate'], ['설치마스터 전달 요청', 'S06']]
+        },
+        packageChange: choice('패키지 주문은 구성 제품 전체의 배송주소 또는 배송일이 함께 변경돼요.', [
+          ['확인', '$confirmPackageChange'], ['뒤로', 'S03']
+        ]),
+        S04: field('새 배송 주소를 입력해 주세요.', [
+          { label: '배송 주소', placeholder: '도로명 또는 지번과 상세주소', sample: '서울 영등포구 문래동' }
+        ], [['주소 검색', '$address'], ['확인', 'deliveryAddressCheck'], ['나가기', 'S03']]),
+        deliveryAddressCheck: { resolve: { default: 'S07', rules: [
+          { ...unsupportedAddress, fields: ['배송 주소'], target: 'S09' },
+          { target: 'deliveryAddressSchedule', fields: ['배송 주소'], match: '^(?:세종특별자치시|세종시)' }
         ] } },
-        deliveryAddressSchedule: choice('변경한 주소에 기존 배송일을 유지할까요?', [
-          ['기존 배송일 유지', 'S07'], ['배송일도 변경', 'requestedDeliveryDate']
+        deliveryAddressSchedule: choice('변경하신 배송지에는 기존 날짜로 배송하기 어려워요. 새 배송일을 선택해 주세요.', [
+          ['배송일 선택', 'requestedDeliveryDate'], ['주소 다시 입력', 'S04']
         ]),
         requestedDeliveryDate: field('희망 배송일을 입력해 주세요. 가까운 배송 가능일을 확인할게요.', [
           { label: '희망 배송일', placeholder: 'YYYY-MM-DD', type: 'date', sample: '2026-12-02' }
-        ], [['배송 가능일 확인', 'S05'], ['뒤로', 'S03']]),
+        ], [['예약 가능일자 확인', '$deliveryDateLookup'], ['뒤로', '$deliveryOrder']]),
+        noDeliveryDates: handoff('선택할 수 있는 배송일이 없어요. 상담사에게 배송 일정을 문의해 주세요.'),
         S05: {
-          actions: [
-            ['12월 2일(수) 선택', '$date'], ['더보기', '$moreDates'], ['변경 요청', 'S07']
-          ]
+          actions: [['배송 가능일 선택', '$date'], ['더보기', '$moreDates'], ['확인', 'S07']]
         },
-        S06: {
-          message: '설치마스터에게 전달할 내용을 입력해 주세요. 납품대기 주문이면 배송 메모에 요청 내용을 기록해요.'
-        },
-        S08: {
-          message: '배송 요청 내용을 확인했어요. 주문의 진행 상태에 따라 배송 메모에 기록하거나 설치마스터가 확인하는 요청이에요.'
-        },
+        S06: field('설치마스터에게 전달할 내용을 입력해 주세요. 요청한 내용은 설치 예정일에 확인할 수 있어요.', [
+          { label: '전달 요청 사항', placeholder: '전달 요청 사항을 입력해 주세요', sample: '방문 전에 연락해 주세요.' }
+        ], [['확인', 'S08'], ['뒤로', '$deliveryOrder']]),
+        S08: { message: '요청하신 내용이 배송 메모에 반영됐어요. 추가로 문의하실 내용이 있으신가요?', actions: close },
         subscriptionOrder: choice('구독 주문의 배송주소는 구독 주문처에 변경을 요청해 주세요. 배송일 문의나 설치 요청 전달을 계속할 수 있어요.', [
-          ['배송주소 변경 안내', 'subscriptionAddress'], ['배송일정 수정 문의', 'requestedDeliveryDate'], ['설치마스터 전달', 'S06'], ['다른 문의', '$menu']
+          ['배송주소 변경 안내', 'subscriptionAddress'], ['배송일정 수정 문의', '$deliveryEditDate'], ['설치마스터 전달 요청', 'S06'], ['다른 문의', '$menu']
         ]),
         subscriptionAddress: result('구독 신청처에 배송주소 변경을 요청해 주세요. 주문처에서 변경 가능 여부와 새 설치 일정을 확인해요.', [
           ['뒤로', 'subscriptionOrder'], ['다른 문의', '$menu']
         ]),
-        createdOrder: choice('납품생성 또는 출고 상태의 주문은 설치마스터를 통해 변경 가능 여부와 일정을 확인해요.', [
-          ['배송주소 수정 요청', 'dispatchAddress'], ['배송일정 변경 요청', 'dispatchDate'], ['설치마스터 전달', 'dispatchRequest'],
-          ['뒤로', 'S02']
-        ]),
-        dispatchAddress: field('설치마스터에게 전달할 새 배송 주소를 입력해 주세요.', ['address'], [
-          ['주소 변경 요청 전달', 'dispatchResult'], ['뒤로', 'createdOrder']
-        ]),
-        dispatchDate: field('설치마스터에게 전달할 희망 배송일을 입력해 주세요.', [
-          { label: '희망 배송일', placeholder: 'YYYY-MM-DD', type: 'date', sample: '2026-12-02' }
-        ], [['일정 변경 요청 전달', 'dispatchResult'], ['뒤로', 'createdOrder']]),
-        dispatchRequest: field('설치마스터에게 전달할 요청 내용을 입력해 주세요.', ['description'], [
-          ['전달 요청 확인', 'dispatchResult'], ['뒤로', 'createdOrder']
-        ]),
-        dispatchResult: result('전달 요청을 확인했어요. 납품생성·출고 주문의 변경 결과는 설치마스터가 안내해요.', [
-          ['다른 주문 선택', 'S02'], ['상담 종료', '$finish']
-        ], [item('주문 상태', '납품생성·출고'), item('처리 경로', '설치마스터 확인')])
+        createdOrder: handoff('주문이 출고됐어요. 배송 변경이나 요청사항 전달은 상담사가 도와드려요.'),
+        pending5: { ...handoff('배송 주문 변경 가능 여부는 상담사에게 문의해 주세요.'), condition: '배송 주문 상담 확인' }
       }
     }
   });
@@ -13338,17 +13504,12 @@ window.SKIX_PARTNER_CARDS = [
     screens.installmentResult = {
       kind: 'result', message: '카드 납부 내역을 확인해 주세요.',
       items: [item('처리 상태', '납부 완료'), item('할부 기간', '[할부 기간]'), item('납부 금액', '[납부 금액]')],
-      actions: [['다른 문의', '$menu'], ['상담 종료', '$finish']]
+      actions: [['다른 계약 보기', no === 4 ? 'chargeContract' : 'arrearsContract'], ['다른 문의', '$menu']]
     };
   }
-  overlays[6].screens.S04 = { addActions: [['제휴카드 이용 안내', 'S01'], ['알림톡으로 안내 받기', 'partnerNotification']] };
-  overlays[6].screens.partnerNotification = {
-    kind: 'input', message: '제휴카드 안내를 받으실 휴대폰 번호를 입력해 주세요.',
-    fields: ['phone'], actions: [['수신 확인', 'partnerNotificationResult'], ['뒤로', 'S04']]
-  };
-  overlays[6].screens.partnerNotificationResult = {
-    kind: 'result', message: '제휴카드 안내를 받을 번호를 확인했어요.',
-    actions: [['공식 제휴카드 보기', 'S02'], ['다른 문의', '$menu']]
+  overlays[6].screens.S04 = {
+    message: '추가로 문의하실 내용이 있으신가요?',
+    actions: [['추가 문의', '$menu'], ['상담 종료', '$finish']]
   };
   for (const no of [8, 9]) {
     const screens = overlays[no].screens;
@@ -13361,7 +13522,7 @@ window.SKIX_PARTNER_CARDS = [
     screens.moveDateInput = {
       kind: 'input',
       message: no === 8 ? '이사 예정일을 입력해 주세요. 그 전날까지 분리 방문이 가능해요.'
-        : '이사 예정일을 입력해 주세요. 재설치 방문은 이사 예정일의 다음 영업일부터 확인할 수 있어요.',
+        : '이사 예정일을 입력해 주세요. 재설치 방문은 이사 예정일 다음 날부터 확인할 수 있어요.',
       fields: [date('이사 예정일', '2026-11-30')], actions: [['다음', 'addressOptions'], ['뒤로', 'moveStatus']]
     };
     if (no === 9) {
@@ -13370,7 +13531,6 @@ window.SKIX_PARTNER_CARDS = [
         actions: [['조리수 밸브 포함', 'S05'], ['기본 재설치만', 'S05']]
       };
     }
-    screens.pairSplitAddress.validate = { dateOrder: [['분리 방문 희망일', '이사 예정일']] };
   }
   overlays[12].screens.S01.addActions = [['긴급 증상 안내', 'urgentCase']];
   overlays[12].screens.urgentCase = {
@@ -13388,22 +13548,28 @@ window.SKIX_PARTNER_CARDS = [
   const item = (title, detail) => ({ title, detail });
   const contracts = overlays[7].screens;
   const packages = [
-    { from: 'packageEstimate', id: 'packageDate', result: 'packageResult', label: '패키지 묶음', total: '149,000원', scope: '묶음에 포함된 계약 2건' },
-    { from: 'crossPackageEstimate', id: 'crossPackageDate', result: 'crossPackageResult', label: '크로스 패키지 묶음', total: '169,000원', scope: '묶음에 포함된 계약 2건' },
-    { from: 'packageSingleNotice', id: 'packageSingleDate', result: 'packageSingleResult', label: '비데', total: '69,000원', scope: '선택한 계약 1건', effect: '연결된 직수 정수기 구독료 월 26,900원 → 29,900원' },
-    { from: 'crossSingleNotice', id: 'crossSingleDate', result: 'crossSingleResult', label: '공기청정기', total: '79,000원', scope: '선택한 계약 1건', effect: '연결된 직수 정수기 구독료 월 24,900원 → 29,900원' }
+    { from: 'packageEstimate', id: 'packageDate', result: 'packageResult', product: '패키지 묶음', total: '149,000원' },
+    { from: 'crossPackageEstimate', id: 'crossPackageDate', result: 'crossPackageResult', product: '크로스 패키지 묶음', total: '169,000원' },
+    { from: 'packageSingleNotice', id: 'packageSingleDate', result: 'packageSingleResult', product: '비데', contract: 'CT-250601-002', penalty: '69,000원', total: '84,000원', effects: [
+      item('직수 정수기 · WPU-1000 · 서울 영등포구 문래동', '현재 구독료 월 26,900원 → 원복 구독료 월 29,900원')
+    ] },
+    { from: 'crossSingleNotice', id: 'crossSingleDate', result: 'crossSingleResult', product: '공기청정기', contract: 'CT-250901-001', penalty: '79,000원', total: '98,900원', effects: [
+      item('직수 정수기 · WPU-1000 · 서울 영등포구 문래동', '현재 구독료 월 24,900원 → 원복 구독료 월 29,900원'),
+      item('비데 · BID-1000 · 서울 영등포구 문래동', '현재 구독료 월 16,900원 → 원복 구독료 월 19,900원')
+    ] }
   ];
-  for (const { from, id, result, label, total, scope, effect } of packages) {
+  for (const { from, id, result, product, total, contract, penalty, effects } of packages) {
     contracts[from].actions[0][1] = id;
     contracts[id] = {
-      kind: 'input', message: label + '의 해약 예정일을 선택해 주세요. 신청일에 따라 실제 위약금이 달라질 수 있어요.',
-      fields: ['date'], actions: [[effect ? '예상 위약금 확인' : '합산 위약금 확인', result], ['뒤로', from]]
+      kind: 'input', message: `${product}의 해약접수 예정일을 입력해 주세요. 입력하지 않으면 오늘을 기준으로 조회해요. 실제 해약접수일에 따라 위약금이 달라질 수 있어요.`,
+      fields: contracts.S05.fields, actions: [['위약금 조회', result], ['뒤로', from]]
     };
     contracts[result] = {
-      kind: 'result', message: '선택한 해약 예정일을 기준으로 계산한 ' + label + '의 예상 위약금이에요.',
-      items: [item('조회 기준일', '11월 30일'), item(effect ? '예상 위약금' : '예상 위약금 합계', total), item('계산 범위', scope),
-        ...(effect ? [item('다른 계약 구독료 변경', effect)] : [])],
-      actions: [['다른 계약 확인', 'S04'], ['위약금 내역서 안내', '@20'], ['다른 문의', '$menu']]
+      kind: 'result', message: contract ? '선택하신 계약의 위약금과 상세 해약금이에요. 함께 할인받던 다른 제품은 구독료가 조정돼요.' : `선택하신 ${product}의 합산 해약금이에요.`,
+      items: contract
+        ? [item('계약번호', contract), item('제품명', product), item('해약 예정일', '11월 30일'), item('위약금', penalty), item('해약금', total), ...effects]
+        : [item('해약 예정일', '11월 30일'), item('총 해약금', total)],
+      actions: [['다른 계약 확인', 'S04'], ['다른 문의', '$menu']]
     };
   }
   for (const no of [4, 5]) {
@@ -14315,9 +14481,11 @@ window.SKIX_PARTNER_CARDS = [
   const welcome = '안녕하세요. SK매직 상담 챗봇입니다. 궁금한 내용을 입력하거나 상담 메뉴에서 선택해 주세요.';
   const defaultPlaceholder = '메시지를 입력하세요';
   const auditFlows = window.SKIX_FLOW_OVERLAYS ?? {};
+  const billingContractScreens = { 1: 'S02', 2: 'S02', 3: 'changeContract', 4: 'chargeContract', 5: 'arrearsContract', 7: 'S04' };
   const otpAttemptLimit = 5;
   const otpValidityMs = 180_000;
   const phoneConsent = '휴대폰 확인을 위해 이름과 휴대폰 번호를 이용해요. 개인정보 수집 및 이용에 동의하시겠어요?';
+  const businessRegistration = { label: '사업자등록번호', placeholder: '사업자등록번호 10자리', type: 'password', sample: '000-00-00000' };
   const partnerBenefitsUrl = 'https://www.skmagic.com/event/cardbenefit';
   const sampleIssuers = [
     { title: '신한카드', detail: '신용카드', kind: 'issuer', last4: '1234' },
@@ -14344,8 +14512,18 @@ window.SKIX_PARTNER_CARDS = [
 
   const registeredServiceProduct = { title: '직수 정수기', detail: 'WPU-1000', family: 'water', icon: 'water', kind: 'product' };
   const serviceVisits = {
-    water: { id: 'AS-261125-001', title: '직수 정수기 · AS', detail: '출수 안 됨', family: 'water', days: 2 },
-    bidet: { id: 'ES-261125-002', title: '비데 · 재설치', detail: '재설치 접수', family: 'bidet', days: 7 }
+    water: { id: 'AS-261125-001', product: '직수 정수기', symptom: '정수 출수 안 됨', family: 'water', days: 2 },
+    bidet: { id: 'ES-261125-002', product: '비데', service: '재설치', family: 'bidet', days: 7, subscription: true },
+    split: { id: 'ES-261125-003', product: '비데', service: '분리', family: 'bidet', days: 5 },
+    air: { id: 'AS-261125-004', product: '공기청정기', symptom: '전원이 켜지지 않음', family: 'air', days: 2 },
+    oven: { id: 'AS-261125-005', product: '전기오븐', symptom: '온도 표시 오류', family: 'oven', days: 8 },
+    dishwasher: { id: 'AS-261125-006', product: '식기세척기', symptom: '세척 중 멈춤', family: 'dishwasher', days: 10 }
+  };
+  const visitListScreens = { 13: 'S02', 14: 'S01', 15: 'S02' };
+  const deliveryOrders = {
+    water: { id: 'DL-261125-001', product: '직수 정수기', days: 5 },
+    air: { id: 'DL-261125-002', product: '공기청정기', days: 8, type: 'created' },
+    package: { id: 'DL-261125-003', product: '정수기·비데 패키지', components: '직수 정수기 · 비데', days: 13, type: 'package' }
   };
   const commonSymptoms = [
     { title: '작동·전원', detail: '전원, 소음, 오류 표시', icon: 'power', groups: [
@@ -14511,7 +14689,7 @@ window.SKIX_PARTNER_CARDS = [
     const custom = {
       '4:S06': ['bank', 'phone'], '5:S06': ['bank', 'phone'],
       '7:S05': ['date'], '12:S01': ['product', 'symptom'],
-      '14:S05': [context.changedField === 'phone' ? 'phone' : 'symptom'], '17:S06': ['description'],
+      '17:S06': ['description'],
       '18:s3': ['phone', 'description'], '20:s3': ['description', 'date'], '22:s2': ['name', 'phone'],
       '28:s2': ['phone'], '28:s4': ['email'], '29:s6': ['address', 'phone'], '30:s6': ['phone'], '33:s3': ['phone', 'name'],
       '34:s2': ['phone', 'name', 'address'], '34:s3': ['name', 'address'], '35:s2': ['product'],
@@ -14553,7 +14731,13 @@ window.SKIX_PARTNER_CARDS = [
 
   function maskNumber(phone) {
     const digits = phone.replace(/\D/g, '');
-    return `${digits.slice(0, 3)}-••••-${digits.slice(-4)}`;
+    return `${digits.slice(0, digits.startsWith('02') ? 2 : 3)}-••••-${digits.slice(-4)}`;
+  }
+
+  function neighborhood(address) {
+    const district = /^(.*?(?:시|도|구|군|읍|면|동|리))(?=\s|$)/.exec(address);
+    const locality = /^(.*?(?:읍|면|동|리))(?=\s|$)/.exec(address);
+    return locality?.[1] || district?.[1] || '등록한 주소';
   }
 
   function validationError(field, input) {
@@ -14570,16 +14754,25 @@ window.SKIX_PARTNER_CARDS = [
     const digits = input.replace(/\D/g, '');
     if (field.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input)) return '이메일 주소 형식을 확인해 주세요.';
     if (/휴대폰/.test(field.label) && !/^01[016789]\d{7,8}$/.test(digits)) return '휴대폰 번호를 확인해 주세요.';
+    if (field.label === '연락요청번호' && !/^(?:010\d{8}|0[2-6]\d{8,9})$/.test(digits)) {
+      return '010 휴대폰 번호나 지역번호를 포함한 전화번호 10~11자리를 입력해 주세요.';
+    }
     if (/팩스/.test(field.label) && !/^0\d{8,10}$/.test(digits)) return '지역번호를 포함한 팩스 번호를 입력해 주세요.';
     if (/카드번호/.test(field.label) && !/^\d{15,16}$/.test(digits)) return '카드번호는 숫자 15~16자리로 입력해 주세요.';
     if (/사업자등록번호/.test(field.label) && !/^\d{10}$/.test(digits)) return '사업자등록번호는 숫자 10자리로 입력해 주세요.';
-    if (/생년월일|인증번호/.test(field.label) && !/^\d{6}$/.test(input)) return '숫자 6자리를 입력해 주세요.';
+    if (field.type !== 'date' && /생년월일|인증번호/.test(field.label) && !/^\d{6}$/.test(input)) return '숫자 6자리를 입력해 주세요.';
     if (/계좌번호/.test(field.label) && !/^\d{8,16}$/.test(digits)) return '계좌번호는 숫자 8~16자리로 입력해 주세요.';
     if (/유효기간/.test(field.label) && !/^(0[1-9]|1[0-2])\s*\/?\s*\d{2}$/.test(input)) return '유효기간을 MM/YY 형식으로 입력해 주세요.';
     if (field.type === 'date') {
       const date = new Date(`${input}T12:00:00Z`);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(input) || Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== input) {
         return '날짜를 선택해 주세요.';
+      }
+      if (field.minAge) {
+        const today = estimateDateRange().today;
+        if (input > (`${Number(today.slice(0, 4)) - field.minAge}` + today.slice(4))) {
+          return `만 ${field.minAge}세 이상이어야 해요. 생년월일을 확인해 주세요.`;
+        }
       }
     }
     if (/(?:이름|주소|제조번호|제품명|모델명)/.test(field.label) && input.length < 2) return `${field.label} 항목을 확인해 주세요.`;
@@ -14603,6 +14796,20 @@ window.SKIX_PARTNER_CARDS = [
     return offsetDate(iso, day === 5 ? 3 : day === 6 ? 2 : 1);
   }
 
+  function counselorIsAvailable(now = new Date()) {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Seoul', weekday: 'short', hour: '2-digit', hourCycle: 'h23'
+    }).formatToParts(now);
+    const weekday = parts.find(({ type }) => type === 'weekday').value;
+    const hour = Number(parts.find(({ type }) => type === 'hour').value);
+    return !['Sat', 'Sun'].includes(weekday) && hour >= 9 && hour < 18;
+  }
+
+  function billingLookupTarget(no) {
+    if (!billingContractScreens[no]) return undefined;
+    return auditFlows[no]?.screens?.S01?.actions?.find(([label]) => label === 'PASS 본인인증')?.[1];
+  }
+
   function estimateDateRange() {
     const today = new Intl.DateTimeFormat('sv-SE', {
       timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit'
@@ -14619,8 +14826,12 @@ window.SKIX_PARTNER_CARDS = [
   function searchScore(scenario, query) {
     const direct = /^(?:no\.?\s*)?(\d{1,2})(?:번)?$/i.exec(query.trim());
     if (direct) return Number(direct[1]) === scenario.no ? 1000 : 0;
+    const consultation = /^상담\s*코드\s*[:#]?\s*(\d+)$/u.exec(query.trim());
+    if (consultation) return scenario.consultationCode?.split('/').some((code) => code.trim() === consultation[1]) ? 1000 : 0;
     const compact = normalize(query);
     if (!compact) return 0;
+    const firstPhaseCode = scenario.firstPhaseScenario?.split(' ', 1)[0];
+    if (firstPhaseCode && normalize(firstPhaseCode) === compact) return 1000;
     const terms = new Set([scenario.displayTitle, scenario.title, ...(scenario.keywords ?? []),
       ...scenario.screens.map((screen) => screen.customer)].map(normalize).filter((term) => term.length > 1));
     if (terms.has(compact)) return 200 + compact.length;
@@ -14699,7 +14910,7 @@ window.SKIX_PARTNER_CARDS = [
           ? { kind: 'sms', code: this.context.otpCode } : null,
         placeholder: this.screen?.placeholder || defaultPlaceholder,
         secure: Boolean(this.screen?.secure || this.screen?.id === '$auth' || this.fields.some((field) => field.type === 'password')),
-        inputDisabled: Boolean(this.fields.length || this.screen?.kind === 'internal-only' || this.screen?.id === '$auth'),
+        inputDisabled: Boolean(this.fields.length || ['internal-only', 'closed'].includes(this.screen?.kind) || this.screen?.id === '$auth'),
         canBack: this.history.length > 0,
         detail: this.screen?.condition || '',
         demoCases: this.scenario?.screens.filter((screen) => screen.id !== this.screen?.id).map((screen) => ({
@@ -14747,12 +14958,13 @@ window.SKIX_PARTNER_CARDS = [
       const reuseServiceDetails = previousNo === 11 && scenario.no === 12
         && previous.serviceProduct && previous.serviceSymptom;
       const reuseVisit = !echo && previous.phoneVerified && ((scenario.no === 13 && [12, 14, 15].includes(previousNo))
-        || (previousNo === 13 && [14, 15].includes(scenario.no) && previous.serviceVisit));
+        || ([13, 14].includes(previousNo) && [14, 15].includes(scenario.no) && previous.serviceVisit));
       const reuseDelivery = !echo && previous.phoneVerified && previousNo === 16 && scenario.no === 17
         && this.screen?.id === 'S03';
+      const billingEntry = billingLookupTarget(scenario.no);
+      const reuseBilling = !echo && previous.billingVerified && billingEntry;
       this.scenario = scenario;
       this.context = { request: customerText || '' };
-      if ([1, 2, 3, 7].includes(scenario.no)) this.context.product = previous.product;
       const originalEntry = scenario.no === 6 && this.partnerCards().length
         ? scenario.screens.find((screen) => screen.id === 'S02') ?? scenario.screens[0]
         : scenario.screens[0];
@@ -14761,14 +14973,27 @@ window.SKIX_PARTNER_CARDS = [
         this.context.serviceSymptom = previous.serviceSymptom;
       }
       let entry = reuseServiceDetails ? this.serviceRegistrationEntry() : auditFlows[scenario.no]?.entry;
+      if (reuseBilling) {
+        Object.assign(this.context, { billingVerified: true, product: previous.product });
+        const contractScreen = billingContractScreens[scenario.no];
+        const choices = auditFlows[scenario.no]?.screens?.[contractScreen]?.actions;
+        const selected = previous.product && choices?.find(([label]) => label === previous.product + ' 선택');
+        entry = (scenario.no !== 7 || /위약금|해약비/.test(customerText))
+          ? selected?.[1] ?? billingEntry : billingEntry;
+      }
       if (reuseVisit) {
         Object.assign(this.context, { phoneVerified: true, maskedPhone: previous.maskedPhone,
-          serviceVisit: previous.serviceVisit, sameDayVisit: previous.sameDayVisit, subscriptionVisit: previous.subscriptionVisit });
-        entry = scenario.no === 13 ? 'S02' : this.visitRequestEntry();
+          serviceVisit: previous.serviceVisit, sameDayVisit: previous.sameDayVisit, subscriptionVisit: previous.subscriptionVisit,
+          visitProfile: previous.visitProfile, visitEdits: previous.visitEdits, cancelledVisits: previous.cancelledVisits });
+        if (scenario.no === 13) {
+          this.showVisitResults();
+          return;
+        }
+        entry = this.visitRequestEntry();
       }
       if (reuseDelivery) {
         Object.assign(this.context, { phoneVerified: true, maskedPhone: previous.maskedPhone,
-          deliveryType: previous.deliveryType });
+          deliveryType: previous.deliveryType, deliveryProfile: previous.deliveryProfile, deliveryOrderKey: previous.deliveryOrderKey });
         entry = this.deliveryOrderEntry();
       }
       const first = this.screenSource(entry) ?? originalEntry;
@@ -14822,10 +15047,12 @@ window.SKIX_PARTNER_CARDS = [
         || screen.explicitActions?.some(([, target]) => target === '$sendOtp');
       if (collectsIdentity && !this.context.nativeSmsConsent) {
         this.context.nativeSmsReturn = screen.id;
-        this.synthetic(phoneConsent, {
+        const firstPhase = this.scenario.phase === '1차';
+        this.synthetic(firstPhase ? phoneConsent + ' 개인사업자는 사업자등록번호도 확인해요.' : phoneConsent, {
           id: '$nativeSmsConsent',
           actions: [['동의하고 계속', '$nativeSmsConsent'],
-            ...([16, 17].includes(this.scenario.no) ? [['개인사업자로 동의하고 계속', '$deliveryBusinessConsent']] : []),
+            ...(firstPhase ? [['개인사업자로 동의하고 계속', [16, 17].includes(this.scenario.no)
+              ? '$deliveryBusinessConsent' : '$nativeSmsBusinessConsent']] : []),
             ['동의하지 않음', '$auditSmsDecline']]
         });
         return;
@@ -14847,12 +15074,15 @@ window.SKIX_PARTNER_CARDS = [
 
     buildFields(screen) {
       if (!this.scenario) return [];
-      const definitions = screen.explicitFields ?? fieldsFor(this.scenario.no, screen, this.context);
+      const original = screen.explicitFields ?? fieldsFor(this.scenario.no, screen, this.context);
+      const definitions = this.context.nativeSmsBusiness && screen.id === this.context.nativeSmsReturn
+        ? [...original, businessRegistration] : original;
       return definitions.map((definition, index) => {
         const item = typeof definition === 'string' ? fieldTemplates[definition] : definition;
         if (!item) throw new Error('Unknown workflow field: ' + definition);
         const type = item.type ?? 'text';
         const sample = item.label === '인증번호' ? this.context.otpCode
+          : item.label === '희망 배송일' ? offsetDate(estimateDateRange().today, 7)
           : item.label === '카드번호' && this.context.issuer?.last4
             ? '000000000000' + this.context.issuer.last4 : item.sample;
         const keyboard = type === 'password' ? 'numeric' : type === 'tel' ? 'tel' : type === 'email' ? 'email' : undefined;
@@ -14872,35 +15102,42 @@ window.SKIX_PARTNER_CARDS = [
         demo: Boolean(screen.demo || properties.demo), status: properties.status, links: screen.links
       };
       if (this.activeSelection()?.kind === 'service-product') message.items = [];
-      if (no === 13 && screen.id === 'S02' || no === 14 && screen.id === 'S01' || no === 15 && screen.id === 'S02') {
-        message.items = Object.keys(serviceVisits).map((key) => ({
-          title: serviceVisits[key].title, detail: `${serviceVisits[key].detail} · ${dateLabel(this.serviceVisitDate(key))}`
+      if (visitListScreens[no] === screen.id) {
+        const visits = this.availableVisits();
+        message.text = `미처리 접수가 ${visits.length}건 있어요. 방문예정일이 가까운 순으로 최대 5건을 보여드려요. 확인할 접수를 선택해 주세요.${visits.length > 5 ? ' 다른 접수는 상담사에게 문의해 주세요.' : ''}`;
+        message.items = visits.slice(0, 5).map((key) => ({
+          title: [serviceVisits[key].product, serviceVisits[key].service].filter(Boolean).join(' '),
+          detail: `${this.visitDetail(key)} · ${dateLabel(this.serviceVisitDate(key))}`
         }));
       }
-      if (no === 13 && ['S03', 'S04'].includes(screen.id)) {
-        const key = screen.id === 'S04' ? 'bidet' : 'water';
-        message.items = items.map((item) => ({ ...item,
-          detail: item.title === '방문 예정일' ? dateLabel(this.serviceVisitDate(key))
-            : item.title === '방문 연락처' && this.context.maskedPhone ? this.context.maskedPhone : item.detail
-        }));
+      const visitKey = this.context.serviceVisit;
+      if (no === 13 && ['S03', 'S04'].includes(screen.id) || no === 14 && ['S02', 'S10'].includes(screen.id)
+        || no === 15 && ['visitDetails', 'S03', 'S04', 'S05'].includes(screen.id)) {
+        const key = visitKey ?? (screen.id === 'S04' && no === 13 ? 'bidet' : 'water');
+        message.items = this.visitItems(key);
+        if (no === 15 && this.context.cancellationReason && ['S04', 'S05'].includes(screen.id)) {
+          message.items.push({ title: '취소 사유', detail: this.context.cancellationReason });
+        }
       }
-      const visit = serviceVisits[this.context.serviceVisit];
-      if (visit && (no === 14 && screen.id === 'S02' || no === 15 && ['S03', 'S04', 'S05'].includes(screen.id))) {
-        message.items = [{ title: '접수번호', detail: visit.id }, { title: '방문 서비스', detail: visit.title },
-          { title: '방문 예정일', detail: dateLabel(this.serviceVisitDate(this.context.serviceVisit)) }];
+      if ([16, 17].includes(no) && screen.id === 'S02') {
+        message.items = this.deliveryOrderKeys().map((key) => {
+          const order = deliveryOrders[key];
+          const detail = this.deliveryItems({ key }).filter(({ title }) => title !== '제품명')
+            .map(({ title, detail }) => `${title} ${detail}`).join('\n');
+          return { title: order.product, detail: order.components ? `제품명 ${order.components}\n${detail}` : detail };
+        });
       }
-      if ((no === 16 && screen.id === 'S03') || (no === 17 && screen.id === 'S02')) {
-        const orderState = { subscription: '납품대기 · 구독', dispatched: '납품생성·출고 · 일시불' }[this.context.deliveryType]
-          || '납품대기 · 일시불';
-        message.items = items.map((item) => ({ ...item,
-          detail: item.title === '주문 상태·판매 유형' ? orderState : item.detail.replace('일시불 · 납품대기', orderState)
-        }));
+      if ([16, 17].includes(no) && ['S03', 'subscriptionOrder'].includes(screen.id)) {
+        message.items = this.deliveryItems();
       }
       if (no === 17 && screen.id === 'S07' && (this.context.modifiedAddress || this.context.date)) {
-        message.items = [
-          ...(this.context.modifiedAddress ? [{ title: '변경한 배송주소', detail: this.context.modifiedAddress }] : []),
-          ...(this.context.date ? [{ title: '변경한 배송일', detail: this.context.date }] : [])
-        ];
+        message.items = this.deliveryItems({ address: this.context.modifiedAddress, date: this.context.dateIso });
+        if (this.deliveryOrderType() === 'created') {
+          message.text += ' 변경 내용은 설치마스터에게 전달하는 처리로 이어져요.';
+        }
+      }
+      if (no === 17 && screen.id === 'S08' && this.context.deliveryNote) {
+        message.items = [{ title: '요청사항', detail: this.context.deliveryNote }];
       }
       if (no === 12 && screen.id === 'S06' && this.context.serviceProduct && this.context.serviceSymptom) {
         message.items = [...items, { title: '접수 제품', detail: this.serviceProductLabel() },
@@ -14910,15 +15147,6 @@ window.SKIX_PARTNER_CARDS = [
       if (this.scenario.phase === '별도 검토' && !message.status) message.status = '별도 검토';
       if (no === 49 && screen.id === 's5' && this.context.consent === '동의하기') {
         message.items = [{ title: '변경 결과', detail: '동의' }];
-      }
-      if (no === 14 && screen.id === 'S10' && this.context.serviceChange) {
-        message.items = [items[0], { title: '변경된 항목', detail: this.context.serviceChange }];
-      }
-      if (no === 14 && screen.id === 'S10' && visit) {
-        message.items = message.items.map((item) => item.title === '접수번호' ? { ...item, detail: visit.id } : item);
-      }
-      if (no === 14 && screen.id === 'S10' && this.context.visitAddressWithDate && this.context.date) {
-        message.items.push({ title: '변경된 방문주소', detail: this.context.visitAddressWithDate });
       }
       if (no === 37 && screen.id === 's8' && this.context.document) {
         message.text = `${this.context.document} 발송 요청을 처리했어요.`;
@@ -14965,7 +15193,7 @@ window.SKIX_PARTNER_CARDS = [
         const { id, title, issuer, detail, phone, phoneLabel, href } = this.context.partnerCard;
         message.items = [{ title, detail: [issuer, detail].filter(Boolean).join('\n'), mediaKey: id }];
         if (phone) message.items.push({ title: phoneLabel || '카드사 신청 문의', detail: phone });
-        message.links = [{ label: '공식 혜택·신청 안내', href: href || partnerBenefitsUrl }];
+        message.links = [{ label: href ? '카드사 상세·신청 안내' : 'SK매직몰 제휴카드 혜택', href: href || partnerBenefitsUrl }];
         message.demo = !id;
       }
       if (screen.id === '$auth') message.status = '인증 안내';
@@ -14981,6 +15209,20 @@ window.SKIX_PARTNER_CARDS = [
         }
         if (key === '할부 기간' && [4, 5].includes(this.scenario.no)) return this.context.installmentPeriod ?? '일시불';
         if (key === '방문 제품' && [8, 9].includes(this.scenario.no)) return this.context.product || '직수 정수기';
+        if ([8, 9, 12].includes(this.scenario.no)) {
+          const details = {
+            '받으실 분': this.context.visitApplicant || '김○○',
+            '방문 주소': this.context.visitAddress || demoAddress,
+            '분리 방문 주소': this.context.splitVisitAddress || demoAddress,
+            '재설치 방문 주소': this.context.reinstallVisitAddress || demoAddress,
+            '방문 연락처': this.context.visitPhone || this.context.maskedPhone || maskNumber(demoPhone),
+            '분리 방문일': this.context.splitDate ? dateLabel(this.context.splitDate) : undefined,
+            '재설치 방문일': this.context.reinstallDate ? dateLabel(this.context.reinstallDate) : undefined,
+            '접수 제품': this.serviceProductLabel() || registeredServiceProduct.title,
+            '접수 증상': this.context.serviceSymptom || '미입력'
+          };
+          if (details[key]) return details[key];
+        }
         if (/발송|전송/.test(key) && /방법|채널|방식/.test(key) && this.context.channel) return this.context.channel;
         if (/마스킹된\s*수신처/.test(key) && this.context.receiptRecipient) return this.context.receiptRecipient;
         if (key === '마스킹된 번호' && this.context.maskedPhone) return this.context.maskedPhone;
@@ -15019,19 +15261,86 @@ window.SKIX_PARTNER_CARDS = [
     }
 
     serviceVisitDate(key) {
+      const changed = this.context.visitEdits?.[key]?.date;
+      if (changed) return changed;
       const { today } = estimateDateRange();
       const days = key === 'water' && this.context.sameDayVisit ? 0 : serviceVisits[key].days;
       return offsetDate(today, days);
     }
 
+    visitDetail(key) {
+      const visit = serviceVisits[key];
+      return visit.service || this.context.visitEdits?.[key]?.symptom || visit.symptom;
+    }
+
+    visitItems(key) {
+      const { id, product, service } = serviceVisits[key];
+      const changed = this.context.visitEdits?.[key];
+      return [
+        { title: '접수번호', detail: id },
+        { title: '접수제품', detail: product },
+        { title: service ? '서비스 종류' : '접수 증상', detail: this.visitDetail(key) },
+        { title: '방문 예정일', detail: dateLabel(this.serviceVisitDate(key)) },
+        { title: '담당 매니저', detail: '영등포센터 김○○ 매니저' },
+        { title: '서비스 받으실 분', detail: '김○○' },
+        { title: '방문 연락처', detail: changed?.phone || this.context.maskedPhone || maskNumber(demoPhone) },
+        { title: '방문 주소', detail: changed?.address ? neighborhood(changed.address) : demoAddress }
+      ];
+    }
+
+    availableVisits() {
+      const keys = this.context.visitProfile === 'single' ? ['water']
+        : this.context.visitProfile === 'multiple' ? Object.keys(serviceVisits) : ['water', 'bidet'];
+      return keys.filter((key) => !this.context.cancelledVisits?.includes(key)).sort((left, right) =>
+        this.serviceVisitDate(left).localeCompare(this.serviceVisitDate(right))
+        || serviceVisits[left].id.localeCompare(serviceVisits[right].id));
+    }
+
+    showVisitResults() {
+      const no = this.scenario.no;
+      const visits = this.availableVisits();
+      if (!visits.length) this.execute({ 13: 'S06', 14: 'S09', 15: 'S06' }[no]);
+      else if (visits.length === 1) {
+        this.context.serviceVisit = visits[0];
+        this.execute(no === 13 ? this.visitDetailScreen() : no === 14 ? this.visitRequestEntry() : 'visitDetails');
+      } else this.execute(visitListScreens[no]);
+    }
+
+    visitDetailScreen() {
+      return serviceVisits[this.context.serviceVisit]?.service ? 'S04' : 'S03';
+    }
+
     visitRequestEntry() {
-      const sameDay = this.context.serviceVisit === 'water' && this.context.sameDayVisit;
+      const sameDay = this.context.serviceVisit && this.serviceVisitDate(this.context.serviceVisit) === estimateDateRange().today;
       if (this.scenario.no === 14) return sameDay ? 'S06' : 'S02';
       return sameDay ? 'S07' : 'S03';
     }
 
+    deliveryOrderKeys() {
+      return this.context.deliveryProfile === 'multiple' ? Object.keys(deliveryOrders) : ['water'];
+    }
+
+    deliveryOrderType(key = this.context.deliveryOrderKey ?? 'water') {
+      return this.context.deliveryProfile === 'multiple' ? deliveryOrders[key].type : this.context.deliveryType;
+    }
+
+    deliveryItems({ address, date, key = this.context.deliveryOrderKey ?? 'water' } = {}) {
+      const order = deliveryOrders[key];
+      const type = this.deliveryOrderType(key);
+      return [
+        { title: '수령인', detail: '김○○' },
+        { title: '수령인 연락처', detail: this.context.maskedPhone || maskNumber(demoPhone) },
+        { title: '배송지', detail: address || demoAddress },
+        { title: '배송일자', detail: dateLabel(date || offsetDate(estimateDateRange().today, order.days)) },
+        { title: '주문번호', detail: order.id },
+        { title: '제품명', detail: order.components || (type === 'package' ? '직수 정수기 · 공기청정기' : order.product) },
+        { title: '주문상태', detail: { created: '납품생성', dispatched: '출고' }[type] || '납품대기' },
+        { title: '판매유형', detail: type === 'subscription' ? '구독' : '일시불' }
+      ];
+    }
+
     deliveryOrderEntry() {
-      return { subscription: 'subscriptionOrder', dispatched: 'createdOrder' }[this.context.deliveryType] || 'S03';
+      return { subscription: 'subscriptionOrder', dispatched: 'createdOrder' }[this.deliveryOrderType()] || 'S03';
     }
 
     serviceRegistrationEntry() {
@@ -15062,11 +15371,13 @@ window.SKIX_PARTNER_CARDS = [
       let first = offsetDate(today, [14, 17].includes(no) ? 0 : 1);
       let last = offsetDate(today, 30);
       const move = this.context.moveDate;
-      if (move && no === 8 && move <= last) last = offsetDate(move, -1);
-      if (move && (no === 9 || no === 14 && this.context.serviceVisit === 'bidet')) {
-        const minimum = nextWeekday(move);
+      const visitService = serviceVisits[this.context.serviceVisit]?.service;
+      if (move && (no === 8 || no === 14 && visitService === '분리') && move <= last) last = offsetDate(move, -1);
+      if (move && (no === 9 || no === 14 && visitService === '재설치')) {
+        const minimum = no === 9 ? offsetDate(move, 1) : nextWeekday(move);
         if (minimum > first) first = minimum;
       }
+      if (no === 17 && this.deliveryOrderType() === 'unavailable') return [];
       if (no === 17 && !all) {
         const requested = this.context.deliveryDate || offsetDate(today, 7);
         const minimum = offsetDate(requested, -2);
@@ -15129,6 +15440,20 @@ window.SKIX_PARTNER_CARDS = [
     selectionActions() {
       const no = this.scenario.no;
       const id = this.screen.id;
+      if (visitListScreens[no] === id) {
+        const visits = this.availableVisits();
+        const target = { 13: '$visitDetails', 14: '$visitChange', 15: 'visitDetails' }[no];
+        const actions = visits.slice(0, 5).map((key) => {
+          const { product, service } = serviceVisits[key];
+          return { id: 'visit:' + key, label: [product, service, '접수 선택'].filter(Boolean).join(' '),
+            target };
+        });
+        if (visits.length > 5) actions.push({ id: 'visit:handoff', label: '다른 접수 건 상담사 문의', target: '$handoff' });
+        return actions;
+      }
+      if ([16, 17].includes(no) && id === 'S02') return this.deliveryOrderKeys().map((key) => ({
+        id: 'delivery:' + key, label: `${deliveryOrders[key].product} 주문 선택`, target: no === 16 ? 'S03' : '$deliveryOrder'
+      }));
       const step = this.symptomStep();
       if (step !== null) {
         const choices = this.symptomOptions(step).map((item, index) => ({
@@ -15179,7 +15504,7 @@ window.SKIX_PARTNER_CARDS = [
         id: `intent:${scenario.no}`, label: scenario.displayTitle || scenario.title, target: `@${scenario.no}`
       }));
       const screen = this.screen;
-      if (!screen || screen.kind === 'internal-only') return [];
+      if (!screen || screen.kind === 'internal-only' || screen.kind === 'closed') return [];
       const no = this.scenario.no;
       const targets = optionTargets[no]?.[screen.id] ?? [];
       const steps = screen.explicitActions ?? (screen.options ?? []).map((label, index) => [label, targets[index] ?? this.graphTarget(label)]);
@@ -15254,7 +15579,7 @@ window.SKIX_PARTNER_CARDS = [
 
     submit(text) {
       const query = String(text ?? '').trim();
-      if (!query || this.screen?.kind === 'internal-only' || this.screen?.id === '$auth') return this.getState();
+      if (!query || ['internal-only', 'closed'].includes(this.screen?.kind) || this.screen?.id === '$auth') return this.getState();
       const action = this.actionList().find((item) => normalize(item.label) === normalize(query));
       if (action && !action.requiresFields) return this.choose(action.id);
       if (this.fields.length === 1) return this.submitFields({ [this.fields[0].id]: query });
@@ -15304,9 +15629,9 @@ window.SKIX_PARTNER_CARDS = [
       const field = this.fields.find((item) => item.id === id);
       if (!field) return '';
       const action = this.actionList().find((item) => item.id === actionId);
-      if (action?.target === '$address' && field.label !== '주소') return '';
+      if (action?.target === '$address' && !field.label.endsWith('주소')) return '';
       const error = validationError(field, input);
-      if (!error && this.scenario.no === 7 && field.type === 'date') {
+      if (!error && input && this.scenario.no === 7 && field.type === 'date') {
         const { today, until } = estimateDateRange();
         if (input < today || input > until) return '오늘부터 한 달 이내의 날짜를 입력해 주세요.';
       }
@@ -15321,8 +15646,8 @@ window.SKIX_PARTNER_CARDS = [
           if (/방문 희망일$/.test(field.label) && (input <= today || input > offsetDate(today, 30))) {
             return '방문 희망일은 내일부터 30일 이내에서 입력해 주세요.';
           }
-          if (field.label === '재설치 방문 희망일' && this.context.moveDate && input < nextWeekday(this.context.moveDate)) {
-            return '재설치 방문 희망일은 이사 예정일의 다음 영업일부터 입력해 주세요.';
+          if (field.label === '재설치 방문 희망일' && this.context.moveDate && input <= this.context.moveDate) {
+            return '재설치 방문 희망일은 이사 예정일 다음 날부터 입력해 주세요.';
           }
         }
       }
@@ -15369,8 +15694,9 @@ window.SKIX_PARTNER_CARDS = [
         this.openScenario(action.target.slice(1), action.label, false);
         return this.getState();
       }
-      this.capture(action.label, values, action.card);
-      const dateRequired = ['접수 요청', '변경 요청'].includes(action.label) && schedulingScreens[this.scenario.no] === this.screen.id;
+      this.capture(action.label, values, action.card, action.id);
+      const dateRequired = (['접수 요청', '변경 요청'].includes(action.label)
+        || this.scenario.no === 17 && action.label === '확인') && schedulingScreens[this.scenario.no] === this.screen.id;
       if (dateRequired && !this.context.date) {
         this.sayBot('날짜를 먼저 선택해 주세요.');
         return this.getState();
@@ -15383,7 +15709,7 @@ window.SKIX_PARTNER_CARDS = [
       return this.getState();
     }
 
-    capture(label, values, card) {
+    capture(label, values, card, actionId = '') {
       const screen = this.screen.id;
       const no = this.scenario.no;
       if (card?.kind === 'product' && [11, 12].includes(no)) {
@@ -15392,20 +15718,39 @@ window.SKIX_PARTNER_CARDS = [
         this.context.serviceSymptom = undefined;
       }
       if ([13, 14, 15].includes(no)) {
-        if (label === '직수 정수기 접수 선택') this.context.serviceVisit = 'water';
-        if (label === '비데 재설치 접수 선택') this.context.serviceVisit = 'bidet';
+        const visitKey = actionId.startsWith('visit:') ? actionId.slice(6) : '';
+        if (serviceVisits[visitKey]) this.context.serviceVisit = visitKey;
         if (label === '인증번호 받기' && values['휴대폰 번호']) {
           const digits = values['휴대폰 번호'].replace(/\D/g, '');
           this.context.sameDayVisit = digits === '01000000001';
           this.context.subscriptionVisit = digits === '01000000007';
+          this.context.visitProfile = { '01000000008': 'single', '01000000009': 'multiple' }[digits];
         }
       }
       if ([16, 17].includes(no) && label === '인증번호 받기' && values['휴대폰 번호']) {
         const digits = values['휴대폰 번호'].replace(/\D/g, '');
-        this.context.deliveryType = { '01000000003': 'subscription', '01000000004': 'dispatched' }[digits];
+        this.context.deliveryProfile = digits === '01000000001' ? 'multiple' : undefined;
+        this.context.deliveryType = { '01000000003': 'subscription', '01000000004': 'dispatched',
+          '01000000006': 'created', '01000000007': 'package', '01000000009': 'unavailable' }[digits];
+      }
+      if ([16, 17].includes(no) && actionId.startsWith('delivery:')) {
+        this.context.deliveryOrderKey = actionId.slice(9);
       }
       if (no === 12 && screen === 'serviceModel' && values.모델명) {
         this.context.serviceProduct = { ...this.context.serviceProduct, detail: values.모델명 };
+      }
+      if ([8, 9, 12].includes(no)) {
+        if (values.이름) this.context.visitApplicant = Array.from(values.이름)[0] + '○○';
+        if (values.주소) {
+          const address = neighborhood(values.주소);
+          this.context.visitAddress = address;
+          if (screen === 'pairSplitAddress') this.context.splitVisitAddress = address;
+          if (screen === 'pairInstallAddress') this.context.reinstallVisitAddress = address;
+        }
+        const phone = values['서비스 당일 연락받으실 휴대폰 번호'];
+        if (phone) this.context.visitPhone = maskNumber(phone);
+        if (values['분리 방문 희망일']) this.context.splitDate = values['분리 방문 희망일'];
+        if (values['재설치 방문 희망일']) this.context.reinstallDate = values['재설치 방문 희망일'];
       }
       this.captureRouteMatches(label, values);
       if (card?.kind === 'partner') this.context.partnerCard = card;
@@ -15441,8 +15786,14 @@ window.SKIX_PARTNER_CARDS = [
         if (fax) this.context.receiptRecipient = '••-••••-' + fax.replace(/\D/g, '').slice(-4);
         if (phone) this.context.receiptRecipient = maskNumber(phone);
       }
-      if (/정수기 선택|공기청정기 선택/.test(label)) this.context.product = label.replace(' 선택', '');
-      if (/주소/.test(label) || no === 17) this.context.modifiedAddress = values.주소 || this.context.modifiedAddress;
+      if ((screen === billingContractScreens[no] || no === 7 && screen === 'S02') && / 선택$/.test(label)) {
+        this.context.product = label.replace(/ 선택$/, '');
+      } else if (/정수기 선택|공기청정기 선택/.test(label)) {
+        this.context.product = label.replace(' 선택', '');
+      }
+      if (/주소/.test(label) || no === 17) {
+        this.context.modifiedAddress = values.주소 || values['배송 주소'] || this.context.modifiedAddress;
+      }
       if (screen === 's1' && no === 35) this.context.serviceKind = label;
       if (screen === 's1' && no === 39) this.context.paymentKind = label;
       if (screen === 's1' && no === 44) this.context.installationKind = label;
@@ -15453,23 +15804,29 @@ window.SKIX_PARTNER_CARDS = [
       if (screen === 's1' && no === 37) this.context.document = label;
       if (screen === 's5' && no === 37) this.context.recurring = label === '매월 받기';
       if (no === 38 && screen === 's2') this.context.oneTimeOrder = /일시불/.test(values['계약 또는 제품명']);
-      if (values['희망 날짜']) this.context.date = dateLabel(values['희망 날짜']);
+      const requestedDate = no === 7 && Object.hasOwn(values, '해약접수 예정일')
+        ? values['해약접수 예정일'] || estimateDateRange().today : values['희망 날짜'];
+      if (requestedDate) this.context.date = dateLabel(requestedDate);
       if ([8, 9, 14, 17].includes(no) && (Object.hasOwn(values, '이사 예정일') || Object.hasOwn(values, '희망 배송일'))) {
         if (Object.hasOwn(values, '이사 예정일')) this.context.moveDate = values['이사 예정일'];
         if (Object.hasOwn(values, '희망 배송일')) this.context.deliveryDate = values['희망 배송일'];
         this.context.date = '';
+        this.context.dateIso = '';
       }
       if (values['휴대폰 번호'] && !values['인증번호']) this.context.maskedPhone = maskNumber(values['휴대폰 번호']);
       if (label === '등록된 번호로 받기') this.context.channel = '알림톡';
-      if (no === 14 && label === '변경 요청') {
-        if (values.주소) this.context.serviceChange = `방문주소 · ${values.주소}`;
-        else if (values['휴대폰 번호']) this.context.serviceChange = `방문 연락처 · ${this.context.maskedPhone}`;
-        else if (values['접수 증상'] || screen === 'editSymptomConfirm') this.context.serviceChange = '접수 증상 변경';
-        else this.context.serviceChange = undefined;
+      if (no === 14 && screen === 'S02') {
+        this.context.modifiedAddress = undefined;
+        this.context.dateIso = undefined;
+        this.context.date = undefined;
       }
-      if (no === 14 && screen === 'S03' && label === '예약일을 변경해 계속하기') this.context.visitAddressWithDate = values.주소;
-      if (no === 14 && screen === 'S02') this.context.visitAddressWithDate = undefined;
-      if (no === 17 && screen === 'S03') this.context.modifiedAddress = undefined;
+      if (no === 15 && screen === 'S03') this.context.cancellationReason = label;
+      if (no === 17 && ['S03', 'subscriptionOrder'].includes(screen)) {
+        this.context.modifiedAddress = undefined;
+        this.context.dateIso = undefined;
+        this.context.date = undefined;
+      }
+      if (no === 17 && screen === 'S06') this.context.deliveryNote = values['전달 요청 사항'];
     }
 
     captureRouteMatches(label, values) {
@@ -15537,15 +15894,48 @@ window.SKIX_PARTNER_CARDS = [
       const screen = this.screen.id;
       switch (target) {
         case '$finish':
-          this.synthetic('상담을 마쳤어요. 다시 도움이 필요하시면 말씀해 주세요.', { kind: 'result', demo: false });
+          if (this.scenario.phase === '1차') {
+            this.context = {};
+            this.synthetic('상담을 마쳤어요. 이용해 주셔서 감사합니다.', { kind: 'closed', demo: false });
+          } else {
+            this.synthetic('상담을 마쳤어요. 다시 도움이 필요하시면 말씀해 주세요.', { kind: 'result', demo: false });
+          }
           break;
-        case '$handoff':
-          this.synthetic('요청하신 내용은 상담사가 확인해야 해요. 연결이 필요한 업무를 아래에서 확인해 주세요.', {
-            id: '$handoff', kind: 'handoff', items: [{ title: '상담 분류', detail: this.scenario.displayTitle || this.scenario.title }]
+        case '$handoff': {
+          const items = [{ title: '상담 분류', detail: this.scenario.displayTitle || this.scenario.title }];
+          if (this.scenario.phase !== '1차') {
+            this.synthetic('요청하신 내용은 상담사가 확인해야 해요. 연결이 필요한 업무를 아래에서 확인해 주세요.', {
+              id: '$handoff', kind: 'handoff', items
+            });
+          } else if (counselorIsAvailable()) {
+            this.synthetic('상담사가 문의 내용을 확인할 수 있도록 채팅 상담 연결을 요청하시겠어요?', {
+              id: '$handoff', kind: 'handoff', items,
+              actions: [['채팅 상담 연결 요청', '$chatHandoffReview'], ['다른 문의', '$menu']]
+            });
+          } else {
+            this.synthetic('지금은 상담사 운영시간이 아니에요. 전화 상담을 요청하시면 운영시간에 상담을 이어갈 수 있어요.', {
+              id: '$handoff', kind: 'handoff', items: [...items, { title: '상담사 운영시간', detail: '평일 09:00–18:00' }],
+              actions: [['상담사 전화 예약', '$callbackIntake'], ['다른 문의', '$menu']]
+            });
+          }
+          break;
+        }
+        case '$chatHandoffReview':
+          this.synthetic('채팅 상담 연결 요청을 확인했어요. 실제 상담사 연결은 운영 환경에서 진행돼요.', {
+            kind: 'result', actions: [['다른 문의', '$menu'], ['상담 종료', '$finish']]
+          });
+          break;
+        case '$callbackIntake':
+          this.form('전화 상담을 받으실 휴대폰 번호를 입력해 주세요.', ['phone'], '$callbackReview', '전화 예약 요청');
+          break;
+        case '$callbackReview':
+          this.synthetic('전화 상담 요청 내용을 확인했어요. 실제 예약 등록은 운영 환경에서 진행돼요.', {
+            kind: 'result', actions: [['다른 문의', '$menu'], ['상담 종료', '$finish']]
           });
           break;
         case '$authSuccess': {
-          const { target: next } = this.context.auth;
+          const { target: next, method } = this.context.auth;
+          if (method === 'PASS 본인인증' && next === billingLookupTarget(no)) this.context.billingVerified = true;
           this.context.auth = undefined;
           this.execute(next);
           break;
@@ -15570,6 +15960,12 @@ window.SKIX_PARTNER_CARDS = [
           break;
         case '$nativeSmsConsent':
           this.context.nativeSmsConsent = true;
+          this.context.nativeSmsBusiness = false;
+          this.execute(this.context.nativeSmsReturn);
+          break;
+        case '$nativeSmsBusinessConsent':
+          this.context.nativeSmsConsent = true;
+          this.context.nativeSmsBusiness = true;
           this.execute(this.context.nativeSmsReturn);
           break;
         case '$deliveryBusinessConsent':
@@ -15584,7 +15980,7 @@ window.SKIX_PARTNER_CARDS = [
           });
           break;
         case '$auditSmsDecline':
-          this.synthetic('동의가 필요한 휴대폰 확인을 마쳤어요. 다른 문의를 입력해 주세요.', {
+          this.synthetic('휴대폰 확인을 진행하려면 개인정보 수집 및 이용 동의가 필요해요. 다른 문의도 이어서 하실 수 있어요.', {
             kind: 'result', actions: [['다른 문의', '$menu']]
           });
           break;
@@ -15636,7 +16032,14 @@ window.SKIX_PARTNER_CARDS = [
             if (this.context.otpTries >= otpAttemptLimit) {
               this.context.otpCode = undefined;
               this.context.otpExpiresAt = undefined;
-              this.execute(shared ? this.context.auditAuth?.failure ?? '$handoff' : this.screen.auth?.failure ?? phoneFailures[no]);
+              if (this.scenario.phase === '1차') {
+                this.synthetic('인증번호 입력 횟수를 모두 사용해 휴대폰 확인을 완료하지 못했어요.', {
+                  id: '$phoneConfirmationFailed', kind: 'exception',
+                  actions: [['처음으로', '$menu'], ['상담사 연결', '$handoff']]
+                });
+              } else {
+                this.execute(shared ? this.context.auditAuth?.failure ?? '$handoff' : this.screen.auth?.failure ?? phoneFailures[no]);
+              }
             } else {
               this.fields = this.fields.map((field) => field.label === '인증번호'
                 ? { ...field, error: `인증번호가 일치하지 않아요. ${otpAttemptLimit - this.context.otpTries}번 더 입력할 수 있어요.` } : field);
@@ -15676,6 +16079,8 @@ window.SKIX_PARTNER_CARDS = [
           break;
         case '$date':
           this.context.date = label.replace(/ 선택$/, '');
+          if ([14, 17].includes(no)) this.context.dateIso = this.scheduleDates(true)
+            .find((date) => dateLabel(date) === this.context.date);
           this.sayBot(`${this.context.date}을 선택했어요. 다음 버튼을 눌러 요청을 완료해 주세요.`, { demo: true });
           break;
         case '$moreDates':
@@ -15688,8 +16093,10 @@ window.SKIX_PARTNER_CARDS = [
           break;
         case '$pickExtraDate':
           this.context.date = label.replace(/ 선택$/, '');
+          if ([14, 17].includes(no)) this.context.dateIso = this.scheduleDates(true)
+            .find((date) => dateLabel(date) === this.context.date);
           this.execute(this.context.dateScreen);
-          this.sayBot(`${this.context.date}을 선택했어요. 변경 요청을 눌러 주세요.`, { demo: true });
+          this.sayBot(`${this.context.date}을 선택했어요. ${no === 17 ? '확인' : '변경 요청'}을 눌러 주세요.`, { demo: true });
           break;
         case '$address':
           this.context.checkedAddress = screen;
@@ -15783,15 +16190,51 @@ window.SKIX_PARTNER_CARDS = [
             kind: 'result', actions: [['문제가 계속돼요', 'S06'], ['해결했어요', '$finish']]
           });
           break;
+        case '$visitResults':
+          this.showVisitResults();
+          break;
+        case '$visitDetails':
+          this.execute(this.visitDetailScreen());
+          break;
         case '$visitChange':
         case '$visitCancel':
           this.execute(this.visitRequestEntry());
           break;
+        case '$commitVisitChange': {
+          const key = this.context.serviceVisit;
+          if (key) {
+            const changed = { ...this.context.visitEdits?.[key] };
+            if (this.context.modifiedAddress) changed.address = this.context.modifiedAddress;
+            if (this.context.dateIso) changed.date = this.context.dateIso;
+            if (this.context.serviceSymptom && screen === 'editSymptomConfirm') changed.symptom = this.context.serviceSymptom;
+            if (values.연락요청번호) changed.phone = maskNumber(values.연락요청번호);
+            this.context.visitEdits = { ...this.context.visitEdits, [key]: changed };
+          }
+          this.execute('S10');
+          break;
+        }
+        case '$commitVisitCancellation':
+          this.context.cancelledVisits = [...(this.context.cancelledVisits ?? []), this.context.serviceVisit];
+          this.execute('S05');
+          break;
         case '$changeVisitAddress':
-          this.execute(this.context.subscriptionVisit || this.context.serviceVisit === 'bidet' ? 'S07' : 'S03');
+          this.execute(this.context.subscriptionVisit || serviceVisits[this.context.serviceVisit]?.subscription ? 'S07' : 'S03');
           break;
         case '$deliveryOrder':
           this.execute(this.deliveryOrderEntry());
+          break;
+        case '$deliveryEditAddress':
+        case '$deliveryEditDate': {
+          const next = target === '$deliveryEditAddress' ? 'S04' : 'requestedDeliveryDate';
+          this.context.deliveryEdit = next;
+          this.execute(this.deliveryOrderType() === 'package' ? 'packageChange' : next);
+          break;
+        }
+        case '$confirmPackageChange':
+          this.execute(this.context.deliveryEdit);
+          break;
+        case '$deliveryDateLookup':
+          this.execute(this.deliveryOrderType() === 'unavailable' ? 'noDeliveryDates' : 'S05');
           break;
         case '$editSymptom':
           this.context.symptomPath = [];
@@ -15799,8 +16242,10 @@ window.SKIX_PARTNER_CARDS = [
           this.showSymptomStep(0);
           break;
         case '$editPhone':
-          this.context.changedField = 'phone';
           this.execute('S05');
+          break;
+        case '$continueServiceRegistration':
+          this.execute(this.serviceRegistrationEntry());
           break;
         case '$contactIdentity':
           this.form('연락을 받으신 분의 정보를 입력해 주세요.', ['name', 'phone'], 's5');
@@ -15977,8 +16422,9 @@ window.SKIX_PARTNER_CARDS = [
   const engine = new window.SKIXChat(window.SKIX_SCENARIOS);
   const scenarios = new Map(window.SKIX_SCENARIOS.map((scenario) => [scenario.no, scenario]));
   const partnerCards = new Map((window.SKIX_PARTNER_CARDS ?? []).map((card) => [card.id, card]));
+  const partnerBenefitsUrl = "https://www.skmagic.com/event/skmagic-card-benefits";
   const cardDetails = new Set([...partnerCards.values()].map((card) => card.href));
-  cardDetails.add("https://www.skmagic.com/event/skmagic-card-benefits");
+  cardDetails.add(partnerBenefitsUrl);
   cardDetails.add("https://www.skmagic.com/event/cardbenefit");
   const localFile = location.protocol === "file:";
   const localServer = "http://127.0.0.1:4328/";
@@ -16065,6 +16511,9 @@ window.SKIX_PARTNER_CARDS = [
   function catalogItem(scenario) {
     const item = button(scenario.displayTitle, "catalog-item");
     item.dataset.scenario = String(scenario.no);
+    if (scenario.firstPhaseScenario) {
+      item.title = `No.${String(scenario.no).padStart(2, "0")} · 상담코드 ${scenario.consultationCode}\n${scenario.firstPhaseScenario}`;
+    }
     return item;
   }
 
@@ -16412,7 +16861,15 @@ window.SKIX_PARTNER_CARDS = [
 
   function actionButton(action) {
     const card = action.card;
-    const option = button(card ? "" : action.label, action.variant === "primary" && !card ? "action primary" : "action");
+    const partner = card?.kind === "partner";
+    const option = partner ? element("a", "action")
+      : button(card ? "" : action.label, action.variant === "primary" && !card ? "action primary" : "action");
+    if (partner) {
+      option.href = partnerBenefitsUrl + (card.id ? "#:~:text=" + encodeURIComponent(card.title) : "");
+      option.target = "_blank";
+      option.rel = "noopener noreferrer";
+      option.title = "SK매직몰 제휴카드 혜택 새 창";
+    }
     option.dataset.action = action.id;
     if (action.requiresFields && pendingField() && !/주소 검색/.test(action.label)) option.disabled = true;
     if (!card) return option;
@@ -16659,13 +17116,20 @@ window.SKIX_PARTNER_CARDS = [
       choices.append(list);
     }
     choices.addEventListener("click", (event) => {
-      const option = event.target.closest("button[data-action]");
+      const option = event.target.closest("[data-action]");
       const action = actions.find((item) => item.id === option?.dataset.action);
-      if (action) applyWorkflowAction(action);
+      if (!action) return;
+      if (option.tagName === "A") {
+        setTimeout(() => {
+          if (option.isConnected) applyWorkflowAction(action);
+        }, 0);
+      } else {
+        applyWorkflowAction(action);
+      }
     });
     if (choices.childElementCount) controls.append(choices);
 
-    if (flow.screen?.kind === "internal-only" || workflow) {
+    if (flow.screen?.kind === "internal-only" || workflow && flow.screen?.kind !== "closed") {
       const extras = element("div", "workflow-tools");
       if (flow.screen?.kind === "internal-only" && flow.detail) extras.append(element("p", "", flow.detail));
       if (workflow) {
@@ -16787,7 +17251,7 @@ window.SKIX_PARTNER_CARDS = [
     byId("secure-message").hidden = !blocked;
     byId("secure-message").querySelector("span").textContent = flow?.screen?.kind === "internal-only"
       ? "이 업무의 고객 채팅 절차는 검토 중이에요."
-      : "대화 안의 안내에 따라 계속해 주세요.";
+      : flow?.screen?.kind === "closed" ? "새 대화를 시작할 수 있어요." : "대화 안의 안내에 따라 계속해 주세요.";
     input.hidden = privateEntry;
     secureInput.hidden = !privateEntry;
     const ready = progressive && !field;

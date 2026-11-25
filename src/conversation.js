@@ -15,8 +15,9 @@
   const engine = new window.SKIXChat(window.SKIX_SCENARIOS);
   const scenarios = new Map(window.SKIX_SCENARIOS.map((scenario) => [scenario.no, scenario]));
   const partnerCards = new Map((window.SKIX_PARTNER_CARDS ?? []).map((card) => [card.id, card]));
+  const partnerBenefitsUrl = "https://www.skmagic.com/event/skmagic-card-benefits";
   const cardDetails = new Set([...partnerCards.values()].map((card) => card.href));
-  cardDetails.add("https://www.skmagic.com/event/skmagic-card-benefits");
+  cardDetails.add(partnerBenefitsUrl);
   cardDetails.add("https://www.skmagic.com/event/cardbenefit");
   const localFile = location.protocol === "file:";
   const localServer = "http://127.0.0.1:4328/";
@@ -103,6 +104,9 @@
   function catalogItem(scenario) {
     const item = button(scenario.displayTitle, "catalog-item");
     item.dataset.scenario = String(scenario.no);
+    if (scenario.firstPhaseScenario) {
+      item.title = `No.${String(scenario.no).padStart(2, "0")} · 상담코드 ${scenario.consultationCode}\n${scenario.firstPhaseScenario}`;
+    }
     return item;
   }
 
@@ -450,7 +454,15 @@
 
   function actionButton(action) {
     const card = action.card;
-    const option = button(card ? "" : action.label, action.variant === "primary" && !card ? "action primary" : "action");
+    const partner = card?.kind === "partner";
+    const option = partner ? element("a", "action")
+      : button(card ? "" : action.label, action.variant === "primary" && !card ? "action primary" : "action");
+    if (partner) {
+      option.href = partnerBenefitsUrl + (card.id ? "#:~:text=" + encodeURIComponent(card.title) : "");
+      option.target = "_blank";
+      option.rel = "noopener noreferrer";
+      option.title = "SK매직몰 제휴카드 혜택 새 창";
+    }
     option.dataset.action = action.id;
     if (action.requiresFields && pendingField() && !/주소 검색/.test(action.label)) option.disabled = true;
     if (!card) return option;
@@ -697,13 +709,20 @@
       choices.append(list);
     }
     choices.addEventListener("click", (event) => {
-      const option = event.target.closest("button[data-action]");
+      const option = event.target.closest("[data-action]");
       const action = actions.find((item) => item.id === option?.dataset.action);
-      if (action) applyWorkflowAction(action);
+      if (!action) return;
+      if (option.tagName === "A") {
+        setTimeout(() => {
+          if (option.isConnected) applyWorkflowAction(action);
+        }, 0);
+      } else {
+        applyWorkflowAction(action);
+      }
     });
     if (choices.childElementCount) controls.append(choices);
 
-    if (flow.screen?.kind === "internal-only" || workflow) {
+    if (flow.screen?.kind === "internal-only" || workflow && flow.screen?.kind !== "closed") {
       const extras = element("div", "workflow-tools");
       if (flow.screen?.kind === "internal-only" && flow.detail) extras.append(element("p", "", flow.detail));
       if (workflow) {
@@ -825,7 +844,7 @@
     byId("secure-message").hidden = !blocked;
     byId("secure-message").querySelector("span").textContent = flow?.screen?.kind === "internal-only"
       ? "이 업무의 고객 채팅 절차는 검토 중이에요."
-      : "대화 안의 안내에 따라 계속해 주세요.";
+      : flow?.screen?.kind === "closed" ? "새 대화를 시작할 수 있어요." : "대화 안의 안내에 따라 계속해 주세요.";
     input.hidden = privateEntry;
     secureInput.hidden = !privateEntry;
     const ready = progressive && !field;

@@ -3,6 +3,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 1,
     "title": "정보변경_결제정보(출금유형/이체일) 문의",
+    "consultationCode": "75",
+    "firstPhaseScenario": "02-8_006 [챗봇] 결제(납부)정보 문의",
     "displayTitle": "결제정보 문의",
     "phase": "1차",
     "category": "결제·납부",
@@ -282,6 +284,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 2,
     "title": "수납 단순문의_구독/멤버십료 문의",
+    "consultationCode": "76",
+    "firstPhaseScenario": "02-8_007 [챗봇] 구독/멤버십료 문의",
     "displayTitle": "구독료·멤버십료 문의",
     "phase": "1차",
     "category": "결제·납부",
@@ -500,6 +504,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 3,
     "title": "정보변경_결제정보(출금유형/이체일) 변경",
+    "consultationCode": "84",
+    "firstPhaseScenario": "02-8_015 [챗봇] 결제(납부)정보 변경",
     "displayTitle": "결제정보 변경",
     "phase": "1차",
     "category": "결제·납부",
@@ -776,6 +782,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 4,
     "title": "요금 납부_렌탈료/멤버십료결제",
+    "consultationCode": "92",
+    "firstPhaseScenario": "02-8_014 [챗봇] 구독/멤버십료 결제",
     "displayTitle": "요금 납부",
     "phase": "1차",
     "category": "결제·납부",
@@ -1111,6 +1119,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 5,
     "title": "수납 단순문의_미납요금문의",
+    "consultationCode": "78",
+    "firstPhaseScenario": "02-8_008 [챗봇] 미납요금 문의",
     "displayTitle": "미납요금 문의",
     "phase": "1차",
     "category": "결제·납부",
@@ -1433,6 +1443,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 6,
     "title": "수납 단순문의_제휴카드 문의",
+    "consultationCode": "80",
+    "firstPhaseScenario": "02-8_009 [챗봇/콜봇] 제휴카드 문의",
     "displayTitle": "제휴카드 문의",
     "phase": "1차",
     "category": "결제·납부",
@@ -1587,6 +1599,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 7,
     "title": "계약기간/위약금 문의",
+    "consultationCode": "127",
+    "firstPhaseScenario": "02-8_010 [챗봇] 계약기간/위약금 문의",
     "displayTitle": "계약기간·위약금 문의",
     "phase": "1차",
     "category": "계약·해약",
@@ -1838,6 +1852,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 8,
     "title": "분리/재설치 접수_분리접수",
+    "consultationCode": "17",
+    "firstPhaseScenario": "02-8_012 [챗봇] 분리/재설치 서비스 접수",
     "displayTitle": "제품 분리 접수",
     "phase": "1차",
     "category": "배송·설치",
@@ -2133,6 +2149,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 9,
     "title": "분리/재설치 접수_재설치접수",
+    "consultationCode": "18",
+    "firstPhaseScenario": "02-8_013 [챗봇] 재설치 서비스 접수",
     "displayTitle": "제품 재설치 접수",
     "phase": "1차",
     "category": "배송·설치",
@@ -2441,6 +2459,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 10,
     "title": "명의변경 문의 / 명의변경 신청 (선납취소·면제취소 포함)",
+    "consultationCode": "108 / 109",
+    "firstPhaseScenario": "02-8_016 [챗봇] 명의변경 문의/신청",
     "displayTitle": "명의변경 문의·신청",
     "phase": "1차",
     "category": "계약·해약",
@@ -2692,6 +2712,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 11,
     "title": "고장상담_일반(기술상담)",
+    "consultationCode": "16",
+    "firstPhaseScenario": "02-8_001 [챗봇] 고장상담",
     "displayTitle": "제품 고장 상담",
     "phase": "1차",
     "category": "AS·케어",
@@ -2933,6 +2955,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 12,
     "title": "고장상담_AS접수_일반",
+    "consultationCode": "12",
+    "firstPhaseScenario": "02-8_002 [챗봇] AS 서비스 접수",
     "displayTitle": "AS 방문 접수",
     "phase": "1차",
     "category": "AS·케어",
@@ -3246,6 +3270,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 13,
     "title": "단순상담_AS 접수/일정/방문 확인",
+    "consultationCode": "1",
+    "firstPhaseScenario": "02-8_003 [챗봇/콜봇] 서비스 접수 정보 확인",
     "displayTitle": "AS 일정·방문 조회",
     "phase": "1차",
     "category": "AS·케어",
@@ -3524,6 +3550,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 14,
     "title": "AS접수 수정_접수수정",
+    "consultationCode": "9",
+    "firstPhaseScenario": "02-8_004 [챗봇] 서비스 접수 정보 수정",
     "displayTitle": "AS 접수 수정",
     "phase": "1차",
     "category": "AS·케어",
@@ -3879,6 +3907,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 15,
     "title": "AS서비스 상담/접수_접수취소",
+    "consultationCode": "10",
+    "firstPhaseScenario": "02-8_005 [챗봇/콜봇] 서비스 취소",
     "displayTitle": "AS 접수 취소",
     "phase": "1차",
     "category": "AS·케어",
@@ -4153,6 +4183,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 16,
     "title": "배송 단순문의_배송/설치일정/방문시간 문의",
+    "consultationCode": "65",
+    "firstPhaseScenario": "02-8_011 [챗봇/콜봇] 배송 설치 문의",
     "displayTitle": "배송·설치 일정 문의",
     "phase": "1차",
     "category": "배송·설치",
@@ -4413,6 +4445,8 @@ window.SKIX_SCENARIOS = [
   {
     "no": 17,
     "title": "배송 단순문의_고객정보확인/변경",
+    "consultationCode": "64",
+    "firstPhaseScenario": "02-8_017 [챗봇] 배송 설치 변경",
     "displayTitle": "배송정보 확인·변경",
     "phase": "1차",
     "category": "배송·설치",

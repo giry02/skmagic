@@ -27,6 +27,55 @@ function approvePass(chat) {
   return chat.choose("본인인증 확인");
 }
 
+test("first-phase plan identifies consultation codes and chat-and-callbot scenarios", () => {
+  const firstPhase = Array.from(SKIX_SCENARIOS).filter(({ phase }) => phase === "1차");
+  assert.equal(firstPhase.length, 17);
+  assert.deepEqual(firstPhase.filter(({ firstPhaseScenario }) => firstPhaseScenario.includes("[챗봇/콜봇]"))
+    .map(({ no }) => no), [6, 13, 15, 16]);
+  const chat = new SKIXChat(SKIX_SCENARIOS);
+  assert.equal(chat.find("상담코드 1")[0]?.no, 13);
+  assert.equal(chat.find("상담코드 109")[0]?.no, 10);
+  assert.equal(chat.find("02-8_017")[0]?.no, 17);
+  assert.equal(chat.find("1")[0]?.no, 1);
+});
+
+test("first-phase sole-proprietor phone confirmation requires a business registration number", () => {
+  const chat = begin(13);
+  const intake = chat.choose("개인사업자로 동의하고 계속");
+  assert.equal(intake.fields.find(({ label }) => label === "사업자등록번호")?.required, true);
+  const rejected = chat.choose("인증번호 받기", { 이름: "김매직", "휴대폰 번호": "010-0000-1234" });
+  assert.equal(rejected.verification, null);
+  const requested = chat.choose("인증번호 받기", {
+    이름: "김매직", "휴대폰 번호": "010-0000-1234", 사업자등록번호: "000-00-00000",
+  });
+  assert.ok(requested.verification?.code);
+  assert.ok(requested.messages.every(({ text }) => !text.includes("000-00-00000")));
+});
+
+test("first-phase counselor routing follows Seoul hours and uses a local callback preview", () => {
+  const OriginalDate = vm.runInContext("Date", sandbox);
+  let now = "2026-11-23T00:00:00.000Z";
+  sandbox.Date = class extends OriginalDate {
+    constructor(...args) {
+      super(...(args.length ? args : [now]));
+    }
+  };
+  try {
+    const open = begin(6).submit("상담사 연결");
+    assert.ok(open.actions.some(({ label }) => label === "채팅 상담 연결 요청"));
+    now = "2026-11-23T09:00:00.000Z";
+    const chat = begin(6);
+    const closed = chat.submit("상담사 연결");
+    assert.ok(closed.actions.some(({ label }) => label === "상담사 전화 예약"));
+    const callback = chat.choose("상담사 전화 예약");
+    assert.equal(callback.fields[0].label, "휴대폰 번호");
+    const result = chat.choose("전화 예약 요청", { "휴대폰 번호": "010-0000-1234" });
+    assert.match(result.messages.at(-1).text, /운영 환경/);
+  } finally {
+    delete sandbox.Date;
+  }
+});
+
 test("SMS expires at three minutes and a resend starts a new validity period", () => {
   const appDate = vm.runInContext("Date", sandbox);
   const originalNow = appDate.now;
@@ -61,6 +110,17 @@ test("SMS codes rotate on resend and do not appear in the conversation", () => {
   assert.equal(ready.verification, null);
 });
 
+test("repeated first-phase phone authentication failure offers restart or a counselor", () => {
+  const chat = begin(16);
+  const code = requestPhoneCode(chat, "010-0000-1234").verification.code;
+  const wrong = code === "100000" ? "100001" : "100000";
+  for (let attempt = 0; attempt < 5; attempt++) chat.choose("확인", { 인증번호: wrong });
+  const failed = chat.getState();
+  assert.equal(failed.screen.id, "$phoneConfirmationFailed");
+  assert.deepEqual(Array.from(failed.actions, ({ label }) => label), ["처음으로", "상담사 연결"]);
+  assert.equal(failed.verification, null);
+});
+
 test("the masked phone field does not replace the order lookup result", () => {
   for (const [phone, expected] of [
     ["01000000000", "S04"],
@@ -81,6 +141,41 @@ test("PASS uses a confirmation step and keeps the selected contract flow", () =>
   assert.equal(auth.screen.id, "$auth");
   assert.deepEqual(Array.from(auth.actions, ({ label }) => label), ["본인인증 확인", "취소"]);
   assert.equal(chat.choose("본인인증 확인").screen.id, "S02");
+});
+
+test("billing links keep the authenticated contract and require separate authorization for a new bank account", () => {
+  const openDetails = () => {
+    const chat = begin(1);
+    approvePass(chat);
+    chat.choose("직수 정수기 선택");
+    chat.choose("결제정보 상세 조회");
+    return chat;
+  };
+
+  const change = openDetails();
+  assert.equal(change.choose("결제정보 변경").screen.id, "ordinaryPaymentDetails");
+  change.choose("결제정보 변경");
+  change.choose("결제정보 변경 진행");
+  change.choose("은행 계좌");
+  const signature = change.choose("PASS 전자서명", { 은행: "KB국민은행", 계좌번호: "000000001234", 생년월일: "900101" });
+  assert.equal(signature.screen.id, "$auth");
+  assert.ok(signature.actions.some(({ label }) => label === "전자서명 확인"));
+
+  const penalty = openDetails();
+  assert.equal(penalty.choose("위약금 문의").fields[0].label, "해약접수 예정일");
+  assert.equal(penalty.choose("위약금 조회", { "해약접수 예정일": "" }).screen.id, "S06");
+});
+
+test("first-phase chat closing is distinct from asking another question", () => {
+  const chat = begin(6);
+  chat.choose("제휴카드 보기");
+  chat.choose(chat.getState().actions.find(({ card }) => card?.kind === "partner").id);
+  chat.choose("혜택 상세 보기");
+  chat.choose("계속하기");
+  const finished = chat.choose("상담 종료");
+  assert.equal(finished.screen.kind, "closed");
+  assert.equal(finished.actions.length, 0);
+  assert.equal(finished.inputDisabled, true);
 });
 
 test("paying arrears with or without this month's charge shows the selected amount", () => {
@@ -133,7 +228,9 @@ test("fault diagnosis opens symptom choices after product selection and continue
   const code = requestPhoneCode(chat, "010-0000-1234").verification.code;
   chat.choose("확인", { 인증번호: code });
   chat.choose("등록된 방문 주소");
-  const dates = chat.choose("가능한 날짜 확인", { "휴대폰 번호": "010-0000-1234" });
+  const address = chat.getState().fields.find(({ label }) => /휴대폰 번호/.test(label));
+  assert.ok(address);
+  const dates = chat.choose("예약 가능일자 확인", { [address.label]: "010-0000-1234" });
   const candidate = dates.actions.find(({ label }) => /\d+월\s*\d+일\s*\([월화수목금토일]\) 선택/u.test(label));
   assert.ok(candidate, "expected an available visit date");
   chat.choose(candidate.id);
@@ -240,21 +337,20 @@ test("giro documents use contract-holder phone verification without corporate in
 
 test("ownership transfer keeps the sole-proprietor registration field", () => {
   const chat = begin(10);
-  chat.choose("PASS 본인인증");
-  chat.choose("본인인증 확인");
   chat.choose("명의변경 신청");
+  approvePass(chat);
   const customerTypes = chat.choose("직수 정수기 선택");
-  assert.deepEqual(Array.from(customerTypes.actions, ({ label }) => label), ["개인", "개인사업자", "귀화·등록번호 정정 등"]);
+  assert.deepEqual(Array.from(customerTypes.actions, ({ label }) => label), ["개인", "개인사업자", "귀화", "주민등록번호 정정"]);
 
   const business = chat.choose("개인사업자");
   assert.equal(business.fields.find(({ label }) => label === "사업자등록번호")?.required, true);
-  const result = chat.choose("신청 접수", {
+  const pending = chat.choose("확인", {
     이름: "김매직",
     "휴대폰 번호": "010-0000-1234",
-    생년월일: "900101",
     사업자등록번호: "000-00-00000",
   });
-  assert.equal(result.screen.id, "S08");
+  assert.equal(pending.screen.id, "transfereeConsent");
+  assert.equal(chat.choose("동의하고 신청하기").screen.id, "S08");
 });
 
 test("a sole proprietor can group giro notices by contract", () => {
