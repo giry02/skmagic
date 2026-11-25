@@ -14,17 +14,31 @@
   const senderChannels = [['알림톡', '$delivery'], ['이메일', '$delivery'], ['팩스', '$delivery']];
   const dateFrom = field('시작일', 'YYYY-MM-DD', '2026-11-01', 'date');
   const dateTo = field('종료일', 'YYYY-MM-DD', '2026-11-25', 'date');
+  const periodForm = (message, target, fields = [dateFrom, dateTo]) => ({
+    ...form(message, fields, target), validate: { dateOrder: [[dateFrom.label, dateTo.label, true]] }
+  });
   const contractField = field('계약 또는 제품명', '예: 직수 정수기 계약', '직수 정수기');
   const lookupScope = '개인과 개인사업자 계약은 계약자 본인이 조회할 수 있어요.';
   const lookupContract = (message, target) => form(message, [contractField], target, '계약 확인');
   const resolved = (fallback, rules = []) => ({ resolve: { default: fallback, rules } });
   const contractCase = (target, code, fields = [contractField.label]) => ({ target, fields, match: '^SK-' + code + '$' });
+  const contractListCase = (target, code, label) => ({
+    target, fields: [label], match: '(?:^|,)\\s*SK-' + code + '\\s*(?:,|$)'
+  });
+  const combinedOutput = (target, label) => ({ target, fields: [label], match: '[^,\\s]+[^,]*,\\s*[^,\\s]+' });
+  const documentOutput = (message, target, format) => ({
+    ...choice(message, senderChannels),
+    items: [{ title: '출력 구분', detail: format }],
+    delivery: { target, useRegisteredNumber: false }
+  });
   const phoneCase = (target, suffix) => ({ target, fields: ['휴대폰 번호'], match: '^010-?0000-?' + suffix + '$' });
   const deferred = [['다른 문의', '$menu']];
 
   Object.assign(window.SKIX_FLOW_OVERLAYS ??= {}, {
     18: {
       screens: {
+        s3: form('연락을 받으신 휴대폰 번호와 안내 내용을 입력해 주세요.', ['phone', 'description'], 'contactLookup'),
+        contactLookup: resolved('s4', [phoneCase('s6', '0000')]),
         s4: { actions: [['관계가 있어요', 's5'], ['관계가 없어요', 'alternateNumber']] },
         s5: { actions: [['배송·설치 확인', '@16'], ['계약·위약금 확인', '@7'], ['AS 접수 확인', '@13']] },
         alternateNumber: resolved('s7', [phoneCase('replaceNumber', '0002')]),
@@ -34,18 +48,26 @@
     19: {
       entry: 'documentIdentity',
       screens: {
-        documentIdentity: auth(lookupScope + ' 문서 발송에 앞서 고객 정보를 확인해 주세요.', 's1', 's5'),
+        documentIdentity: auth(lookupScope + ' 문서 발송에 앞서 고객 정보를 확인해 주세요.', 'documentOwner', 's5'),
+        documentOwner: resolved('s1', [phoneCase('s5', '0000')]),
         s1: { actions: [['청구·수납 문서', 'billDocuments'], ['계약서·계약정보확인서', 'contractDocuments'], ['가상계좌확인서', 'virtualDocument']] },
         s2: { actions: [['일회 발송', 'billPeriod'], ['정기 발송일 선택', 'billMonthly']] },
         s4: { actions: senderChannels, delivery: { target: 's7', useRegisteredNumber: false } },
         s7: { items: [{ title: '발송 방법', detail: '[발송 방법]' }] },
         billDocuments: choice('어떤 청구·수납 문서가 필요하신가요?', [
           ['청구서', 's2'], ['상세 청구서', 'billPeriod'], ['완납증명서', 'billPeriod'],
-          ['수납내역서', 'billAdvance'], ['미납내역서', 'billProvisional'], ['구독계획표', 'billPeriod'],
-          ['부채증명서', 'billProvisional']
+          ['수납내역서', 'receiptFrequency'], ['미납내역서', 'billProvisionalPeriod'], ['구독계획표', 'billPeriod'],
+          ['부채증명서', 'billProvisionalPeriod']
         ]),
-        billAdvance: choice('수납내역서에 선수금을 포함할까요?', [['포함', 's2'], ['제외', 's2']]),
-        billProvisional: choice('문서에 가해약 계약을 포함할까요?', [['포함', 'billPeriod'], ['제외', 'billPeriod']]),
+        receiptFrequency: choice('수납내역서를 한 번 받으시겠어요, 정기적으로 받으시겠어요?', [
+          ['일회 발송', 'billAdvancePeriod'], ['정기 발송일 선택', 'billAdvanceMonthly']
+        ]),
+        billAdvancePeriod: periodForm('수납내역서의 조회 시작일과 종료일을 입력해 주세요.', 'billAdvance'),
+        billAdvance: choice('수납내역서에 선수금을 포함할까요?', [['포함', 'billTax'], ['제외', 'billTax']]),
+        billAdvanceMonthly: choice('정기 발송일을 선택해 주세요.', [3, 10, 20, 25].map((day) => ['매월 ' + day + '일', 'billMonthlyAdvance'])),
+        billMonthlyAdvance: choice('정기 수납내역서에 선수금을 포함할까요?', [['포함', 'billMonthlyTax'], ['제외', 'billMonthlyTax']]),
+        billProvisionalPeriod: periodForm('문서의 조회 시작일과 종료일을 입력해 주세요.', 'billProvisional'),
+        billProvisional: choice('문서에 가해약 계약을 포함할까요?', [['포함', 'billTax'], ['제외', 'billTax']]),
         billMonthly: choice('정기 발송일을 선택해 주세요.', [3, 10, 20, 25].map((day) => ['매월 ' + day + '일', 'billMonthlyTax'])),
         billMonthlyTax: choice('정기 발송 문서의 부가세 기준을 선택해 주세요.', [['건별', 'billMonthlyChannel'], ['총액', 'billMonthlyChannel']]),
         billMonthlyChannel: {
@@ -53,7 +75,7 @@
           delivery: { target: 'billMonthlySaved', useRegisteredNumber: false }
         },
         billMonthlySaved: result('요청하신 문서의 정기 발송 일정을 등록했어요.', deferred, [{ title: '발송 방법', detail: '[발송 방법]' }]),
-        billPeriod: form('일회 발송에 필요한 조회 시작일과 종료일을 입력해 주세요.', [dateFrom, dateTo], 'billTax'),
+        billPeriod: periodForm('일회 발송에 필요한 조회 시작일과 종료일을 입력해 주세요.', 'billTax'),
         billTax: choice('부가세 기준을 선택해 주세요.', [['건별', 's4'], ['총액', 's4']]),
         contractDocuments: choice('발급하실 계약 문서를 선택해 주세요.', [['구독계약서', 's3'], ['계약정보확인서', 's4']]),
         virtualDocument: lookupContract('가상계좌확인서를 받을 계약번호나 제품명을 입력해 주세요.', 'virtualDocumentStatus'),
@@ -62,24 +84,27 @@
     },
     20: {
       screens: {
-        s1: { actions: [['휴대폰 확인', '$auditSms']], auth: { success: 's2', failure: 's5' } },
+        s1: { actions: [['휴대폰 확인', '$auditSms']], auth: { success: 'terminationOwner', failure: 's5' } },
+        terminationOwner: resolved('s2', [phoneCase('s5', '0000')]),
         s2: { actions: [['계약 선택하기', 'terminationContracts']] },
         s3: { actions: [['해약 사유와 회수일 확인', 'terminationInquiryFormat']], fields: [
           field('해약 사유', '예: 제품 이용 종료', '제품 이용 종료'),
           field('희망 회수일', 'YYYY-MM-DD', '2026-11-30', 'date')
         ] },
-        s4: { message: '해약 위약금 산정내역서를 어떤 방법으로 받으실까요?', delivery: { target: 's6', useRegisteredNumber: false } },
+        s4: documentOutput('해약 위약금 산정내역서를 어떤 방법으로 받으실까요?', 's6', '개별 출력'),
         s6: { message: '해약 위약금 산정내역서를 [발송 방법]으로 보냈어요.', items: [{ title: '발송 문서', detail: '해약 위약금 산정내역서' }] },
         terminationContracts: form('조회할 계약 또는 제품을 입력해 주세요. 여러 계약은 쉼표로 나눠 적을 수 있어요.', [
           field('조회할 계약', '예: 직수 정수기, 공기청정기', '직수 정수기')
         ], 'terminationStatus'),
-        terminationStatus: resolved('s3', [contractCase('terminationFormat', '261125-021', ['조회할 계약'])]),
-        terminationFormat: resolved('s4'),
-        terminationInquiryFormat: resolved('terminationInquiryChannel'),
-        terminationInquiryChannel: {
-          ...choice('해약 위약금 문의내역서를 어떤 방법으로 받으실까요?', senderChannels),
-          delivery: { target: 'terminationInquirySent', useRegisteredNumber: false }
-        },
+        terminationStatus: resolved('s3', [
+          contractListCase('s5', '261125-000', '조회할 계약'),
+          contractListCase('terminationFormat', '261125-021', '조회할 계약')
+        ]),
+        terminationFormat: resolved('s4', [combinedOutput('terminationCombinedChannel', '조회할 계약')]),
+        terminationCombinedChannel: documentOutput('선택하신 계약의 해약 위약금 산정내역서를 한 문서로 받을 수 있어요.', 's6', '통합 출력'),
+        terminationInquiryFormat: resolved('terminationInquiryChannel', [combinedOutput('terminationInquiryCombinedChannel', '조회할 계약')]),
+        terminationInquiryChannel: documentOutput('해약 위약금 문의내역서를 어떤 방법으로 받으실까요?', 'terminationInquirySent', '개별 출력'),
+        terminationInquiryCombinedChannel: documentOutput('선택하신 계약의 해약 위약금 문의내역서를 한 문서로 받을 수 있어요.', 'terminationInquirySent', '통합 출력'),
         terminationInquirySent: result('해약 위약금 문의내역서를 [발송 방법]으로 보냈어요.', deferred, [
           { title: '발송 문서', detail: '해약 위약금 문의내역서' }
         ])
@@ -87,44 +112,63 @@
     },
     21: {
       screens: {
-        s1: { actions: [['휴대폰 확인', '$auditSms']], auth: { success: 'returnContractLookup', failure: 's5' } },
-        s2: { delivery: { target: 's6', useRegisteredNumber: false } },
+        s1: { actions: [['휴대폰 확인', '$auditSms']], auth: { success: 'terminationConfirmationOwner', failure: 's5' } },
+        terminationConfirmationOwner: resolved('returnContractLookup', [phoneCase('s5', '0000')]),
+        s2: documentOutput('해약이 확정되어 확인서를 받을 수 있어요. 어떤 방법으로 보내드릴까요?', 's6', '개별 출력'),
         s3: { actions: [['확정 상태 재확인 상담', '$handoff']] },
         s4: { addActions: [['회수 일정 확인', '@36']] },
-        returnContractLookup: lookupContract('해약확인서를 받을 계약번호나 제품명을 입력해 주세요.', 'returnStatus'),
-        returnStatus: resolved('s2', [contractCase('s3', '261125-022'), contractCase('s4', '261125-023')])
+        returnContractLookup: lookupContract('해약확인서를 받을 계약번호나 제품명을 입력해 주세요. 여러 계약은 쉼표로 나눠 적어 주세요.', 'returnStatus'),
+        returnStatus: resolved('s2', [
+          contractListCase('s5', '261125-000', contractField.label),
+          contractListCase('s4', '261125-023', contractField.label),
+          contractListCase('s3', '261125-022', contractField.label),
+          combinedOutput('returnCombinedChannel', contractField.label)
+        ]),
+        returnCombinedChannel: documentOutput('선택하신 계약의 해약확인서를 한 문서로 받을 수 있어요.', 's6', '통합 출력')
       }
     },
     22: {
       screens: {
         s1: { actions: [['계약 제품', 'serviceIdentity'], ['일반 서비스', 's2']] },
-        s2: { fields: ['name', 'phone', 'address'] },
+        s2: form('서비스를 신청하실 때 사용한 휴대폰 번호, 성함, 주소를 입력해 주세요.', ['phone', 'name', 'address'], 'serviceRecordLookup'),
         s3: { actions: [['일반 AS', 'servicePeriod'], ['재설치', 'servicePeriod'], ['분리', 'servicePeriod'], ['필터 서비스', 'servicePeriod']] },
         s4: { delivery: { target: 's6', useRegisteredNumber: false } },
         s6: { items: [{ title: '발송 방법', detail: '[발송 방법]' }] },
-        serviceIdentity: auth(lookupScope + ' 계약을 확인해 주세요.', 's3', 's5'),
-        servicePeriod: form('서비스를 받은 제품과 처리기간을 입력해 주세요.', ['product', dateFrom, dateTo], 's4')
+        serviceIdentity: auth(lookupScope + ' 계약을 확인해 주세요.', 'serviceRecordLookup', 's5'),
+        serviceRecordLookup: resolved('s3', [phoneCase('s5', '0000')]),
+        servicePeriod: periodForm('서비스를 받은 제품과 처리기간을 입력해 주세요.', 's4', ['product', dateFrom, dateTo])
       }
     },
     23: {
       screens: {
         s1: { actions: [['카드 결제 이력 확인', 'receiptContractLookup']] },
+        s5: { actions: [['조회 조건 변경', 'receiptPeriod'], ['계약 다시 선택', 'receiptContractLookup']] },
         receiptContractLookup: lookupContract('영수증을 받을 계약번호나 제품명을 입력해 주세요.', 'receiptAuth'),
-        receiptAuth: auth('카드 결제 이력 조회를 위해 휴대폰으로 본인을 확인해 주세요.', 'receiptLookupStatus', 's6'),
-        receiptLookupStatus: resolved('$receiptPicker', [contractCase('s5', '261125-024')])
+        receiptAuth: auth('카드 결제 이력 조회를 위해 휴대폰으로 본인을 확인해 주세요.', 'receiptOwner', 's6'),
+        receiptOwner: resolved('receiptPeriod', [phoneCase('s6', '0000'), contractCase('s6', '261125-000')]),
+        receiptPeriod: form('카드로 결제하신 달을 입력해 주세요.', [
+          field('결제 월', 'YYYY-MM', '2026-11')
+        ], 'receiptLookupStatus'),
+        receiptLookupStatus: resolved('s5', [
+          contractCase('s5', '261125-024'),
+          { target: '$receiptPicker', fields: ['결제 월'], match: '^(?:2026\\s*[-./년]\\s*)?11\\s*월?$' }
+        ])
       }
     },
     24: {
       entry: 'giroIdentity',
       screens: {
-        giroIdentity: auth('지로 고지서와 가상계좌 문서는 계약자 본인 확인 후 조회할 수 있어요.', 's1', 's8'),
-        s1: { actions: [['지로 발송 내역', 's3'], ['지로 고지서 다시 받기', 'giroEligible'], ['가상계좌확인서 받기', 'fixedAccountState']] },
+        giroIdentity: auth('지로 고지서와 가상계좌 문서는 계약자 본인 확인 후 조회할 수 있어요.', 'giroOwner', 's8'),
+        giroOwner: resolved('s1', [phoneCase('s8', '0000')]),
+        s1: { actions: [['지로 발송 내역', 'giroHistory'], ['지로 고지서 다시 받기', 'giroEligible'], ['가상계좌확인서 받기', 'fixedAccountState']] },
         s4: { delivery: { target: 's5', useRegisteredNumber: false } },
         s7: { actions: [['납부 방법 확인', '@5'], ['여기서 마치기', '$finish']] },
+        giroHistory: lookupContract('지로 발송 내역을 확인할 계약번호나 제품명을 입력해 주세요.', 'giroHistoryStatus'),
+        giroHistoryStatus: resolved('s3', [contractCase('s8', '261125-025'), contractCase('s8', '261125-000')]),
         giroEligible: lookupContract('고지서를 받을 계약번호나 제품명을 입력해 주세요.', 'giroEligibleStatus'),
-        giroEligibleStatus: resolved('s4', [contractCase('s8', '261125-025')]),
+        giroEligibleStatus: resolved('s4', [contractCase('s8', '261125-025'), contractCase('s8', '261125-000')]),
         fixedAccountState: lookupContract('가상계좌확인서를 받을 계약번호나 제품명을 입력해 주세요.', 'fixedAccountStatus'),
-        fixedAccountStatus: resolved('fixedAccountChannel', [contractCase('s7', '261125-058')]),
+        fixedAccountStatus: resolved('fixedAccountChannel', [contractCase('s8', '261125-000'), contractCase('s7', '261125-058')]),
         fixedAccountChannel: {
           ...choice('기존 고정형 가상계좌확인서를 어떤 방법으로 받으실까요?', senderChannels),
           delivery: { target: 's6', useRegisteredNumber: false }
@@ -133,12 +177,13 @@
     },
     25: {
       screens: {
-        s1: {
-          message: '지로 고지서를 합치거나 나누려면 계약자 본인의 계약을 확인해 주세요.',
-          actions: [['계약 확인', 'giroGroupContract']]
-        },
+        s1: auth('지로 고지서를 합치거나 나누기 전에 계약자 본인을 확인해 주세요.', 'giroGroupOwner', 'giroGroupDenied'),
+        giroGroupOwner: resolved('giroGroupContract', [phoneCase('giroGroupDenied', '0000')]),
         giroGroupContract: lookupContract('지로 고지서 설정을 확인할 계약번호나 제품명을 입력해 주세요.', 'giroGroupEligibility'),
-        giroGroupEligibility: resolved('s2', [contractCase('s3', '261125-025')]),
+        giroGroupEligibility: resolved('s2', [contractCase('s3', '261125-025'), contractCase('giroGroupDenied', '261125-000')]),
+        giroGroupDenied: exception('계약자 본인이나 계약 정보를 확인하지 못했어요. 등록하신 정보로 다시 확인해 주세요.', [
+          ['다시 확인하기', 's1'], ['다른 문의', '$menu']
+        ]),
         s2: { actions: [['한 장으로 받기', 'giroGroup'], ['계약별로 나눠 받기', 'giroSplit']] },
         s5: { actions: [['우편', 's6'], ['이메일', 's6']] },
         giroGroup: resolved('giroMergeContracts'),
@@ -160,7 +205,8 @@
     },
     26: {
       screens: {
-        s1: { actions: [['휴대폰 확인', '$auditSms']], auth: { success: 's2', failure: 's6' } },
+        s1: { actions: [['휴대폰 확인', '$auditSms']], auth: { success: 'mergeIdentity', failure: 's6' } },
+        mergeIdentity: resolved('s2', [phoneCase('s6', '0000')]),
         s2: { actions: [['계약 선택하기', 'mergeContracts']] },
         s3: { actions: [['계속하기', 's5'], ['여기서 마치기', '$finish']] },
         s4: { actions: [['결제정보 변경', '@3'], ['계약 다시 선택', 'mergeContracts']] },
@@ -174,6 +220,7 @@
           validate: { oneOf: { field: '대표 계약', sources: ['첫 번째 계약', '두 번째 계약'] } }
         },
         mergeState: resolved('s5', [
+          contractCase('s6', '261125-000', ['첫 번째 계약', '두 번째 계약']),
           contractCase('s3', '261125-026', ['첫 번째 계약', '두 번째 계약']),
           contractCase('s4', '261125-027', ['첫 번째 계약', '두 번째 계약']),
           contractCase('E7', '261125-028', ['첫 번째 계약', '두 번째 계약'])
@@ -182,7 +229,8 @@
     },
     27: {
       screens: {
-        s1: { actions: [['휴대폰 확인', '$auditSms']], auth: { success: 'splitLookup', failure: 's7' } },
+        s1: auth('묶인 결제를 분리하려면 계약자 본인 또는 계약에 등록된 납부자 정보를 확인해 주세요.', 'splitIdentity', 's7'),
+        splitIdentity: resolved('splitLookup', [phoneCase('s7', '0000')]),
         splitLookup: lookupContract('분리할 결제 묶음의 대표 계약번호나 제품명을 입력해 주세요.', 'splitStatus'),
         s2: { actions: [['모든 계약을 나누기', 'splitRepresentative'], ['일부 계약만 나누기', 's4']] },
         s4: { actions: [['분리할 계약 선택', 'splitSelection']] },
@@ -237,6 +285,7 @@
         filterIdentity: auth('필터는 계약자 또는 제품 사용자에게 안내할 수 있어요. 고객 정보를 확인해 주세요.', 'filterIssue', 's8'),
         filterIssue: choice('필터 배송에서 무엇을 확인할까요?', [
           ['다음 배송 예정일', 's2'], ['배송 완료인데 미수령', 's3'], ['필터가 파손됐거나 다른 필터가 왔어요', 's4'],
+          ['이사 전 주소에 배송됐어요', 'filterChangedAddress'],
           ['다음 배송 주소만 변경', 'filterAddressOnly']
         ]),
         filterChangedAddress: form('필터를 다시 받을 주소를 입력해 주세요.', ['address'], 's5', '재발송 요청'),
@@ -249,9 +298,9 @@
         s1: { actions: [['휴대폰 확인', '$auditSms']], auth: { success: 'careLookup', failure: 's7' } },
         careLookup: lookupContract('방문 일정을 확인할 계약번호나 제품명을 입력해 주세요.', 'careStatus'),
         s2: { actions: [['방문 날짜 변경·미리 점검', 's5'], ['방문 담당자 연락 요청', 's5'], ['연락처 변경', 's6'], ['주소 변경', 'careAddress']] },
-        s4: { actions: [['요금 납부 안내', 'E7'], ['나중에 확인', '$finish']] },
+        s4: { message: '연체가 3회 이상이면 미납 요금을 납부하신 뒤 안심OK 방문을 요청할 수 있어요. 납부 방법을 안내해 드릴까요?', actions: [['요금 납부 안내', 'E7'], ['나중에 확인', '$finish']] },
         s5: { actions: [['관할 지국 연락 요청', 'careRequested'], ['상담사 연결', 'E8']] },
-        careStatus: resolved('s2', [contractCase('s3', '261125-030'), contractCase('s4', '261125-031')]),
+        careStatus: resolved('s2', [contractCase('s7', '261125-000'), contractCase('s3', '261125-030'), contractCase('s4', '261125-031')]),
         careAddress: form('바꿀 케어 서비스 주소를 입력해 주세요.', ['address'], 'careAddressSaved', '주소 변경'),
         careAddressSaved: result('케어 서비스 주소를 변경했어요.', [['다음 방문 일정 확인', 's2'], ['여기서 마치기', '$finish']]),
         careRequested: result('방문 및 연락 요청 내용을 확인했어요. 관할 지국에서 조율하는 업무예요.', deferred)
@@ -296,7 +345,7 @@
     },
     34: {
       screens: {
-        s2: { fields: ['phone', 'name', 'address'], actions: [['접수 조회', 'visitLookup']] },
+        s2: form('서비스를 받으실 분의 연락처를 입력해 주세요.', ['phone'], 'visitLookup', '접수 조회'),
         s3: { fields: ['name', 'address'], actions: [['맞는 접수 확인', 's4']] },
         s6: { message: '방문 전 별도 연락 요청 내용을 확인했어요. 연락 시간은 담당 매니저가 확인해요.' },
         visitLookup: resolved('s4', [phoneCase('s3', '0002'), phoneCase('visitNotFound', '0000')]),
@@ -311,7 +360,13 @@
         s3: { message: '직수 정수기 기준 기본 비용이에요. 적용 비용은 해당 제품과 판매유형, 계약 상태에 따라 달라요.', addActions: [['서비스 비용 적용 기준 보기', 'servicePricing']] },
         s5: { message: 'AS 비용은 보증·계약 상태와 고장 원인에 따라 달라요. 부품이 필요한 경우 방문 점검 후 정확한 비용을 안내받을 수 있어요.', addActions: [['서비스 비용 적용 기준 보기', 'servicePricing']] },
         serviceSaleType: choice('제품의 판매 또는 이용 유형을 알려 주세요.', [
-          ['구독·멤버십 제품', '$costResult'], ['일시불 구매 제품', '$costResult'], ['판매 유형을 모르겠어요', '$costResult']
+          ['구독·멤버십 제품', 'serviceCostLookup'], ['일시불 구매 제품', 'serviceCostUnconfirmed'], ['판매 유형을 모르겠어요', 'serviceCostUnconfirmed']
+        ]),
+        serviceCostLookup: resolved('serviceCostUnconfirmed', [
+          { target: '$costResult', fields: ['제품명 또는 모델명'], match: '^(직수\\s*정수기|정수기|WPU-1000)$' }
+        ]),
+        serviceCostUnconfirmed: result('비용은 모델, 판매 유형과 계약 상태에 따라 달라요. 정확한 금액은 해당 제품과 서비스 내역을 확인한 뒤 안내할 수 있어요.', [
+          ['상담에서 비용 확인', '$handoff'], ['다른 제품 확인', 's2']
         ]),
         servicePricing: result('이전설치 비용은 제품과 판매유형, 계약 상태에 따라 달라요. AS는 보증 여부와 방문·수리 내용에 따라 달라요. 접수 시 적용 비용을 확인할 수 있어요.', [
           ['서비스 접수 안내', 's7'], ['비용 안내로 마치기', '$finish']
@@ -320,6 +375,9 @@
     },
     36: {
       screens: {
+        s1: { actions: [['제품 회수', 'returnIdentity'], ['제품 설치', '@16']] },
+        returnIdentity: auth('제품 회수 일정은 계약자 본인 확인 후 안내할 수 있어요.', 'returnOwner', 'returnNotFound'),
+        returnOwner: resolved('s2', [phoneCase('returnNotFound', '0000')]),
         s2: { fields: [contractField], actions: [['회수 계약 조회', 'returnContractState']] },
         s3: { addActions: [['납부 방법 확인', '@4'], ['다른 문의', '$menu']] },
         s5: { actions: [['회수일 변경', 'returnDateCheck'], ['방문 담당자에게 전달', 'returnNote'], ['일정만 확인', '$finish']] },
@@ -327,7 +385,13 @@
         s8: { message: '방문 담당자에게 전달할 요청 내용을 확인했어요. 일정 변경 가능 여부는 방문 담당자가 확인해요.' },
         returnContractState: resolved('s4', [contractCase('s3', '261125-036'), contractCase('returnNotFound', '261125-000')]),
         returnNotFound: handoff('제품 회수 계약과 일정은 담당 상담사가 확인할 수 있어요.'),
-        returnDateCheck: resolved('s6', [contractCase('returnNote', '261125-037'), contractCase('returnNote', '261125-038')]),
+        returnDateCheck: resolved('s6', [contractCase('returnToday', '261125-037'), contractCase('returnUnavailable', '261125-038')]),
+        returnToday: handoff('회수 당일에는 여기서 날짜를 바꾸기 어려워요. 방문 담당자에게 요청을 전달할 수 있어요.', [
+          ['방문 담당자에게 전달', 'returnNote'], ['현재 일정 유지', 's5']
+        ]),
+        returnUnavailable: handoff('선택할 수 있는 회수 일정이 확인되지 않아요. 방문 담당자에게 요청을 전달할 수 있어요.', [
+          ['방문 담당자에게 전달', 'returnNote'], ['현재 일정 유지', 's5']
+        ]),
         returnNote: form('방문 담당자에게 전달할 요청을 입력해 주세요.', ['description'], 's8', '전달 요청'),
         returnLaterSaved: result('회수 요청일을 12월 3일(목)로 변경했어요.', deferred, [{ title: '회수 요청일', detail: '12월 3일(목)' }])
       }

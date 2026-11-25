@@ -44,7 +44,7 @@
   const recordPickers = new Map([
     [["1:S02", "2:S02", "3:changeContract", "4:chargeContract", "5:arrearsContract", "7:S02", "7:S04", "10:S03"], ["contract", "계약 선택"]],
     [["13:S02", "14:S01", "15:S02"], ["appointment", "방문 접수 선택"]],
-    [["16:S02", "17:S02", "38:orderSelect"], ["order", "배송·설치 주문 선택"]],
+    [["16:S02", "17:S02", "38:orderSelect", "46:virtualRefundOrder", "46:cardRefundOrder"], ["order", "배송·설치 주문 선택"]],
   ].flatMap(([keys, picker]) => keys.map((key) => [key, picker])));
   const documentPickers = new Set([
     "19:s1", "19:billDocuments", "19:contractDocuments", "23:s2", "24:s1", "37:s1", "45:prepaidDocuments",
@@ -56,6 +56,7 @@
   const pickerIcons = {
     "service-symptom": "tool", product: "bag", contract: "folder", appointment: "tool", order: "truck",
     address: "truck", date: "calendar", channel: "chat", document: "file", term: "file", consent: "lock",
+    payment: "wallet",
   };
   const openCategories = new Set();
   let allCatalogItems = false;
@@ -400,7 +401,8 @@
       notice.setAttribute("aria-label", "인증 문자");
       const number = element("strong", "verification-code", code);
       number.setAttribute("data-verification-code", "");
-      notice.append(element("span", "verification-sender", "SK매직 인증 문자"), number);
+      notice.append(element("span", "verification-sender", "SK매직 인증 문자"), number,
+        element("span", "verification-sender", "유효 시간 3분"));
       const sms = button("인증 문자 확인");
       sms.setAttribute("aria-controls", notice.id);
       const sync = () => {
@@ -583,6 +585,18 @@
     if (documentPickers.has(screenKey)) return picker("document", "문서 선택", actions, ({ label }) => ({
       kind: "document", title: label,
     }));
+    if (screenKey === "45:prepaidPaymentMethods") {
+      const kinds = { 카드: "credit", "실시간 계좌이체": "transfer", 가상계좌: "virtual" };
+      return picker("payment", "선납 결제수단 선택", actions, ({ label }) => ({ kind: kinds[label], title: label }));
+    }
+    if (screenKey === "4:paymentScope") {
+      const options = actions.filter(({ label }) => items.some(({ title }) => title === label));
+      return picker("payment", "납부 범위 선택", options, ({ label }) => {
+        const item = items.find(({ title }) => title === label);
+        used.add(item);
+        return { kind: "payment", title: label, detail: item.detail };
+      });
+    }
     if (screenKey === "8:addressOptions" || screenKey === "12:serviceCases") {
       const address = items.find(({ title }) => title === "등록 주소");
       if (address) used.add(address);

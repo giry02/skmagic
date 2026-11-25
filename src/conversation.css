@@ -703,6 +703,7 @@ p, h1, h2, h3 { margin: 0; }
   font-size: 13px;
 }
 .verification-sender { color: var(--quiet); }
+.verification-message { flex-wrap: wrap; }
 .verification-code { font-variant-numeric: tabular-nums; letter-spacing: .13em; }
 .pass-request { margin-bottom: 8px; }
 .pass-mark {

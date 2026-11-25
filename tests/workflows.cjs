@@ -22,6 +22,30 @@ function requestPhoneCode(chat, phone) {
   return chat.choose("인증번호 받기", { 이름: "김매직", "휴대폰 번호": phone });
 }
 
+function approvePass(chat) {
+  chat.choose("PASS 본인인증");
+  return chat.choose("본인인증 확인");
+}
+
+test("SMS expires at three minutes and a resend starts a new validity period", () => {
+  const appDate = vm.runInContext("Date", sandbox);
+  const originalNow = appDate.now;
+  let time = originalNow();
+  appDate.now = () => time;
+  try {
+    const chat = begin(16);
+    const code = requestPhoneCode(chat, "010-0000-1234").verification.code;
+    time += 180_000;
+    const expired = chat.choose("확인", { 인증번호: code });
+    assert.match(expired.fields.find(({ label }) => label === "인증번호")?.error, /유효 시간/);
+    const replacement = chat.choose("인증번호 재전송").verification.code;
+    assert.notEqual(replacement, code);
+    assert.equal(chat.choose("확인", { 인증번호: replacement }).screen.id, "S02");
+  } finally {
+    appDate.now = originalNow;
+  }
+});
+
 test("SMS codes rotate on resend and do not appear in the conversation", () => {
   const chat = begin(16);
   const first = requestPhoneCode(chat, "010-0000-1234").verification.code;
@@ -57,6 +81,16 @@ test("PASS uses a confirmation step and keeps the selected contract flow", () =>
   assert.equal(auth.screen.id, "$auth");
   assert.deepEqual(Array.from(auth.actions, ({ label }) => label), ["본인인증 확인", "취소"]);
   assert.equal(chat.choose("본인인증 확인").screen.id, "S02");
+});
+
+test("paying arrears with or without this month's charge shows the selected amount", () => {
+  for (const [option, expected] of [["미납요금만 납부", /59,700원/], ["미납요금과 당월 요금 납부", /79,600원/]]) {
+    const chat = begin(4);
+    approvePass(chat);
+    chat.choose("공기청정기 선택");
+    const payment = chat.choose(option);
+    assert.match(payment.messages.at(-1).items.find(({ title }) => title === "납부 금액")?.detail, expected);
+  }
 });
 
 test("fault diagnosis opens symptom choices after product selection and continues to visit intake", () => {
@@ -99,8 +133,10 @@ test("fault diagnosis opens symptom choices after product selection and continue
   const code = requestPhoneCode(chat, "010-0000-1234").verification.code;
   chat.choose("확인", { 인증번호: code });
   chat.choose("등록된 방문 주소");
-  chat.choose("가능한 날짜 확인", { "휴대폰 번호": "010-0000-1234" });
-  chat.choose("11월 27일(금) 선택");
+  const dates = chat.choose("가능한 날짜 확인", { "휴대폰 번호": "010-0000-1234" });
+  const candidate = dates.actions.find(({ label }) => /\d+월\s*\d+일\s*\([월화수목금토일]\) 선택/u.test(label));
+  assert.ok(candidate, "expected an available visit date");
+  chat.choose(candidate.id);
   const booking = chat.choose("접수 요청");
   assert.equal(booking.screen.id, "S06");
   const details = booking.messages.at(-1).items;
@@ -120,6 +156,18 @@ test("visit intake routes a staged leak symptom to assistance before asking for 
   assert.equal(urgent.fields.length, 0);
   assert.equal(urgent.verification, null);
   assert.ok(urgent.actions.some(({ label }) => label === "상담사 연결"));
+});
+
+test("an authenticated AS lookup carries the selected appointment into editing", () => {
+  const chat = begin(13);
+  const code = requestPhoneCode(chat, "010-0000-1234").verification.code;
+  chat.choose("확인", { 인증번호: code });
+  chat.choose("비데 재설치 접수 선택");
+  const edit = chat.choose("접수내용 변경");
+  assert.equal(edit.scenario.no, 14);
+  assert.equal(edit.screen.id, "S02");
+  assert.equal(edit.verification, null);
+  assert.equal(chat.choose("방문주소").screen.id, "S07");
 });
 
 test("an unlisted bidet uses the documented nozzle symptom stages", () => {
@@ -212,6 +260,9 @@ test("ownership transfer keeps the sole-proprietor registration field", () => {
 test("a sole proprietor can group giro notices by contract", () => {
   const chat = new SKIXChat(SKIX_SCENARIOS);
   assert.equal(chat.submit("개인사업자 지로 고지서 합치기").scenario?.no, 25);
+  chat.choose("휴대폰 확인");
+  const code = requestPhoneCode(chat, "010-0000-1234").verification.code;
+  chat.choose("확인", { 인증번호: code });
   chat.choose("계약 확인");
   chat.choose("계약 확인", { "계약 또는 제품명": "직수 정수기" });
   chat.choose("한 장으로 받기");
@@ -235,16 +286,105 @@ test("subscription consultation retains signup and replacement without corporate
 });
 
 test("a sole proprietor can still request a business registration document", () => {
+  const denied = begin(37);
+  denied.choose("사업자등록증");
+  assert.equal(denied.choose("계약자 아님").screen.id, "s4");
+  assert.equal(denied.getState().fields.length, 0);
+
   const chat = begin(37);
-  chat.choose("사업자등록증");
-  const authority = chat.choose("계약 확인", { "계약 또는 제품명": "직수 정수기" });
+  const authority = chat.choose("사업자등록증");
   assert.deepEqual(Array.from(authority.actions, ({ label }) => label), ["계약자 본인", "계약자 아님"]);
 
   chat.choose("계약자 본인");
+  chat.choose("계약 확인", { "계약 또는 제품명": "직수 정수기" });
   chat.choose("한 번 받기");
   chat.choose("이메일");
   const result = chat.choose("발송 요청", { "이메일 주소": "solo@example.com" });
   assert.equal(result.screen.id, "s8");
   assert.match(result.messages.at(-1).text, /사업자등록증.*발송/);
   assert.ok(result.messages.every(({ text }) => !text.includes("solo@example.com")));
+});
+
+test("installation cancellation verifies the selected order and keeps a dispatch handoff pending", () => {
+  const chat = begin(38);
+  chat.choose("주문 확인");
+  const orders = chat.choose("주문 조회", { 이름: "김매직", "휴대폰 번호": "010-0000-1234", 주소: "서울 영등포구 문래동" });
+  assert.equal(orders.screen.id, "orderSelect");
+
+  const dispatched = chat.choose("비데 · 출고 준비");
+  assert.equal(dispatched.screen.id, "dispatchOrder");
+  assert.match(dispatched.messages.at(-1).items.find(({ title }) => title === "주문번호")?.detail, /003$/);
+  chat.choose("이 주문이 맞아요");
+  chat.choose("담당자에게 취소 요청");
+  const requested = chat.choose("취소 요청 전달", { "취소 사유": "일정 변경" });
+  assert.equal(requested.screen.id, "orderHandoff");
+  assert.ok(requested.actions.every(({ label }) => !label.includes("환불")));
+});
+
+test("school-fee exemption and deposit carry-over follow the contract and customer agreement", () => {
+  const chat = begin(39);
+  chat.choose("이번 달 납부 결과");
+  chat.choose("계약 확인", { "계약 또는 제품명": "SK-261125-043" });
+  assert.equal(approvePass(chat).screen.id, "schoolWaiver");
+
+  const deposit = begin(39);
+  deposit.choose("이중 결제·가상계좌 입금");
+  deposit.choose("계약 확인", { "계약 또는 제품명": "SK-261125-044" });
+  approvePass(deposit);
+  const carry = deposit.choose("가상계좌 입금 처리 확인");
+  assert.equal(carry.screen.id, "depositCarry");
+  assert.equal(deposit.choose("환불 문의").scenario.no, 47);
+});
+
+test("a typed appliance determines whether a cooking-water valve is offered", () => {
+  for (const [product, expected] of [["식기세척기", "s7"], ["직수 정수기", "valveChoice"]]) {
+    const chat = begin(44);
+    chat.choose("재설치 방문");
+    chat.choose("설치 환경 확인", { "제품명 또는 모델명": product, "설치 장소": "싱크대 옆" });
+    chat.choose("계속하기");
+    chat.choose("재설치 방문 접수");
+    const state = chat.choose("재설치 방문 정보 확인", {
+      주소: "서울 영등포구 문래동", "희망 날짜": "2026-12-03", "휴대폰 번호": "010-0000-1234",
+    });
+    assert.equal(state.screen.id, expected, product);
+  }
+});
+
+test("prepayment documents check contract and payment status before offering a receipt", () => {
+  for (const [contract, expected] of [["SK-261125-000", "s2"], ["SK-261125-059", "s6"], ["직수 정수기", "prepaidReceipt"]]) {
+    const chat = begin(45);
+    chat.choose("선납 견적서·영수증");
+    chat.choose("선납 상태 확인", { "계약 또는 제품명": contract });
+    const verified = approvePass(chat);
+    const outcome = verified.screen.id === "prepaidDocuments" ? chat.choose("선납 영수증") : verified;
+    assert.equal(outcome.screen.id, expected);
+    if (expected === "prepaidReceipt") assert.ok(outcome.actions.some(({ label }) => label === "팩스"));
+  }
+});
+
+test("regular document sending accepts only an offered monthly date", () => {
+  const chat = begin(37);
+  chat.choose("사업자등록증");
+  chat.choose("계약자 본인");
+  chat.choose("계약 확인", { "계약 또는 제품명": "직수 정수기" });
+  chat.choose("매월 받기");
+  const invalid = chat.choose("이 날짜로 계속", { "정기 발송일": "1일" });
+  assert.equal(invalid.screen.id, "s6");
+  assert.match(invalid.fields[0].error, /12일/);
+  assert.equal(chat.choose("이 날짜로 계속", { "정기 발송일": "매월 말일" }).screen.id, "s7");
+});
+
+test("cash-receipt shipment and retroactive issuance check approval and payment eligibility", () => {
+  for (const [request, contract, expected] of [
+    ["발행 여부 확인", "직수 정수기", "receiptApproved"],
+    ["영수증 받기", "직수 정수기", "s5"],
+    ["영수증 받기", "SK-261125-050", "receiptPendingApproval"],
+    ["전월분 소급 발행", "SK-261125-049", "taxReceiptConflict"],
+    ["전월분 소급 발행", "SK-261125-051", "s3"],
+  ]) {
+    const chat = begin(48);
+    chat.choose(request);
+    chat.choose("계약 확인", { "계약 또는 제품명": contract });
+    assert.equal(approvePass(chat).screen.id, expected, request);
+  }
 });
