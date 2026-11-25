@@ -15,7 +15,7 @@
   const dateFrom = field('시작일', 'YYYY-MM-DD', '2026-11-01', 'date');
   const dateTo = field('종료일', 'YYYY-MM-DD', '2026-11-25', 'date');
   const contractField = field('계약 또는 제품명', '예: 직수 정수기 계약', '직수 정수기');
-  const lookupScope = '계약자 본인이나 확인 권한이 있는 법인 담당자가 조회할 수 있어요.';
+  const lookupScope = '개인과 개인사업자 계약은 계약자 본인이 조회할 수 있어요.';
   const lookupContract = (message, target) => form(message, [contractField], target, '계약 확인');
   const resolved = (fallback, rules = []) => ({ resolve: { default: fallback, rules } });
   const contractCase = (target, code, fields = [contractField.label]) => ({ target, fields, match: '^SK-' + code + '$' });
@@ -117,19 +117,8 @@
     24: {
       entry: 'giroIdentity',
       screens: {
-        giroIdentity: choice('지로·가상계좌 문서를 확인할 계약 유형을 선택해 주세요.', [
-          ['계약자 휴대폰 확인', 'giroPhone'], ['법인 담당자', 'companyLookup'], ['확인 권한 없음', 's8']
-        ]),
-        giroPhone: auth(lookupScope, 's1', 's8'),
-        companyLookup: form('새봄법인과 담당자 정보를 입력해 주세요.', [
-          field('회사명', '예: 새봄법인', '새봄법인'),
-          field('사업자번호', '예: 000-00-00000', '000-00-00000'),
-          field('담당 부서', '예: 고객지원팀', '고객지원팀'),
-          field('담당자 성함', '예: 김매직', '김매직')
-        ], 'companyLookupResult'),
-        companyLookupResult: resolved('s1', [{ target: 's2', fields: ['사업자번호'], match: '^000-?00-?00001$' }]),
+        giroIdentity: auth('지로 고지서와 가상계좌 문서는 계약자 본인 확인 후 조회할 수 있어요.', 's1', 's8'),
         s1: { actions: [['지로 발송 내역', 's3'], ['지로 고지서 다시 받기', 'giroEligible'], ['가상계좌확인서 받기', 'fixedAccountState']] },
-        s2: { fields: [field('전자납부번호', '예: 123456', '123456')], actions: [['전자납부번호 확인', 's1']] },
         s4: { delivery: { target: 's5', useRegisteredNumber: false } },
         s7: { actions: [['납부 방법 확인', '@5'], ['여기서 마치기', '$finish']] },
         giroEligible: lookupContract('고지서를 받을 계약번호나 제품명을 입력해 주세요.', 'giroEligibleStatus'),
@@ -144,7 +133,10 @@
     },
     25: {
       screens: {
-        s1: { actions: [['계약 확인', 'giroGroupContract']] },
+        s1: {
+          message: '지로 고지서를 합치거나 나누려면 계약자 본인의 계약을 확인해 주세요.',
+          actions: [['계약 확인', 'giroGroupContract']]
+        },
         giroGroupContract: lookupContract('지로 고지서 설정을 확인할 계약번호나 제품명을 입력해 주세요.', 'giroGroupEligibility'),
         giroGroupEligibility: resolved('s2', [contractCase('s3', '261125-025')]),
         s2: { actions: [['한 장으로 받기', 'giroGroup'], ['계약별로 나눠 받기', 'giroSplit']] },
@@ -231,7 +223,7 @@
           ['계약자 개명', 'renameEvidence'], ['대표자 변경', 'representativeEvidence'], ['상호 변경', 's5']
         ]),
         renameEvidence: handoff('계약자 개명은 신분증 사본 또는 최근 3개월 내 발급된 개명 전후가 기재된 주민등록초본과 본인 확인이 필요해요. 상담사가 제출 경로를 안내할 수 있어요.'),
-        representativeEvidence: handoff('개인사업자는 본인 확인을 진행해요. 법인 대표자 변경은 사업자등록증을 확인한 뒤 처리할 수 있어요.'),
+        representativeEvidence: handoff('개인사업자 대표자 변경에는 본인 확인이 필요해요. 상담사가 확인 절차를 안내할 수 있어요.'),
         emailSaved: result('세금계산서 수신 이메일을 변경했어요.', [
           ['이미 발행한 계산서도 받기', 's8'], ['다른 항목 변경', 's1'], ['여기서 마치기', '$finish']
         ])
@@ -267,10 +259,10 @@
     },
     31: {
       screens: {
+        s1: { actions: [['신규 가입', 's2'], ['기존 제품 교체', 's3']] },
         s2: { fields: ['product'], actions: [['희망 제품 확인', 'applicationStatus']] },
         s3: { fields: ['product'], actions: [['교체 제품 확인', 'replacementConsultation']] },
         s4: { message: '판매처에 사전 접수된 상담이 있어요. 판매처에 추가 상담을 요청할 수 있어요.' },
-        s6: { message: '법인 견적은 담당 부서에서 확인해요. 법인과 필요한 제품을 상담 담당자에게 안내하시면 견적 상담을 이어갈 수 있어요.' },
         applicationStatus: choice('같은 제품의 가입 상담을 판매처에 신청하신 적이 있나요?', [
           ['판매처에 상담 요청을 했어요', 's4'], ['아직 상담을 신청하지 않았어요', 's5']
         ]),

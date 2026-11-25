@@ -44,7 +44,7 @@
     7: { S01: ['S02'], S02: ['$contractPurpose'], S04: ['S05'], S05: ['S06'], S07: ['$handoff'], S08: ['$handoff'] },
     8: { S01: ['phoneInput', 'phoneInput'], S02: ['S04', '$otherProduct'], S03: ['@13', 'S04'], S04: ['$address', 'S05'], S05: ['$date', 'S06'], S07: ['@5'], S08: ['$handoff'] },
     9: { S01: ['phoneInput', 'phoneInput'], S02: ['S04', '$otherProduct'], S03: ['@13', 'S04'], S04: ['$address', 'S05'], S05: ['$date', 'S06'], S07: ['@5'], S08: ['S04', '$handoff'] },
-    10: { S01: ['$transferPurpose'], S03: ['S06'], S04: ['@4'], S05: ['$handoff'], S06: ['$transferPerson', '$transferPerson', '$transferBusiness', '$transferBusiness'], S09: ['$handoff'] },
+    10: { S01: ['$transferPurpose'], S03: ['S06'], S04: ['@4'], S05: ['$handoff'], S06: ['$transferPerson', '$transferBusiness', 'S07'], S09: ['$handoff'] },
     11: { S01: ['S02'], S02: ['$symptom'], S04: ['$handoff'], S05: ['$selfHelp'], S06: ['@12', '$handoff', '$menu'], S07: ['$handoff'] },
     12: { S01: ['S02'], S03: ['@13', 'S04'], S04: ['$address', 'S05'], S05: ['$date', 'S06'], regAddrPass: ['S05'], S07: ['@5'], S08: ['S04', '$handoff'], S09: ['$handoff'] },
     13: { S02: ['S03'], S03: ['@14', '@15'], S04: ['@14', '@15'], S07: ['$handoff'] },
@@ -65,7 +65,7 @@
     28: { s1: ['s2', '$userDetails', 's4', 's5'], s2: ['s7'], passRetry: ['s7'], s3: ['s1'], s5: ['$handoff'], s6: ['@9'], s8: ['$resendUnavailable', '$finish'] },
     29: { s1: ['s2', 's6'], s3: ['$carrier'], s4: ['s5', '$filterAddress'] },
     30: { s3: ['s5'], s4: ['@4', '$finish'], s5: ['$handoff'], E7: ['@4'], E8: ['$handoff'] },
-    31: { s1: ['s2', 's3', 's6'], s4: ['s5', '$finish'], s5: ['$handoff'], s6: ['$handoff'], E6: ['$handoff'] },
+    31: { s1: ['s2', 's3'], s4: ['s5', '$finish'], s5: ['$handoff'], E6: ['$handoff'] },
     32: { s3: ['$handoff'], s4: ['@35', '@31'], s6: ['$handoff', '$finish'], E6: ['$handoff'] },
     33: { s1: ['s3', 's3', 's2'], s4: ['s3'], s5: ['s6', '$finish'] },
     34: { s5: ['s6', 's7'] },
@@ -129,7 +129,7 @@
     6: { S05: '$menu' }, 8: { S04: 'S05' }, 9: { S04: 'S05' }, 11: { S02: '$symptom' },
     12: { S01: 'S02', S04: 'S05' }, 14: { S03: 'S10', S05: 'S10' },
     17: { S04: 'S07', S06: 'S08' }, 18: { s3: 's4' }, 20: { s3: 's4' }, 22: { s2: 's3' },
-    24: { s2: 's3' }, 28: { s4: 's7' }, 29: { s6: 's7' }, 30: { s6: '$contactChanged' },
+    28: { s4: 's7' }, 29: { s6: 's7' }, 30: { s6: '$contactChanged' },
     31: { s2: 's4', s3: 's5' }, 32: { s2: 's5' }, 33: { s3: 's5' }, 34: { s2: 's4', s3: 's4' },
     35: { s2: '$costResult' }, 36: { s2: 's4', s6: 's7' }, 37: { s3: 's5', s6: 's7' }, 38: { s2: 's3' },
     39: { s2: 'reuse006Pass' }, 40: { s2: 's5' }, 41: { s1: '$serviceProvider' },
@@ -186,7 +186,6 @@
     if (custom[key]) return custom[key];
     if (key === '6:S05' || key === '37:s7') return [];
     if (screen.kind !== 'input') return [];
-    if (key === '24:s2') return [fromLabel('전자납부번호', screen.placeholder, 'text', '123456')];
     if (key === '32:s2') return [fromLabel('제품 제조번호', screen.placeholder, 'text', 'SKIX-2026-0123')];
     if (key === '31:s2' || key === '31:s3') return ['product'];
     return screen.placeholder ? [{ ...fieldTemplates.description, placeholder: screen.placeholder }] : [];
@@ -224,7 +223,7 @@
     if (/휴대폰/.test(field.label) && !/^01[016789]\d{7,8}$/.test(digits)) return '휴대폰 번호를 확인해 주세요.';
     if (/팩스/.test(field.label) && !/^0\d{8,10}$/.test(digits)) return '지역번호를 포함한 팩스 번호를 입력해 주세요.';
     if (/카드번호/.test(field.label) && !/^\d{15,16}$/.test(digits)) return '카드번호는 숫자 15~16자리로 입력해 주세요.';
-    if (/생년월일|인증번호|전자납부번호/.test(field.label) && !/^\d{6}$/.test(input)) return '숫자 6자리를 입력해 주세요.';
+    if (/생년월일|인증번호/.test(field.label) && !/^\d{6}$/.test(input)) return '숫자 6자리를 입력해 주세요.';
     if (/계좌번호/.test(field.label) && !/^\d{8,16}$/.test(digits)) return '계좌번호는 숫자 8~16자리로 입력해 주세요.';
     if (/유효기간/.test(field.label) && !/^(0[1-9]|1[0-2])\s*\/?\s*\d{2}$/.test(input)) return '유효기간을 MM/YY 형식으로 입력해 주세요.';
     if (field.type === 'date') {
@@ -293,6 +292,18 @@
   }
 
   class SKIXChat {
+    static corporateReply(message) {
+      const text = String(message ?? '').normalize('NFKC');
+      const subject = normalize(text)
+        .replace(/법인(?:용)?(?:신용|체크)?카드/g, '')
+        .replace(/(?:법인(?:사업자|고객|회원|계약|명의|직원)?|(?:회사|기업|기관|단체)(?:의)?(?:명의|계약|계정|고객|사업자))[은는이가을를]?(?:아니고|아니라|아닙니다|아니에요|아닌|말고|빼고|제외하고|제외한)/g, '');
+      const entity = /법인|주식회사|유한책임회사|유한회사/u.test(subject)
+        || /(?:회사|기업|기관|단체)(?:의)?(?:명의|계약|계정|고객|사업자|구독|렌탈|견적|전용|로그인)/u.test(subject)
+        || /기업(?:의)?(?:문의|상담|회원)/u.test(subject)
+        || /\b(?:b[\s-]*2[\s-]*b|corporate)\b|(?:^|\s)\(주\)(?=\s|[가-힣])/iu.test(text);
+      return entity ? '현재 이 상담은 개인과 개인사업자 고객만 이용할 수 있어요.' : '';
+    }
+
     constructor(scenarios = []) {
       this.scenarios = [...scenarios];
       this.reset();
@@ -300,14 +311,18 @@
 
     reset() {
       this.history = [];
+      this.messages = [{ role: 'bot', text: welcome }];
+      this.clearWorkflow();
+      this.resolving = new Set();
+      return this.getState();
+    }
+
+    clearWorkflow() {
       this.scenario = null;
       this.screen = null;
-      this.messages = [{ role: 'bot', text: welcome }];
       this.context = {};
       this.fields = [];
       this.candidates = [];
-      this.resolving = new Set();
-      return this.getState();
     }
 
     getState() {
@@ -332,6 +347,7 @@
     }
 
     find(query) {
+      if (SKIXChat.corporateReply(query)) return [];
       return rankedScenarios(this.scenarios, String(query ?? '')).map(({ scenario }) => scenario);
     }
 
@@ -692,6 +708,14 @@
       if (action && !action.requiresFields) return this.choose(action.id);
       if (this.fields.length === 1) return this.submitFields({ [this.fields[0].id]: query });
       if (this.fields.length) return this.getState();
+      const scope = SKIXChat.corporateReply(query);
+      if (scope) {
+        this.remember();
+        this.clearWorkflow();
+        this.sayUser(query);
+        this.sayBot(scope);
+        return this.getState();
+      }
       if (/^(?:처음으로|다른\s*문의|상담\s*메뉴)$/.test(query)) {
         this.remember();
         this.sayUser(query);
@@ -896,17 +920,14 @@
     }
 
     command(target, label, values) {
+      if (target === '$menu') {
+        this.clearWorkflow();
+        this.sayBot('다른 문의를 입력하거나 상담 메뉴에서 선택해 주세요.');
+        return;
+      }
       const no = this.scenario.no;
       const screen = this.screen.id;
       switch (target) {
-        case '$menu':
-          this.scenario = null;
-          this.screen = null;
-          this.fields = [];
-          this.context = {};
-          this.candidates = [];
-          this.sayBot('다른 문의를 입력하거나 상담 메뉴에서 선택해 주세요.');
-          break;
         case '$finish':
           this.synthetic('상담을 마쳤어요. 다시 도움이 필요하시면 말씀해 주세요.', { kind: 'result', demo: false });
           break;

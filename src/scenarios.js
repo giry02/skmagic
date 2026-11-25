@@ -2555,8 +2555,7 @@ window.SKIX_SCENARIOS = [
         "options": [
           "개인",
           "개인사업자",
-          "법인",
-          "기타 유형"
+          "귀화·등록번호 정정 등"
         ],
         "items": [
           {
@@ -3438,7 +3437,7 @@ window.SKIX_SCENARIOS = [
       {
         "id": "S07",
         "stepId": "h",
-        "condition": "다계정·법인·조회 실패",
+        "condition": "다계정 또는 조회 실패",
         "message": "챗봇에서 접수 내역을 확인하기 어려워요. 상담사를 통해 확인하실 수 있어요.",
         "kind": "handoff",
         "options": [
@@ -3468,7 +3467,7 @@ window.SKIX_SCENARIOS = [
       {
         "from": "b",
         "to": "h",
-        "label": "다건·법인·실패"
+        "label": "다건·실패"
       },
       {
         "from": "c",
@@ -4309,7 +4308,7 @@ window.SKIX_SCENARIOS = [
       {
         "id": "S05",
         "stepId": "h",
-        "condition": "법인·다계정 또는 주문 묶음 5건 초과",
+        "condition": "다계정 또는 주문 묶음 5건 초과",
         "message": "챗봇에서 배송 주문을 확인하기 어려워요. 상담사를 통해 배송 정보를 확인해 주세요.",
         "kind": "handoff",
         "options": [
@@ -4362,7 +4361,7 @@ window.SKIX_SCENARIOS = [
       {
         "from": "b",
         "to": "h",
-        "label": "법인·다계정·실패"
+        "label": "다계정·실패"
       },
       {
         "from": "c",
@@ -4663,7 +4662,7 @@ window.SKIX_SCENARIOS = [
       {
         "from": "a",
         "to": "h",
-        "label": "법인·다계정·실패"
+        "label": "다계정·실패"
       },
       {
         "from": "b",
@@ -5985,17 +5984,9 @@ window.SKIX_SCENARIOS = [
         ]
       },
       {
-        "id": "s2",
-        "stepId": "who",
-        "condition": "법인 사업자번호로 조회 실패한 경우",
-        "message": "지로 고지서에 적힌 전자납부번호(고객번호) 6자리를 알려주세요. 그 번호로 관련 계약을 확인해 볼게요.",
-        "kind": "input",
-        "placeholder": "전자납부번호 6자리"
-      },
-      {
         "id": "s3",
         "stepId": "status",
-        "condition": "법인 지로 발급 수량 및 수령 정보 조회 완료",
+        "condition": "지로 발급 수량 및 수령 정보 조회 완료",
         "message": "조회한 지로 발급 내역이에요.",
         "kind": "result",
         "items": [
@@ -6208,7 +6199,7 @@ window.SKIX_SCENARIOS = [
       {
         "id": "s2",
         "stepId": "op",
-        "condition": "법인 지로 대상 확인 후 고객 의사 수집",
+        "condition": "계약자 본인 및 지로 납부 대상 확인",
         "message": "어떤 방식으로 고지서를 받고 싶으신가요?",
         "kind": "choice",
         "options": [
@@ -6219,7 +6210,7 @@ window.SKIX_SCENARIOS = [
       {
         "id": "s3",
         "stepId": "deny",
-        "condition": "법인 지로 납부 대상 아님 또는 권한 확인 실패",
+        "condition": "지로 납부 대상 아님 또는 권한 확인 실패",
         "message": "확인하신 계약은 지로 고지서 통합이나 분리 대상이 아니에요. 계약과 현재 납부 방법을 확인해 주세요.",
         "kind": "exception"
       },
@@ -7531,7 +7522,6 @@ window.SKIX_SCENARIOS = [
       "렌탈 신청",
       "정수기 구독",
       "기기변경",
-      "법인 견적",
       "정수기 렌탈하고",
       "정수기 신청",
       "구독 신규",
@@ -7539,8 +7529,7 @@ window.SKIX_SCENARIOS = [
       "렌탈 가입 상담",
       "렌탈 견적",
       "구독 교체",
-      "새 정수기 렌탈",
-      "법인 구독 견적"
+      "새 정수기 렌탈"
     ],
     "intentRules": [
       [
@@ -7549,7 +7538,6 @@ window.SKIX_SCENARIOS = [
           "구독",
           "렌탈",
           "사업장",
-          "법인",
           "제품"
         ],
         [
@@ -7575,8 +7563,7 @@ window.SKIX_SCENARIOS = [
         "kind": "choice",
         "options": [
           "신규 가입",
-          "기존 제품 교체",
-          "법인 견적"
+          "기존 제품 교체"
         ]
       },
       {
@@ -7617,16 +7604,6 @@ window.SKIX_SCENARIOS = [
         ]
       },
       {
-        "id": "s6",
-        "stepId": "b2b",
-        "condition": "별도 검토. 법인 견적은 유관 부서 담당",
-        "message": "법인 구독 견적은 담당 부서에서 확인해 드려요. 견적 상담을 신청하시겠어요?",
-        "kind": "handoff",
-        "options": [
-          "법인 견적 상담"
-        ]
-      },
-      {
         "id": "E6",
         "stepId": "reject",
         "condition": "별도 검토 · 가입 조건 확인 결과 추가 상담 필요",
@@ -7653,21 +7630,12 @@ window.SKIX_SCENARIOS = [
         "label": "신규"
       },
       {
-        "from": "ask",
-        "to": "b2b",
-        "label": "법인 견적"
-      },
-      {
         "from": "current",
         "to": "apply"
       },
       {
         "from": "product",
         "to": "apply"
-      },
-      {
-        "from": "b2b",
-        "to": "voc"
       },
       {
         "from": "apply",
@@ -8530,12 +8498,8 @@ window.SKIX_SCENARIOS = [
         "kind": "input",
         "items": [
           {
-            "title": "개인 계약",
+            "title": "계약자 정보",
             "detail": "계약자 성함, 연락처, 생년월일, 주소"
-          },
-          {
-            "title": "법인 계약",
-            "detail": "법인명, 사업자번호, 담당자 정보, 주소"
           }
         ],
         "placeholder": "대상 제품 또는 계약 선택"
@@ -8719,8 +8683,7 @@ window.SKIX_SCENARIOS = [
       "국세 납부 증명",
       "납세증명서",
       "당사 서류",
-      "사업자 등록증 보내",
-      "법인 서류"
+      "사업자 등록증 보내"
     ],
     "intentRules": [
       [
@@ -8729,7 +8692,6 @@ window.SKIX_SCENARIOS = [
           "사업자등록",
           "완납증명서",
           "납세증명서",
-          "법인 서류",
           "보험료 완납",
           "납부확인서"
         ],
@@ -8777,12 +8739,12 @@ window.SKIX_SCENARIOS = [
         "id": "s3",
         "stepId": "c",
         "condition": "요청 권한·계약 정보 확인",
-        "message": "서류를 받기 위해 계약 정보를 확인할게요. 개인·개인사업자 계약은 계약자 본인, 법인 계약은 소속 직원이 요청할 수 있어요.",
+        "message": "서류는 계약자 본인이 요청할 수 있어요. 계약 정보를 확인할게요.",
         "kind": "input",
         "items": [
           {
             "title": "확인할 정보",
-            "detail": "계약자 또는 법인 정보"
+            "detail": "계약자 정보"
           }
         ],
         "placeholder": "계약 확인 정보"
@@ -9847,7 +9809,7 @@ window.SKIX_SCENARIOS = [
         "id": "s2",
         "stepId": "x",
         "condition": "조회 권한 또는 계약 정보 확인 불가",
-        "message": "이 멤버십 계약 정보를 확인할 수 없어요. 계약자 또는 법인 정보를 다시 확인해 주세요.",
+        "message": "이 멤버십 계약 정보를 확인할 수 없어요. 계약자 정보를 다시 확인해 주세요.",
         "kind": "exception"
       },
       {

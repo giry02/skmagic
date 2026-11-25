@@ -751,6 +751,14 @@
     if (!retry) liveRows.push({ role: "user", text: message });
     offer = null;
     failedRequest = null;
+    const scopeReply = window.SKIXChat.corporateReply(message);
+    if (scopeReply) {
+      liveRows.push({ role: "bot", text: scopeReply });
+      apiHistory = [];
+      lastScenario = null;
+      update({ focus: true });
+      return;
+    }
     const controller = new AbortController();
     const request = { controller, timer: setTimeout(() => controller.abort(), timeoutMs) };
     activeRequest = request;

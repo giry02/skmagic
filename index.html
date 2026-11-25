@@ -3416,8 +3416,7 @@ window.SKIX_SCENARIOS = [
         "options": [
           "개인",
           "개인사업자",
-          "법인",
-          "기타 유형"
+          "귀화·등록번호 정정 등"
         ],
         "items": [
           {
@@ -4299,7 +4298,7 @@ window.SKIX_SCENARIOS = [
       {
         "id": "S07",
         "stepId": "h",
-        "condition": "다계정·법인·조회 실패",
+        "condition": "다계정 또는 조회 실패",
         "message": "챗봇에서 접수 내역을 확인하기 어려워요. 상담사를 통해 확인하실 수 있어요.",
         "kind": "handoff",
         "options": [
@@ -4329,7 +4328,7 @@ window.SKIX_SCENARIOS = [
       {
         "from": "b",
         "to": "h",
-        "label": "다건·법인·실패"
+        "label": "다건·실패"
       },
       {
         "from": "c",
@@ -5170,7 +5169,7 @@ window.SKIX_SCENARIOS = [
       {
         "id": "S05",
         "stepId": "h",
-        "condition": "법인·다계정 또는 주문 묶음 5건 초과",
+        "condition": "다계정 또는 주문 묶음 5건 초과",
         "message": "챗봇에서 배송 주문을 확인하기 어려워요. 상담사를 통해 배송 정보를 확인해 주세요.",
         "kind": "handoff",
         "options": [
@@ -5223,7 +5222,7 @@ window.SKIX_SCENARIOS = [
       {
         "from": "b",
         "to": "h",
-        "label": "법인·다계정·실패"
+        "label": "다계정·실패"
       },
       {
         "from": "c",
@@ -5524,7 +5523,7 @@ window.SKIX_SCENARIOS = [
       {
         "from": "a",
         "to": "h",
-        "label": "법인·다계정·실패"
+        "label": "다계정·실패"
       },
       {
         "from": "b",
@@ -6846,17 +6845,9 @@ window.SKIX_SCENARIOS = [
         ]
       },
       {
-        "id": "s2",
-        "stepId": "who",
-        "condition": "법인 사업자번호로 조회 실패한 경우",
-        "message": "지로 고지서에 적힌 전자납부번호(고객번호) 6자리를 알려주세요. 그 번호로 관련 계약을 확인해 볼게요.",
-        "kind": "input",
-        "placeholder": "전자납부번호 6자리"
-      },
-      {
         "id": "s3",
         "stepId": "status",
-        "condition": "법인 지로 발급 수량 및 수령 정보 조회 완료",
+        "condition": "지로 발급 수량 및 수령 정보 조회 완료",
         "message": "조회한 지로 발급 내역이에요.",
         "kind": "result",
         "items": [
@@ -7069,7 +7060,7 @@ window.SKIX_SCENARIOS = [
       {
         "id": "s2",
         "stepId": "op",
-        "condition": "법인 지로 대상 확인 후 고객 의사 수집",
+        "condition": "계약자 본인 및 지로 납부 대상 확인",
         "message": "어떤 방식으로 고지서를 받고 싶으신가요?",
         "kind": "choice",
         "options": [
@@ -7080,7 +7071,7 @@ window.SKIX_SCENARIOS = [
       {
         "id": "s3",
         "stepId": "deny",
-        "condition": "법인 지로 납부 대상 아님 또는 권한 확인 실패",
+        "condition": "지로 납부 대상 아님 또는 권한 확인 실패",
         "message": "확인하신 계약은 지로 고지서 통합이나 분리 대상이 아니에요. 계약과 현재 납부 방법을 확인해 주세요.",
         "kind": "exception"
       },
@@ -8392,7 +8383,6 @@ window.SKIX_SCENARIOS = [
       "렌탈 신청",
       "정수기 구독",
       "기기변경",
-      "법인 견적",
       "정수기 렌탈하고",
       "정수기 신청",
       "구독 신규",
@@ -8400,8 +8390,7 @@ window.SKIX_SCENARIOS = [
       "렌탈 가입 상담",
       "렌탈 견적",
       "구독 교체",
-      "새 정수기 렌탈",
-      "법인 구독 견적"
+      "새 정수기 렌탈"
     ],
     "intentRules": [
       [
@@ -8410,7 +8399,6 @@ window.SKIX_SCENARIOS = [
           "구독",
           "렌탈",
           "사업장",
-          "법인",
           "제품"
         ],
         [
@@ -8436,8 +8424,7 @@ window.SKIX_SCENARIOS = [
         "kind": "choice",
         "options": [
           "신규 가입",
-          "기존 제품 교체",
-          "법인 견적"
+          "기존 제품 교체"
         ]
       },
       {
@@ -8478,16 +8465,6 @@ window.SKIX_SCENARIOS = [
         ]
       },
       {
-        "id": "s6",
-        "stepId": "b2b",
-        "condition": "별도 검토. 법인 견적은 유관 부서 담당",
-        "message": "법인 구독 견적은 담당 부서에서 확인해 드려요. 견적 상담을 신청하시겠어요?",
-        "kind": "handoff",
-        "options": [
-          "법인 견적 상담"
-        ]
-      },
-      {
         "id": "E6",
         "stepId": "reject",
         "condition": "별도 검토 · 가입 조건 확인 결과 추가 상담 필요",
@@ -8514,21 +8491,12 @@ window.SKIX_SCENARIOS = [
         "label": "신규"
       },
       {
-        "from": "ask",
-        "to": "b2b",
-        "label": "법인 견적"
-      },
-      {
         "from": "current",
         "to": "apply"
       },
       {
         "from": "product",
         "to": "apply"
-      },
-      {
-        "from": "b2b",
-        "to": "voc"
       },
       {
         "from": "apply",
@@ -9391,12 +9359,8 @@ window.SKIX_SCENARIOS = [
         "kind": "input",
         "items": [
           {
-            "title": "개인 계약",
+            "title": "계약자 정보",
             "detail": "계약자 성함, 연락처, 생년월일, 주소"
-          },
-          {
-            "title": "법인 계약",
-            "detail": "법인명, 사업자번호, 담당자 정보, 주소"
           }
         ],
         "placeholder": "대상 제품 또는 계약 선택"
@@ -9580,8 +9544,7 @@ window.SKIX_SCENARIOS = [
       "국세 납부 증명",
       "납세증명서",
       "당사 서류",
-      "사업자 등록증 보내",
-      "법인 서류"
+      "사업자 등록증 보내"
     ],
     "intentRules": [
       [
@@ -9590,7 +9553,6 @@ window.SKIX_SCENARIOS = [
           "사업자등록",
           "완납증명서",
           "납세증명서",
-          "법인 서류",
           "보험료 완납",
           "납부확인서"
         ],
@@ -9638,12 +9600,12 @@ window.SKIX_SCENARIOS = [
         "id": "s3",
         "stepId": "c",
         "condition": "요청 권한·계약 정보 확인",
-        "message": "서류를 받기 위해 계약 정보를 확인할게요. 개인·개인사업자 계약은 계약자 본인, 법인 계약은 소속 직원이 요청할 수 있어요.",
+        "message": "서류는 계약자 본인이 요청할 수 있어요. 계약 정보를 확인할게요.",
         "kind": "input",
         "items": [
           {
             "title": "확인할 정보",
-            "detail": "계약자 또는 법인 정보"
+            "detail": "계약자 정보"
           }
         ],
         "placeholder": "계약 확인 정보"
@@ -10708,7 +10670,7 @@ window.SKIX_SCENARIOS = [
         "id": "s2",
         "stepId": "x",
         "condition": "조회 권한 또는 계약 정보 확인 불가",
-        "message": "이 멤버십 계약 정보를 확인할 수 없어요. 계약자 또는 법인 정보를 다시 확인해 주세요.",
+        "message": "이 멤버십 계약 정보를 확인할 수 없어요. 계약자 정보를 다시 확인해 주세요.",
         "kind": "exception"
       },
       {
@@ -12795,7 +12757,7 @@ window.SKIX_PARTNER_CARDS = [
   const unrestrictedService = [['다른 분리·재설치 접수', '@8'], ['고장 상담', '@11'], ['추가 문의', '$menu']];
   const moveDate = (label, sample) => ({ label, placeholder: '방문 날짜 선택', type: 'date', sample });
   const birthdate = { label: '생년월일', placeholder: 'YYMMDD', type: 'password', sample: '900101' };
-  const companyNumber = { label: '사업자등록번호', placeholder: '사업자등록번호', type: 'password', sample: '000-00-00000' };
+  const businessRegistrationNumber = { label: '사업자등록번호', placeholder: '사업자등록번호', type: 'password', sample: '000-00-00000' };
   const changedDates = [['11월 27일(금) 선택', '$date'], ['더보기', '$moreDates']];
 
   function moveService(isSplit) {
@@ -12863,7 +12825,7 @@ window.SKIX_PARTNER_CARDS = [
           message: '선납 할인을 받고 있거나 묶음·크로스 패키지로 할인받는 계약은 명의변경 조건을 먼저 확인해 주세요. 묶음 중 일부만 변경하면 할인 반환금이나 구독료 조정이 발생할 수 있어요.'
         },
         S06: { fields: [], kind: 'choice', actions: [
-          ['개인', 'transfereePersonal'], ['개인사업자', 'transfereeBusiness'], ['법인·비영리', 'transfereePapers'],
+          ['개인', 'transfereePersonal'], ['개인사업자', 'transfereeBusiness'],
           ['귀화·등록번호 정정 등', 'transfereePapers']
         ] },
         S07: { addActions: [['서류 안내', 'transferDocuments'], ['상담사 연결', '$handoff']] },
@@ -12877,13 +12839,13 @@ window.SKIX_PARTNER_CARDS = [
         transfereePersonal: field('새 계약자의 정보를 입력해 주세요. 만 19세 미만은 명의변경이 제한돼요.',
           ['name', 'phone', birthdate], [['신청 접수', 'S08'], ['뒤로', 'S06']], { secure: true }),
         transfereeBusiness: field('새 개인사업자의 정보를 입력해 주세요. 휴업·폐업 상태일 때는 명의변경이 제한돼요.',
-          ['name', 'phone', birthdate, companyNumber], [['신청 접수', 'S08'], ['뒤로', 'S06']], { secure: true }),
+          ['name', 'phone', birthdate, businessRegistrationNumber], [['신청 접수', 'S08'], ['뒤로', 'S06']], { secure: true }),
         transfereePapers: field('서류 안내를 받을 연락처를 입력해 주세요. 접수 후 준비할 서류와 제출 경로를 안내해요.',
           ['phone'], [['서류 안내 확인', 'S07'], ['뒤로', 'S06']], { secure: true }),
         transferDocuments: result('신청 유형에 따라 명의변경 신청서, 사업자 확인 서류 등 대상 서류가 달라요. 서류 안내를 먼저 확인해 주세요.', [
           ['명의변경 신청', 'S03'], ['서류 상세 문의', '$handoff'], ['뒤로', 'S02']
         ], [
-          item('신청 주체', '양도인인 현재 계약자'), item('추가 서류가 필요한 유형', '개인사업자·법인·비영리·명의 정정 등')
+          item('신청 주체', '양도인인 현재 계약자'), item('추가 서류가 필요한 유형', '개인사업자·명의 정정 등')
         ]),
         transferTracking: choice('접수번호를 기준으로 진행 상태를 확인해요. 이미 진행된 신청은 취소할 수 없는 상태일 수 있어요.', [
           ['진행 상태 확인', 'transferPending'], ['명의변경 신청 취소', 'transferCancelCheck'], ['상담사 연결', '$handoff']
@@ -13173,7 +13135,7 @@ window.SKIX_PARTNER_CARDS = [
     const transfer = no === 4 ? 'S05' : 'S05T';
     screens.receiptPaymentMethods = {
       kind: 'choice',
-      message: '세금계산서가 발행되지 않은 사업자 계약이에요. 실시간 계좌이체 또는 가상계좌 납부에서 현금영수증을 선택할 수 있어요.',
+      message: '세금계산서가 발행되지 않은 개인사업자 계약이에요. 실시간 계좌이체 또는 가상계좌 납부에서 현금영수증을 선택할 수 있어요.',
       actions: [['실시간 계좌이체', 'receiptTransfer'], ['가상계좌', 'receiptVirtual'], ['뒤로', 'oneTimeMethods']]
     };
     const receiptChoice = (yes, no) => [['현금영수증 신청', yes], ['신청 안 함', no], ['뒤로', 'receiptPaymentMethods']];
@@ -13208,7 +13170,7 @@ window.SKIX_PARTNER_CARDS = [
   const dateFrom = field('시작일', 'YYYY-MM-DD', '2026-11-01', 'date');
   const dateTo = field('종료일', 'YYYY-MM-DD', '2026-11-25', 'date');
   const contractField = field('계약 또는 제품명', '예: 직수 정수기 계약', '직수 정수기');
-  const lookupScope = '계약자 본인이나 확인 권한이 있는 법인 담당자가 조회할 수 있어요.';
+  const lookupScope = '개인과 개인사업자 계약은 계약자 본인이 조회할 수 있어요.';
   const lookupContract = (message, target) => form(message, [contractField], target, '계약 확인');
   const resolved = (fallback, rules = []) => ({ resolve: { default: fallback, rules } });
   const contractCase = (target, code, fields = [contractField.label]) => ({ target, fields, match: '^SK-' + code + '$' });
@@ -13310,19 +13272,8 @@ window.SKIX_PARTNER_CARDS = [
     24: {
       entry: 'giroIdentity',
       screens: {
-        giroIdentity: choice('지로·가상계좌 문서를 확인할 계약 유형을 선택해 주세요.', [
-          ['계약자 휴대폰 확인', 'giroPhone'], ['법인 담당자', 'companyLookup'], ['확인 권한 없음', 's8']
-        ]),
-        giroPhone: auth(lookupScope, 's1', 's8'),
-        companyLookup: form('새봄법인과 담당자 정보를 입력해 주세요.', [
-          field('회사명', '예: 새봄법인', '새봄법인'),
-          field('사업자번호', '예: 000-00-00000', '000-00-00000'),
-          field('담당 부서', '예: 고객지원팀', '고객지원팀'),
-          field('담당자 성함', '예: 김매직', '김매직')
-        ], 'companyLookupResult'),
-        companyLookupResult: resolved('s1', [{ target: 's2', fields: ['사업자번호'], match: '^000-?00-?00001$' }]),
+        giroIdentity: auth('지로 고지서와 가상계좌 문서는 계약자 본인 확인 후 조회할 수 있어요.', 's1', 's8'),
         s1: { actions: [['지로 발송 내역', 's3'], ['지로 고지서 다시 받기', 'giroEligible'], ['가상계좌확인서 받기', 'fixedAccountState']] },
-        s2: { fields: [field('전자납부번호', '예: 123456', '123456')], actions: [['전자납부번호 확인', 's1']] },
         s4: { delivery: { target: 's5', useRegisteredNumber: false } },
         s7: { actions: [['납부 방법 확인', '@5'], ['여기서 마치기', '$finish']] },
         giroEligible: lookupContract('고지서를 받을 계약번호나 제품명을 입력해 주세요.', 'giroEligibleStatus'),
@@ -13337,7 +13288,10 @@ window.SKIX_PARTNER_CARDS = [
     },
     25: {
       screens: {
-        s1: { actions: [['계약 확인', 'giroGroupContract']] },
+        s1: {
+          message: '지로 고지서를 합치거나 나누려면 계약자 본인의 계약을 확인해 주세요.',
+          actions: [['계약 확인', 'giroGroupContract']]
+        },
         giroGroupContract: lookupContract('지로 고지서 설정을 확인할 계약번호나 제품명을 입력해 주세요.', 'giroGroupEligibility'),
         giroGroupEligibility: resolved('s2', [contractCase('s3', '261125-025')]),
         s2: { actions: [['한 장으로 받기', 'giroGroup'], ['계약별로 나눠 받기', 'giroSplit']] },
@@ -13424,7 +13378,7 @@ window.SKIX_PARTNER_CARDS = [
           ['계약자 개명', 'renameEvidence'], ['대표자 변경', 'representativeEvidence'], ['상호 변경', 's5']
         ]),
         renameEvidence: handoff('계약자 개명은 신분증 사본 또는 최근 3개월 내 발급된 개명 전후가 기재된 주민등록초본과 본인 확인이 필요해요. 상담사가 제출 경로를 안내할 수 있어요.'),
-        representativeEvidence: handoff('개인사업자는 본인 확인을 진행해요. 법인 대표자 변경은 사업자등록증을 확인한 뒤 처리할 수 있어요.'),
+        representativeEvidence: handoff('개인사업자 대표자 변경에는 본인 확인이 필요해요. 상담사가 확인 절차를 안내할 수 있어요.'),
         emailSaved: result('세금계산서 수신 이메일을 변경했어요.', [
           ['이미 발행한 계산서도 받기', 's8'], ['다른 항목 변경', 's1'], ['여기서 마치기', '$finish']
         ])
@@ -13460,10 +13414,10 @@ window.SKIX_PARTNER_CARDS = [
     },
     31: {
       screens: {
+        s1: { actions: [['신규 가입', 's2'], ['기존 제품 교체', 's3']] },
         s2: { fields: ['product'], actions: [['희망 제품 확인', 'applicationStatus']] },
         s3: { fields: ['product'], actions: [['교체 제품 확인', 'replacementConsultation']] },
         s4: { message: '판매처에 사전 접수된 상담이 있어요. 판매처에 추가 상담을 요청할 수 있어요.' },
-        s6: { message: '법인 견적은 담당 부서에서 확인해요. 법인과 필요한 제품을 상담 담당자에게 안내하시면 견적 상담을 이어갈 수 있어요.' },
         applicationStatus: choice('같은 제품의 가입 상담을 판매처에 신청하신 적이 있나요?', [
           ['판매처에 상담 요청을 했어요', 's4'], ['아직 상담을 신청하지 않았어요', 's5']
         ]),
@@ -13594,8 +13548,8 @@ window.SKIX_PARTNER_CARDS = [
         },
         s3: { fields: contract, actions: [["계약 확인", "documentLookup"]] },
         documentLookup: resolved("documentAuthority", [contractCase("s4", "000")]),
-        documentAuthority: choice("개인·개인사업자 계약은 본인이, 법인 계약은 소속 직원이 요청할 수 있어요.", [
-          ["개인·개인사업자 본인", "s5"], ["법인 소속 직원", "s5"], ["그 외 관계", "s4"]
+        documentAuthority: choice("개인과 개인사업자 계약은 계약자 본인이 서류를 요청할 수 있어요.", [
+          ["계약자 본인", "s5"], ["계약자 아님", "s4"]
         ]),
         s6: {
           fields: [{
@@ -13852,7 +13806,7 @@ window.SKIX_PARTNER_CARDS = [
           ["정기결제", "receiptNumberFixed"], ["개인 일회성 계좌이체·가상계좌", "receiptNumberAllowed"],
           ["세금계산서 발행 또는 기타", "taxReceiptConflict"]
         ]),
-        receiptNumberFixed: result("정기결제의 발행번호는 개인 계약자의 휴대폰번호 또는 사업자의 사업자번호를 사용해요."),
+        receiptNumberFixed: result("정기결제의 발행번호는 개인 계약자의 휴대폰번호 또는 개인사업자의 사업자번호를 사용해요."),
         receiptNumberAllowed: choice("개인의 일회성 실시간 이체 또는 가상계좌 납부에 한해 발행번호 변경 여부를 확인할 수 있어요.", [
           ["요금 납부 절차 확인", "@4"], ["상담 요청", "$handoff"]
         ]),
@@ -13950,7 +13904,7 @@ window.SKIX_PARTNER_CARDS = [
     7: { S01: ['S02'], S02: ['$contractPurpose'], S04: ['S05'], S05: ['S06'], S07: ['$handoff'], S08: ['$handoff'] },
     8: { S01: ['phoneInput', 'phoneInput'], S02: ['S04', '$otherProduct'], S03: ['@13', 'S04'], S04: ['$address', 'S05'], S05: ['$date', 'S06'], S07: ['@5'], S08: ['$handoff'] },
     9: { S01: ['phoneInput', 'phoneInput'], S02: ['S04', '$otherProduct'], S03: ['@13', 'S04'], S04: ['$address', 'S05'], S05: ['$date', 'S06'], S07: ['@5'], S08: ['S04', '$handoff'] },
-    10: { S01: ['$transferPurpose'], S03: ['S06'], S04: ['@4'], S05: ['$handoff'], S06: ['$transferPerson', '$transferPerson', '$transferBusiness', '$transferBusiness'], S09: ['$handoff'] },
+    10: { S01: ['$transferPurpose'], S03: ['S06'], S04: ['@4'], S05: ['$handoff'], S06: ['$transferPerson', '$transferBusiness', 'S07'], S09: ['$handoff'] },
     11: { S01: ['S02'], S02: ['$symptom'], S04: ['$handoff'], S05: ['$selfHelp'], S06: ['@12', '$handoff', '$menu'], S07: ['$handoff'] },
     12: { S01: ['S02'], S03: ['@13', 'S04'], S04: ['$address', 'S05'], S05: ['$date', 'S06'], regAddrPass: ['S05'], S07: ['@5'], S08: ['S04', '$handoff'], S09: ['$handoff'] },
     13: { S02: ['S03'], S03: ['@14', '@15'], S04: ['@14', '@15'], S07: ['$handoff'] },
@@ -13971,7 +13925,7 @@ window.SKIX_PARTNER_CARDS = [
     28: { s1: ['s2', '$userDetails', 's4', 's5'], s2: ['s7'], passRetry: ['s7'], s3: ['s1'], s5: ['$handoff'], s6: ['@9'], s8: ['$resendUnavailable', '$finish'] },
     29: { s1: ['s2', 's6'], s3: ['$carrier'], s4: ['s5', '$filterAddress'] },
     30: { s3: ['s5'], s4: ['@4', '$finish'], s5: ['$handoff'], E7: ['@4'], E8: ['$handoff'] },
-    31: { s1: ['s2', 's3', 's6'], s4: ['s5', '$finish'], s5: ['$handoff'], s6: ['$handoff'], E6: ['$handoff'] },
+    31: { s1: ['s2', 's3'], s4: ['s5', '$finish'], s5: ['$handoff'], E6: ['$handoff'] },
     32: { s3: ['$handoff'], s4: ['@35', '@31'], s6: ['$handoff', '$finish'], E6: ['$handoff'] },
     33: { s1: ['s3', 's3', 's2'], s4: ['s3'], s5: ['s6', '$finish'] },
     34: { s5: ['s6', 's7'] },
@@ -14035,7 +13989,7 @@ window.SKIX_PARTNER_CARDS = [
     6: { S05: '$menu' }, 8: { S04: 'S05' }, 9: { S04: 'S05' }, 11: { S02: '$symptom' },
     12: { S01: 'S02', S04: 'S05' }, 14: { S03: 'S10', S05: 'S10' },
     17: { S04: 'S07', S06: 'S08' }, 18: { s3: 's4' }, 20: { s3: 's4' }, 22: { s2: 's3' },
-    24: { s2: 's3' }, 28: { s4: 's7' }, 29: { s6: 's7' }, 30: { s6: '$contactChanged' },
+    28: { s4: 's7' }, 29: { s6: 's7' }, 30: { s6: '$contactChanged' },
     31: { s2: 's4', s3: 's5' }, 32: { s2: 's5' }, 33: { s3: 's5' }, 34: { s2: 's4', s3: 's4' },
     35: { s2: '$costResult' }, 36: { s2: 's4', s6: 's7' }, 37: { s3: 's5', s6: 's7' }, 38: { s2: 's3' },
     39: { s2: 'reuse006Pass' }, 40: { s2: 's5' }, 41: { s1: '$serviceProvider' },
@@ -14092,7 +14046,6 @@ window.SKIX_PARTNER_CARDS = [
     if (custom[key]) return custom[key];
     if (key === '6:S05' || key === '37:s7') return [];
     if (screen.kind !== 'input') return [];
-    if (key === '24:s2') return [fromLabel('전자납부번호', screen.placeholder, 'text', '123456')];
     if (key === '32:s2') return [fromLabel('제품 제조번호', screen.placeholder, 'text', 'SKIX-2026-0123')];
     if (key === '31:s2' || key === '31:s3') return ['product'];
     return screen.placeholder ? [{ ...fieldTemplates.description, placeholder: screen.placeholder }] : [];
@@ -14130,7 +14083,7 @@ window.SKIX_PARTNER_CARDS = [
     if (/휴대폰/.test(field.label) && !/^01[016789]\d{7,8}$/.test(digits)) return '휴대폰 번호를 확인해 주세요.';
     if (/팩스/.test(field.label) && !/^0\d{8,10}$/.test(digits)) return '지역번호를 포함한 팩스 번호를 입력해 주세요.';
     if (/카드번호/.test(field.label) && !/^\d{15,16}$/.test(digits)) return '카드번호는 숫자 15~16자리로 입력해 주세요.';
-    if (/생년월일|인증번호|전자납부번호/.test(field.label) && !/^\d{6}$/.test(input)) return '숫자 6자리를 입력해 주세요.';
+    if (/생년월일|인증번호/.test(field.label) && !/^\d{6}$/.test(input)) return '숫자 6자리를 입력해 주세요.';
     if (/계좌번호/.test(field.label) && !/^\d{8,16}$/.test(digits)) return '계좌번호는 숫자 8~16자리로 입력해 주세요.';
     if (/유효기간/.test(field.label) && !/^(0[1-9]|1[0-2])\s*\/?\s*\d{2}$/.test(input)) return '유효기간을 MM/YY 형식으로 입력해 주세요.';
     if (field.type === 'date') {
@@ -14199,6 +14152,18 @@ window.SKIX_PARTNER_CARDS = [
   }
 
   class SKIXChat {
+    static corporateReply(message) {
+      const text = String(message ?? '').normalize('NFKC');
+      const subject = normalize(text)
+        .replace(/법인(?:용)?(?:신용|체크)?카드/g, '')
+        .replace(/(?:법인(?:사업자|고객|회원|계약|명의|직원)?|(?:회사|기업|기관|단체)(?:의)?(?:명의|계약|계정|고객|사업자))[은는이가을를]?(?:아니고|아니라|아닙니다|아니에요|아닌|말고|빼고|제외하고|제외한)/g, '');
+      const entity = /법인|주식회사|유한책임회사|유한회사/u.test(subject)
+        || /(?:회사|기업|기관|단체)(?:의)?(?:명의|계약|계정|고객|사업자|구독|렌탈|견적|전용|로그인)/u.test(subject)
+        || /기업(?:의)?(?:문의|상담|회원)/u.test(subject)
+        || /\b(?:b[\s-]*2[\s-]*b|corporate)\b|(?:^|\s)\(주\)(?=\s|[가-힣])/iu.test(text);
+      return entity ? '현재 이 상담은 개인과 개인사업자 고객만 이용할 수 있어요.' : '';
+    }
+
     constructor(scenarios = []) {
       this.scenarios = [...scenarios];
       this.reset();
@@ -14206,14 +14171,18 @@ window.SKIX_PARTNER_CARDS = [
 
     reset() {
       this.history = [];
+      this.messages = [{ role: 'bot', text: welcome }];
+      this.clearWorkflow();
+      this.resolving = new Set();
+      return this.getState();
+    }
+
+    clearWorkflow() {
       this.scenario = null;
       this.screen = null;
-      this.messages = [{ role: 'bot', text: welcome }];
       this.context = {};
       this.fields = [];
       this.candidates = [];
-      this.resolving = new Set();
-      return this.getState();
     }
 
     getState() {
@@ -14238,6 +14207,7 @@ window.SKIX_PARTNER_CARDS = [
     }
 
     find(query) {
+      if (SKIXChat.corporateReply(query)) return [];
       return rankedScenarios(this.scenarios, String(query ?? '')).map(({ scenario }) => scenario);
     }
 
@@ -14598,6 +14568,14 @@ window.SKIX_PARTNER_CARDS = [
       if (action && !action.requiresFields) return this.choose(action.id);
       if (this.fields.length === 1) return this.submitFields({ [this.fields[0].id]: query });
       if (this.fields.length) return this.getState();
+      const scope = SKIXChat.corporateReply(query);
+      if (scope) {
+        this.remember();
+        this.clearWorkflow();
+        this.sayUser(query);
+        this.sayBot(scope);
+        return this.getState();
+      }
       if (/^(?:처음으로|다른\s*문의|상담\s*메뉴)$/.test(query)) {
         this.remember();
         this.sayUser(query);
@@ -14802,17 +14780,14 @@ window.SKIX_PARTNER_CARDS = [
     }
 
     command(target, label, values) {
+      if (target === '$menu') {
+        this.clearWorkflow();
+        this.sayBot('다른 문의를 입력하거나 상담 메뉴에서 선택해 주세요.');
+        return;
+      }
       const no = this.scenario.no;
       const screen = this.screen.id;
       switch (target) {
-        case '$menu':
-          this.scenario = null;
-          this.screen = null;
-          this.fields = [];
-          this.context = {};
-          this.candidates = [];
-          this.sayBot('다른 문의를 입력하거나 상담 메뉴에서 선택해 주세요.');
-          break;
         case '$finish':
           this.synthetic('상담을 마쳤어요. 다시 도움이 필요하시면 말씀해 주세요.', { kind: 'result', demo: false });
           break;
@@ -15898,6 +15873,14 @@ window.SKIX_PARTNER_CARDS = [
     if (!retry) liveRows.push({ role: "user", text: message });
     offer = null;
     failedRequest = null;
+    const scopeReply = window.SKIXChat.corporateReply(message);
+    if (scopeReply) {
+      liveRows.push({ role: "bot", text: scopeReply });
+      apiHistory = [];
+      lastScenario = null;
+      update({ focus: true });
+      return;
+    }
     const controller = new AbortController();
     const request = { controller, timer: setTimeout(() => controller.abort(), timeoutMs) };
     activeRequest = request;

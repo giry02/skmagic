@@ -143,7 +143,7 @@
   const unrestrictedService = [['다른 분리·재설치 접수', '@8'], ['고장 상담', '@11'], ['추가 문의', '$menu']];
   const moveDate = (label, sample) => ({ label, placeholder: '방문 날짜 선택', type: 'date', sample });
   const birthdate = { label: '생년월일', placeholder: 'YYMMDD', type: 'password', sample: '900101' };
-  const companyNumber = { label: '사업자등록번호', placeholder: '사업자등록번호', type: 'password', sample: '000-00-00000' };
+  const businessRegistrationNumber = { label: '사업자등록번호', placeholder: '사업자등록번호', type: 'password', sample: '000-00-00000' };
   const changedDates = [['11월 27일(금) 선택', '$date'], ['더보기', '$moreDates']];
 
   function moveService(isSplit) {
@@ -211,7 +211,7 @@
           message: '선납 할인을 받고 있거나 묶음·크로스 패키지로 할인받는 계약은 명의변경 조건을 먼저 확인해 주세요. 묶음 중 일부만 변경하면 할인 반환금이나 구독료 조정이 발생할 수 있어요.'
         },
         S06: { fields: [], kind: 'choice', actions: [
-          ['개인', 'transfereePersonal'], ['개인사업자', 'transfereeBusiness'], ['법인·비영리', 'transfereePapers'],
+          ['개인', 'transfereePersonal'], ['개인사업자', 'transfereeBusiness'],
           ['귀화·등록번호 정정 등', 'transfereePapers']
         ] },
         S07: { addActions: [['서류 안내', 'transferDocuments'], ['상담사 연결', '$handoff']] },
@@ -225,13 +225,13 @@
         transfereePersonal: field('새 계약자의 정보를 입력해 주세요. 만 19세 미만은 명의변경이 제한돼요.',
           ['name', 'phone', birthdate], [['신청 접수', 'S08'], ['뒤로', 'S06']], { secure: true }),
         transfereeBusiness: field('새 개인사업자의 정보를 입력해 주세요. 휴업·폐업 상태일 때는 명의변경이 제한돼요.',
-          ['name', 'phone', birthdate, companyNumber], [['신청 접수', 'S08'], ['뒤로', 'S06']], { secure: true }),
+          ['name', 'phone', birthdate, businessRegistrationNumber], [['신청 접수', 'S08'], ['뒤로', 'S06']], { secure: true }),
         transfereePapers: field('서류 안내를 받을 연락처를 입력해 주세요. 접수 후 준비할 서류와 제출 경로를 안내해요.',
           ['phone'], [['서류 안내 확인', 'S07'], ['뒤로', 'S06']], { secure: true }),
         transferDocuments: result('신청 유형에 따라 명의변경 신청서, 사업자 확인 서류 등 대상 서류가 달라요. 서류 안내를 먼저 확인해 주세요.', [
           ['명의변경 신청', 'S03'], ['서류 상세 문의', '$handoff'], ['뒤로', 'S02']
         ], [
-          item('신청 주체', '양도인인 현재 계약자'), item('추가 서류가 필요한 유형', '개인사업자·법인·비영리·명의 정정 등')
+          item('신청 주체', '양도인인 현재 계약자'), item('추가 서류가 필요한 유형', '개인사업자·명의 정정 등')
         ]),
         transferTracking: choice('접수번호를 기준으로 진행 상태를 확인해요. 이미 진행된 신청은 취소할 수 없는 상태일 수 있어요.', [
           ['진행 상태 확인', 'transferPending'], ['명의변경 신청 취소', 'transferCancelCheck'], ['상담사 연결', '$handoff']
@@ -521,7 +521,7 @@
     const transfer = no === 4 ? 'S05' : 'S05T';
     screens.receiptPaymentMethods = {
       kind: 'choice',
-      message: '세금계산서가 발행되지 않은 사업자 계약이에요. 실시간 계좌이체 또는 가상계좌 납부에서 현금영수증을 선택할 수 있어요.',
+      message: '세금계산서가 발행되지 않은 개인사업자 계약이에요. 실시간 계좌이체 또는 가상계좌 납부에서 현금영수증을 선택할 수 있어요.',
       actions: [['실시간 계좌이체', 'receiptTransfer'], ['가상계좌', 'receiptVirtual'], ['뒤로', 'oneTimeMethods']]
     };
     const receiptChoice = (yes, no) => [['현금영수증 신청', yes], ['신청 안 함', no], ['뒤로', 'receiptPaymentMethods']];

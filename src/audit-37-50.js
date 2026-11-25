@@ -55,8 +55,8 @@
         },
         s3: { fields: contract, actions: [["계약 확인", "documentLookup"]] },
         documentLookup: resolved("documentAuthority", [contractCase("s4", "000")]),
-        documentAuthority: choice("개인·개인사업자 계약은 본인이, 법인 계약은 소속 직원이 요청할 수 있어요.", [
-          ["개인·개인사업자 본인", "s5"], ["법인 소속 직원", "s5"], ["그 외 관계", "s4"]
+        documentAuthority: choice("개인과 개인사업자 계약은 계약자 본인이 서류를 요청할 수 있어요.", [
+          ["계약자 본인", "s5"], ["계약자 아님", "s4"]
         ]),
         s6: {
           fields: [{
@@ -313,7 +313,7 @@
           ["정기결제", "receiptNumberFixed"], ["개인 일회성 계좌이체·가상계좌", "receiptNumberAllowed"],
           ["세금계산서 발행 또는 기타", "taxReceiptConflict"]
         ]),
-        receiptNumberFixed: result("정기결제의 발행번호는 개인 계약자의 휴대폰번호 또는 사업자의 사업자번호를 사용해요."),
+        receiptNumberFixed: result("정기결제의 발행번호는 개인 계약자의 휴대폰번호 또는 개인사업자의 사업자번호를 사용해요."),
         receiptNumberAllowed: choice("개인의 일회성 실시간 이체 또는 가상계좌 납부에 한해 발행번호 변경 여부를 확인할 수 있어요.", [
           ["요금 납부 절차 확인", "@4"], ["상담 요청", "$handoff"]
         ]),
