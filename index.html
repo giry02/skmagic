@@ -15376,7 +15376,10 @@ window.SKIX_PARTNER_CARDS = [
     inputProgress = { screen: flow.screen, fields, values: Object.create(null) };
     input.value = "";
     secureInput.value = "";
-    promptForField();
+    const lastMessage = flow.messages.at(-1);
+    const alreadyAsked = fields.length === 1 && lastMessage?.role === "bot"
+      && lastMessage.text?.includes(fields[0].label) && /입력해|알려\s*주/.test(lastMessage.text);
+    if (!alreadyAsked) promptForField();
   }
 
   function composerEntry() {
@@ -15666,7 +15669,7 @@ window.SKIX_PARTNER_CARDS = [
       return;
     }
     const instruction = next.length === 1
-      ? `입력을 마쳤어요. 위에서 ‘${next[0].label}’을 선택해 주세요.`
+      ? `입력을 마쳤어요. 위에서 ‘${next[0].label}’ 버튼을 선택해 주세요.`
       : "입력을 마쳤어요. 위에서 다음 단계를 선택해 주세요.";
     addInputMessage("bot", instruction);
     update({ focus: true });
