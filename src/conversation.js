@@ -58,6 +58,7 @@
   let renderedKeys = [];
   let inputProgress = null;
   let inputMessages = [];
+  let revealedCode = null;
 
   function element(tag, className = "", text = "") {
     const node = document.createElement(tag);
@@ -192,9 +193,7 @@
     }
     const content = element("div", "turn-content");
     content.append(element("span", "sr-only", user ? "고객" : "AI 상담"));
-    const hasOfficialCard = message.items?.some((item) => partnerCards.has(item.mediaKey));
-    const turnStatus = message.status || (!user && !hasOfficialCard && message.items?.length
-      && (message.demo || message.source === "demo") ? "예시 데이터" : "");
+    const turnStatus = message.status;
     if (turnStatus) content.append(element("p", "turn-meta", turnStatus));
     if (message.text) {
       const bubble = element("p", "bubble");
@@ -275,7 +274,7 @@
     if (!field) return;
     const label = field.label;
     const particle = /[가-힣]$/.test(label) && (label.charCodeAt(label.length - 1) - 44032) % 28 !== 0 ? "을" : "를";
-    const prompt = label + particle + (privateField(field) ? " 예시 값으로 입력해 주세요." : " 입력해 주세요.");
+    const prompt = label + particle + " 입력해 주세요.";
     addInputMessage("bot", error ? `${error} ${prompt}` : prompt);
   }
 
@@ -286,7 +285,10 @@
       inputProgress = null;
       return;
     }
-    if (inputProgress?.screen === flow.screen) return;
+    if (inputProgress?.screen === flow.screen) {
+      inputProgress.fields = fields;
+      return;
+    }
     inputProgress = { screen: flow.screen, fields, values: Object.create(null) };
     input.value = "";
     secureInput.value = "";
@@ -316,26 +318,15 @@
 
   function markMode() {
     const detected = demoMode ? "demo" : connection.state;
-    const names = { demo: "예시 대화", live: "AI 연결됨", checking: "연결 확인 중", offline: "AI 연결 대기" };
+    const names = { demo: "안내형 상담", live: "AI 연결됨", checking: "연결 확인 중", offline: "AI 연결 대기" };
     modeLabel.textContent = names[detected];
     modeLabel.dataset.mode = detected;
     modeLabel.title = detected === "live" ? [connection.provider, connection.model].filter(Boolean).join(" · ") : "";
-    composeNote.replaceChildren();
+    composeNote.textContent = "시연 환경 · 입력 내용은 실제 업무에 반영되지 않습니다.";
     if (demoMode) {
-      composeNote.append(document.createTextNode("예시 데이터로 동작합니다. "));
-      if (localFile) {
-        const open = element("a", "", "AI 상담으로 열기");
-        open.href = localServer;
-        composeNote.append(open);
-      } else {
-        const open = element("a", "", "AI 상담으로 돌아가기");
-        open.href = location.href;
-        composeNote.append(open);
-      }
-    } else {
-      const viewingPartners = workflow && engine.getState().scenario?.no === 6 && partnerCards.size;
-      composeNote.textContent = viewingPartners ? "제휴 조건은 SK매직몰과 카드사에서 확인할 수 있어요."
-        : workflow ? "예시 데이터로 상담을 진행하고 있어요." : "채팅에는 개인정보를 입력하지 마세요.";
+      const open = element("a", "", "AI 상담으로 열기");
+      open.href = localFile ? localServer : location.href;
+      composeNote.append(document.createTextNode(" "), open);
     }
   }
 
@@ -352,7 +343,7 @@
     }
     if (failedRequest) {
       const retry = button("다시 시도");
-      const useDemo = button("예시 대화");
+      const useDemo = button("안내형 상담");
       retry.addEventListener("click", () => requestReply(failedRequest.message, true));
       useDemo.addEventListener("click", () => {
         const question = failedRequest.message;
@@ -375,7 +366,7 @@
     const field = pendingField();
     const tools = element("div", "input-buttons");
     if (field?.sample) {
-      const sample = button("예시 값 넣기");
+      const sample = button("값 채우기");
       sample.id = "fill-sample";
       sample.addEventListener("click", () => {
         const editor = composerEntry();
@@ -384,6 +375,29 @@
         editor.focus({ preventScroll: true });
       });
       tools.append(sample);
+    }
+    if (flow.verification?.kind === "sms") {
+      const code = flow.verification.code;
+      const notice = element("section", "verification-message");
+      notice.id = "verification-message";
+      notice.setAttribute("aria-label", "인증 문자");
+      const number = element("strong", "verification-code", code);
+      number.setAttribute("data-verification-code", "");
+      notice.append(element("span", "verification-sender", "SK매직 인증 문자"), number);
+      const sms = button("인증 문자 확인");
+      sms.setAttribute("aria-controls", notice.id);
+      const sync = () => {
+        const expanded = revealedCode === code;
+        sms.setAttribute("aria-expanded", String(expanded));
+        notice.hidden = !expanded;
+      };
+      sms.addEventListener("click", () => {
+        revealedCode = revealedCode === code ? null : code;
+        sync();
+      });
+      sync();
+      tools.prepend(sms);
+      section.append(notice);
     }
     if (field && !field.required) {
       const skip = button("건너뛰기");
@@ -483,6 +497,12 @@
     const choices = element("div", "controls");
     const visual = actions.filter((action) => action.card);
     const plain = actions.filter((action) => !action.card);
+    if (flow.screen?.id === "$auth") {
+      const request = element("div", "pass-request");
+      const sign = actions.some((action) => action.label === "전자서명 확인");
+      request.append(element("span", "pass-mark", "PASS"), element("strong", "", sign ? "전자서명" : "본인인증"));
+      choices.append(request);
+    }
     if (!visual.length && flow.selection?.detail) {
       const summary = element("div", "selection-summary");
       summary.append(element("strong", "", flow.selection.title), element("span", "", flow.selection.detail));
@@ -525,7 +545,7 @@
       return;
     }
     if (!offer || activeRequest || failedRequest) return;
-    const action = button(offer.displayTitle + " 예시로 진행", "action");
+    const action = button(offer.displayTitle + " 계속하기", "action");
     action.addEventListener("click", () => startWorkflow(offer));
     const tools = element("div", "workflow-tools");
     tools.append(action);
@@ -598,6 +618,7 @@
 
   function update({ focus = false, scroll = true } = {}) {
     const flow = demoMode || workflow ? engine.getState() : null;
+    if (flow?.verification?.code !== revealedCode) revealedCode = null;
     syncInputProgress(flow);
     const messages = getRows();
     const empty = !messages.length;
@@ -630,10 +651,11 @@
     inputLabel.htmlFor = editor.id;
     inputLabel.textContent = field ? field.label + " 입력" : "질문 입력";
     input.maxLength = field ? 250 : 1500;
+    const hint = field?.placeholder;
     editor.placeholder = field
-      ? field.placeholder || (field.type === "date" ? "예: 2026-11-30" : field.label + " 입력")
+      ? field.type === "date" ? "YYYY-MM-DD" : hint && !/예[:시]|example\.com|0000-0000/.test(hint) ? hint : field.label + " 입력"
       : ready ? "위에서 다음 단계를 선택해 주세요."
-        : empty ? "예: 정수기 렌탈료는 언제 빠져나가나요?" : (flow?.screen?.placeholder || "이어서 질문해 보세요");
+        : empty ? "궁금한 내용을 입력해 주세요." : (flow?.screen?.placeholder || "이어서 질문해 보세요");
     resizeInput();
     if (focus) {
       const target = blocked || ready
@@ -667,7 +689,6 @@
       lastScenario = scenario.no;
       engine.start(scenario.no);
       if (fromMenu && scenario.no !== 50) liveRows.push({ role: "user", text: scenario.displayTitle });
-      if (!fromMenu && scenario.no !== 6) liveRows.push({ role: "bot", text: "예시 데이터로 상담 절차를 이어갈게요.", status: "예시 대화" });
       offer = null;
       failedRequest = null;
     }
@@ -688,6 +709,7 @@
     lastScenario = null;
     inputMessages = [];
     inputProgress = null;
+    revealedCode = null;
     input.value = "";
     secureInput.value = "";
     engine.reset();

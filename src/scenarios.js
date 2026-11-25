@@ -1,4 +1,4 @@
-// 상담 화면, 예시 데이터 및 실행에 사용되는 화면 전이.
+// 상담 화면, 화면 전이, 미리보기용 조회 데이터.
 window.SKIX_SCENARIOS = [
   {
     "no": 1,
@@ -94,11 +94,11 @@ window.SKIX_SCENARIOS = [
         "items": [
           {
             "title": "직수 정수기",
-            "detail": "WPU-1000 · 문래동 · 예시카드"
+            "detail": "WPU-1000 · 문래동 · 신한카드"
           },
           {
             "title": "공기청정기",
-            "detail": "ACL-1000 · 문래동 · 예시은행"
+            "detail": "ACL-1000 · 문래동 · KB국민은행"
           }
         ],
         "demo": true
@@ -120,7 +120,7 @@ window.SKIX_SCENARIOS = [
           },
           {
             "title": "결제정보",
-            "detail": "출금 유형  신용카드 자동납부\n카드사  예시카드\n카드번호  ••••-••••-••••-1234\n결제일  매월 25일"
+            "detail": "출금 유형  신용카드 자동납부\n카드사  신한카드\n카드번호  ••••-••••-••••-1234\n결제일  매월 25일"
           },
           {
             "title": "계약 기간",
@@ -594,7 +594,7 @@ window.SKIX_SCENARIOS = [
         "fields": [
           {
             "label": "카드번호",
-            "value": "••••-••••-••••-1234"
+            "value": "카드번호"
           },
           {
             "label": "유효기간",
@@ -621,11 +621,11 @@ window.SKIX_SCENARIOS = [
         "fields": [
           {
             "label": "은행",
-            "value": "예시은행"
+            "value": "은행명"
           },
           {
             "label": "계좌번호",
-            "value": "••••-••••-1234"
+            "value": "계좌번호"
           },
           {
             "label": "생년월일",
@@ -664,7 +664,7 @@ window.SKIX_SCENARIOS = [
         "items": [
           {
             "title": "변경된 수단",
-            "detail": "신용카드 자동납부 · 예시카드"
+            "detail": "신용카드 자동납부 · 신한카드"
           },
           {
             "title": "카드번호",
@@ -900,7 +900,7 @@ window.SKIX_SCENARIOS = [
         "fields": [
           {
             "label": "카드번호",
-            "value": "••••-••••-••••-1234"
+            "value": "카드번호"
           },
           {
             "label": "유효기간",
@@ -931,11 +931,11 @@ window.SKIX_SCENARIOS = [
         "fields": [
           {
             "label": "은행",
-            "value": "예시은행"
+            "value": "은행명"
           },
           {
             "label": "계좌번호",
-            "value": "••••-••••-1234"
+            "value": "계좌번호"
           },
           {
             "label": "생년월일",
@@ -988,7 +988,7 @@ window.SKIX_SCENARIOS = [
         "items": [
           {
             "title": "가상계좌",
-            "detail": "예시은행 · ••••-••••-1234"
+            "detail": "KB국민은행 · ••••-••••-1234"
           },
           {
             "title": "입금할 금액",
@@ -1241,7 +1241,7 @@ window.SKIX_SCENARIOS = [
         "fields": [
           {
             "label": "카드번호",
-            "value": "••••-••••-••••-1234"
+            "value": "카드번호"
           },
           {
             "label": "유효기간",
@@ -1273,11 +1273,11 @@ window.SKIX_SCENARIOS = [
         "fields": [
           {
             "label": "은행",
-            "value": "예시은행"
+            "value": "은행명"
           },
           {
             "label": "계좌번호",
-            "value": "••••-••••-1234"
+            "value": "계좌번호"
           },
           {
             "label": "생년월일",
@@ -1323,7 +1323,7 @@ window.SKIX_SCENARIOS = [
         "items": [
           {
             "title": "가상계좌",
-            "detail": "예시은행 · ••••-••••-1234"
+            "detail": "KB국민은행 · ••••-••••-1234"
           }
         ],
         "demo": true
@@ -1491,12 +1491,12 @@ window.SKIX_SCENARIOS = [
         "message": "혜택을 자세히 보고 싶은 카드를 선택해 주세요.",
         "kind": "choice",
         "options": [
-          "예시 제휴카드 혜택 보기"
+          "제휴카드 혜택 보기"
         ],
         "items": [
           {
-            "title": "예시 제휴카드",
-            "detail": "이용실적에 따라 구독료 청구 할인 · 신청 문의 02-••••-1234"
+            "title": "구독 제휴카드",
+            "detail": "구독료 청구 할인 · 카드별 이용 실적과 신청 방법 확인"
           }
         ],
         "demo": true
@@ -1512,7 +1512,7 @@ window.SKIX_SCENARIOS = [
         ],
         "items": [
           {
-            "title": "예시 제휴카드",
+            "title": "구독 제휴카드",
             "detail": "이용실적에 따라 구독료 청구 할인"
           }
         ],
@@ -1901,11 +1901,11 @@ window.SKIX_SCENARIOS = [
         "fields": [
           {
             "label": "이름",
-            "value": "이름 입력"
+            "value": "신청자 이름"
           },
           {
             "label": "휴대폰 번호",
-            "value": "010-••••-1234"
+            "value": "휴대폰 번호"
           }
         ],
         "demo": true
@@ -2208,11 +2208,11 @@ window.SKIX_SCENARIOS = [
         "fields": [
           {
             "label": "이름",
-            "value": "이름 입력"
+            "value": "신청자 이름"
           },
           {
             "label": "휴대폰 번호",
-            "value": "010-••••-1234"
+            "value": "휴대폰 번호"
           }
         ],
         "demo": true
@@ -3008,11 +3008,11 @@ window.SKIX_SCENARIOS = [
         "fields": [
           {
             "label": "이름",
-            "value": "이름 입력"
+            "value": "신청자 이름"
           },
           {
             "label": "휴대폰 번호",
-            "value": "010-••••-1234"
+            "value": "휴대폰 번호"
           }
         ],
         "demo": true
@@ -3315,11 +3315,11 @@ window.SKIX_SCENARIOS = [
         "fields": [
           {
             "label": "이름",
-            "value": "이름 입력"
+            "value": "신청자 이름"
           },
           {
             "label": "휴대폰 번호",
-            "value": "010-••••-1234"
+            "value": "휴대폰 번호"
           }
         ],
         "items": [],
@@ -3587,11 +3587,11 @@ window.SKIX_SCENARIOS = [
         "fields": [
           {
             "label": "이름",
-            "value": "이름 입력"
+            "value": "신청자 이름"
           },
           {
             "label": "휴대폰 번호",
-            "value": "010-••••-1234"
+            "value": "휴대폰 번호"
           }
         ],
         "demo": true
@@ -3937,11 +3937,11 @@ window.SKIX_SCENARIOS = [
         "fields": [
           {
             "label": "이름",
-            "value": "이름 입력"
+            "value": "신청자 이름"
           },
           {
             "label": "휴대폰 번호",
-            "value": "010-••••-1234"
+            "value": "휴대폰 번호"
           }
         ],
         "items": [],
@@ -4224,11 +4224,11 @@ window.SKIX_SCENARIOS = [
         "fields": [
           {
             "label": "이름",
-            "value": "이름 입력"
+            "value": "신청자 이름"
           },
           {
             "label": "휴대폰 번호",
-            "value": "010-••••-1234"
+            "value": "휴대폰 번호"
           }
         ],
         "demo": true
@@ -4483,11 +4483,11 @@ window.SKIX_SCENARIOS = [
         "fields": [
           {
             "label": "이름",
-            "value": "이름 입력"
+            "value": "신청자 이름"
           },
           {
             "label": "휴대폰 번호",
-            "value": "010-••••-1234"
+            "value": "휴대폰 번호"
           }
         ],
         "items": [],
@@ -5204,7 +5204,7 @@ window.SKIX_SCENARIOS = [
     "demoValues": {
       "발송 방법": "이메일",
       "문서 이름": "청구·수납 내역서",
-      "마스킹된 수신처": "de••@example.com"
+      "마스킹된 수신처": "k•••@naver.com"
     }
   },
   {
@@ -5556,7 +5556,7 @@ window.SKIX_SCENARIOS = [
     ],
     "demoValues": {
       "발송 방법": "이메일",
-      "마스킹된 수신처": "de••@example.com"
+      "마스킹된 수신처": "k•••@naver.com"
     }
   },
   {
@@ -5926,7 +5926,7 @@ window.SKIX_SCENARIOS = [
     "demoValues": {
       "발송 방법": "이메일",
       "조회 기간": "2026년 11월 결제분",
-      "마스킹된 수신처": "de••@example.com"
+      "마스킹된 수신처": "k•••@naver.com"
     }
   },
   {
@@ -6150,7 +6150,7 @@ window.SKIX_SCENARIOS = [
       "발급 건수": "1건",
       "우편 또는 이메일": "이메일",
       "발송 방법": "이메일",
-      "마스킹된 수신처": "de••@example.com"
+      "마스킹된 수신처": "k•••@naver.com"
     }
   },
   {
@@ -7269,7 +7269,7 @@ window.SKIX_SCENARIOS = [
     "demoValues": {
       "예정 월 또는 날짜": "2026년 12월 2일(수)",
       "마스킹된 주소": "서울 영등포구 문래동 •••",
-      "택배사": "예시 택배"
+      "택배사": "CJ대한통운"
     }
   },
   {
@@ -7585,7 +7585,7 @@ window.SKIX_SCENARIOS = [
         "condition": "별도 검토. 신규 상담에 필요한 정보 수집",
         "message": "상담받고 싶은 제품이나 모델을 알려주세요. 모델을 모르시면 제품 종류와 원하시는 기능만 알려주셔도 돼요.",
         "kind": "input",
-        "placeholder": "예: 얼음이 나오는 정수기"
+        "placeholder": "제품 종류 또는 모델명"
       },
       {
         "id": "s3",
@@ -8765,7 +8765,7 @@ window.SKIX_SCENARIOS = [
         "id": "s2",
         "stepId": "p",
         "condition": "당월분 발송 가능일 전",
-        "message": "12월 4대보험 완납증명서은 12월 15일 이후에 보내드릴 수 있어요. 전월 서류를 받으시겠어요?",
+        "message": "이번 달 증명서의 발송 가능일이 아직 오지 않았어요. 지난달 서류를 받으시겠어요?",
         "kind": "choice",
         "options": [
           "전월분 받기",
@@ -8841,7 +8841,11 @@ window.SKIX_SCENARIOS = [
         "items": [
           {
             "title": "발송 방식",
-            "detail": "sample@example.com"
+            "detail": "이메일"
+          },
+          {
+            "title": "수신 이메일",
+            "detail": "k•••@naver.com"
           },
           {
             "title": "발송 구분",
@@ -10276,7 +10280,7 @@ window.SKIX_SCENARIOS = [
         "condition": "제품 모델 및 설치 환경 확인",
         "message": "제품의 모델명과 설치하려는 장소를 알려 주세요.",
         "kind": "input",
-        "placeholder": "예: 정수기 모델명, 싱크대 상판"
+        "placeholder": "제품 모델명과 설치 장소"
       },
       {
         "id": "s3",
@@ -10791,7 +10795,7 @@ window.SKIX_SCENARIOS = [
         "items": [
           {
             "title": "환불 계좌",
-            "detail": "예시은행 ••••-••••-1234"
+            "detail": "KB국민은행 ••••-••••-1234"
           },
           {
             "title": "환불 예정일",
@@ -10975,7 +10979,7 @@ window.SKIX_SCENARIOS = [
           },
           {
             "title": "환불 계좌",
-            "detail": "예시은행 ••••-••••-1234"
+            "detail": "KB국민은행 ••••-••••-1234"
           },
           {
             "title": "예정일 또는 완료일",
@@ -11242,7 +11246,7 @@ window.SKIX_SCENARIOS = [
         "id": "s6",
         "stepId": "f",
         "condition": "승인건 영수증 발송 완료",
-        "message": "현금영수증을 요청하신 이메일으로 보냈어요. 정기 발송 서비스는 운영하지 않아요.",
+        "message": "현금영수증을 요청하신 이메일로 보냈어요. 정기 발송 서비스는 운영하지 않아요.",
         "kind": "result",
         "demo": true
       },
@@ -11446,11 +11450,11 @@ window.SKIX_SCENARIOS = [
         "fields": [
           {
             "label": "이름",
-            "value": "이름 입력"
+            "value": "신청자 이름"
           },
           {
             "label": "휴대폰 번호",
-            "value": "010-••••-1234"
+            "value": "휴대폰 번호"
           }
         ],
         "options": [

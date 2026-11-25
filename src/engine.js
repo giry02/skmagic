@@ -1,20 +1,20 @@
 (function () {
   'use strict';
 
-  const demoCode = '123456';
   const demoPhone = '010-0000-1234';
   const demoAddress = '서울 영등포구 문래동';
   const welcome = '안녕하세요. SK매직 상담 챗봇입니다. 궁금한 내용을 입력하거나 상담 메뉴에서 선택해 주세요.';
   const defaultPlaceholder = '메시지를 입력하세요';
   const auditFlows = window.SKIX_FLOW_OVERLAYS ?? {};
   const otpAttemptLimit = 5;
+  const phoneConsent = '휴대폰 확인을 위해 이름과 휴대폰 번호를 이용해요. 개인정보 수집 및 이용에 동의하시겠어요?';
   const partnerBenefitsUrl = 'https://www.skmagic.com/event/cardbenefit';
   const sampleIssuers = [
-    { title: '예시카드', detail: '신용카드 · 끝자리 1234', kind: 'issuer', last4: '1234' },
-    { title: '예시 체크카드', detail: '체크카드 · 끝자리 4321', kind: 'issuer', last4: '4321' }
+    { title: '신한카드', detail: '신용카드', kind: 'issuer', last4: '1234' },
+    { title: 'KB국민카드', detail: '체크카드', kind: 'issuer', last4: '4321' }
   ];
   const samplePartner = {
-    title: '예시 제휴카드', detail: '이용실적에 따라 구독료 청구 할인', kind: 'partner'
+    title: '제휴카드 혜택', detail: '이용실적에 따라 구독료 청구 할인', kind: 'partner'
   };
   const methodCards = {
     '등록 결제수단': { kind: 'saved', detail: '등록된 카드 선택', title: '등록 결제수단' },
@@ -26,10 +26,10 @@
     '가상계좌': { kind: 'virtual', detail: '발급된 계좌로 직접 입금', title: '가상계좌' }
   };
   const savedCard = {
-    title: '예시카드', detail: '••••-••••-••••-1234 · 계약자 본인 명의', kind: 'saved'
+    title: '신한카드', detail: '••••-••••-••••-1234 · 계약자 본인 명의', kind: 'saved'
   };
   const sampleTransaction = {
-    title: '2026년 11월 카드 결제', detail: '예시카드 · 끝자리 1234 · 29,900원', kind: 'payment-record'
+    title: '2026년 11월 카드 결제', detail: '신한카드 · 끝자리 1234 · 29,900원', kind: 'payment-record'
   };
 
   // Destinations follow the order of the option labels on each Figma screen.
@@ -151,8 +151,8 @@
 
   const fromLabel = (label, placeholder, type = 'text', sample = '') => ({ label, placeholder, type, sample });
   const fieldTemplates = {
-    name: fromLabel('이름', '예시 이름을 입력하세요', 'text', '김매직'),
-    bank: fromLabel('은행', '예: 예시은행', 'text', '예시은행'),
+    name: fromLabel('이름', '이름 입력', 'text', '김매직'),
+    bank: fromLabel('은행', '은행명 입력', 'text', 'KB국민은행'),
     phone: fromLabel('휴대폰 번호', '010-0000-0000', 'tel', demoPhone),
     address: fromLabel('주소', '시·구·동 또는 도로명 입력', 'text', demoAddress),
     email: fromLabel('이메일 주소', 'name@example.com', 'email', 'magic@example.com'),
@@ -161,7 +161,7 @@
     product: fromLabel('제품명 또는 모델명', '예: 직수 정수기', 'text', '직수 정수기'),
     contract: fromLabel('계약 또는 제품명', '예: 직수 정수기 계약', 'text', '직수 정수기 계약'),
     description: fromLabel('요청 내용', '내용을 입력해 주세요', 'text', '방문 전에 연락해 주세요.'),
-    otp: fromLabel('인증번호', '6자리 인증번호 입력', 'password', demoCode),
+    otp: fromLabel('인증번호', '6자리 인증번호 입력', 'password'),
     symptom: fromLabel('접수 증상', '예: 물이 나오지 않아요', 'text', '정수기에서 물이 나오지 않아요')
   };
 
@@ -243,6 +243,19 @@
       .format(date).replace(/일\s*/, '일');
   }
 
+  function estimateDateRange() {
+    const today = new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(new Date());
+    const end = new Date(today + 'T12:00:00Z');
+    const day = end.getUTCDate();
+    end.setUTCDate(1);
+    end.setUTCMonth(end.getUTCMonth() + 1);
+    const lastDay = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() + 1, 0)).getUTCDate();
+    end.setUTCDate(Math.min(day, lastDay));
+    return { today, until: end.toISOString().slice(0, 10) };
+  }
+
   function searchScore(scenario, query) {
     const direct = /^(?:no\.?\s*)?(\d{1,2})(?:번)?$/i.exec(query.trim());
     if (direct) return Number(direct[1]) === scenario.no ? 1000 : 0;
@@ -271,6 +284,14 @@
       .sort((a, b) => b.score - a.score || a.scenario.no - b.scenario.no);
   }
 
+  function nextOtp(previous) {
+    const numbers = new Uint32Array(1);
+    if (globalThis.crypto?.getRandomValues) globalThis.crypto.getRandomValues(numbers);
+    else numbers[0] = Math.floor(Math.random() * 0x100000000);
+    const generated = 100000 + numbers[0] % 900000;
+    return String(String(generated) === previous ? 100000 + (generated - 99999) % 900000 : generated);
+  }
+
   class SKIXChat {
     constructor(scenarios = []) {
       this.scenarios = [...scenarios];
@@ -285,6 +306,7 @@
       this.context = {};
       this.fields = [];
       this.candidates = [];
+      this.resolving = new Set();
       return this.getState();
     }
 
@@ -296,6 +318,8 @@
         messages: [...this.messages],
         actions: this.actionList().map(({ target, ...action }) => action),
         fields: this.fields.map((field) => ({ ...field })),
+        verification: this.context.otpCode && this.fields.some((field) => field.label === '인증번호')
+          ? { kind: 'sms', code: this.context.otpCode } : null,
         placeholder: this.screen?.placeholder || defaultPlaceholder,
         secure: Boolean(this.screen?.secure || this.screen?.id === '$auth' || this.fields.some((field) => field.type === 'password')),
         inputDisabled: Boolean(this.fields.length || this.screen?.kind === 'internal-only' || this.screen?.id === '$auth'),
@@ -371,17 +395,34 @@
       if (!screen) return;
       const patch = auditFlows[this.scenario.no]?.screens?.[screen.id];
       if (patch) {
-        const { actions, fields, ...properties } = patch;
-        screen = { ...screen, ...properties };
+        const { actions, fields, ...display } = patch;
+        screen = { ...screen, ...display };
         if (actions) screen.explicitActions = actions;
         if (fields) screen.explicitFields = fields;
+      }
+      if (screen.resolve && !properties.demo) {
+        const key = this.scenario.no + ':' + screen.id;
+        if (this.resolving.has(key)) throw new Error('Circular workflow resolution: ' + key);
+        const matched = screen.resolve.rules?.find((rule, index) =>
+          this.context.routeMatches?.[screen.id + ':' + index]?.length);
+        const target = matched?.target ?? screen.resolve.default;
+        if (target && target !== screen.id) {
+          this.screen = screen;
+          this.resolving.add(key);
+          try {
+            this.execute(target);
+          } finally {
+            this.resolving.delete(key);
+          }
+          return;
+        }
       }
       const collectsIdentity = screen.id === 'phoneInput'
         || screen.options?.some((label) => /인증번호 받기/.test(label))
         || screen.explicitActions?.some(([, target]) => target === '$sendOtp');
       if (collectsIdentity && !this.context.nativeSmsConsent) {
         this.context.nativeSmsReturn = screen.id;
-        this.synthetic('휴대폰 확인을 위해 예시 연락처와 인증번호를 사용할게요. 데모에서 개인정보 수집·이용 동의 단계를 체험하시겠어요?', {
+        this.synthetic(phoneConsent, {
           id: '$nativeSmsConsent',
           actions: [['동의하고 계속', '$nativeSmsConsent'], ['동의하지 않음', '$auditSmsDecline']]
         });
@@ -404,8 +445,9 @@
         const item = typeof definition === 'string' ? fieldTemplates[definition] : definition;
         if (!item) throw new Error('Unknown workflow field: ' + definition);
         const type = item.type ?? 'text';
-        const sample = item.label === '카드번호' && this.context.issuer?.last4
-          ? '000000000000' + this.context.issuer.last4 : item.sample;
+        const sample = item.label === '인증번호' ? this.context.otpCode
+          : item.label === '카드번호' && this.context.issuer?.last4
+            ? '000000000000' + this.context.issuer.last4 : item.sample;
         const keyboard = type === 'password' ? 'numeric' : type === 'tel' ? 'tel' : type === 'email' ? 'email' : undefined;
         return {
           ...item, sample, id: `field-${index}`, type, inputMode: keyboard, required: item.required !== false && !item.readonly,
@@ -427,7 +469,7 @@
       if (no === 1 && screen.id === 'S03' && this.context.product === '공기청정기') {
         message.items = [
           { title: '공기청정기', detail: '제품코드 ACL-1000\n사용 주소 서울 영등포구 문래동' },
-          { title: '결제정보', detail: '출금 유형  은행계좌 자동이체\n은행  예시은행\n계좌번호  ••••-••••-1234\n이체일  매월 25일\n월 구독료  29,900원' },
+          { title: '결제정보', detail: '출금 유형  은행계좌 자동이체\n은행  KB국민은행\n계좌번호  ••••-••••-1234\n이체일  매월 25일\n월 구독료  29,900원' },
           ...items.slice(2)
         ];
       }
@@ -548,7 +590,7 @@
         const cards = list.length ? list : [samplePartner];
         return cards.map((card, index) => ({
           id: 'partner:' + index, target: 'S03',
-          label: list.length ? card.title : '예시 제휴카드 혜택 보기',
+          label: list.length ? card.title : '제휴카드 혜택 보기',
           card: {
             id: card.id, title: card.title, issuer: card.issuer, detail: card.detail, phone: card.phone,
             phoneLabel: card.phoneLabel, href: card.href, mediaKey: card.id, kind: 'partner'
@@ -568,7 +610,7 @@
       }
       if (id === '$savedPicker') {
         return [
-          { id: 'saved:sample', label: '예시카드 선택', target: '$confirmPayment', card: savedCard },
+          { id: 'saved:sample', label: '신한카드 선택', target: '$confirmPayment', card: savedCard },
           { id: 'saved:external', label: '타인 명의라면?', target: no === 4 ? 'S03' : '$unavailableSavedCard' }
         ];
       }
@@ -689,8 +731,9 @@
       const action = this.actionList().find((item) => item.id === actionId);
       if (action?.target === '$address' && field.label !== '주소') return '';
       const error = validationError(field, input);
-      if (!error && this.scenario.no === 7 && field.type === 'date' && (input < '2026-11-25' || input > '2026-12-25')) {
-        return '예시 기준일(2026년 11월 25일)부터 한 달 이내 날짜를 선택해 주세요.';
+      if (!error && this.scenario.no === 7 && field.type === 'date') {
+        const { today, until } = estimateDateRange();
+        if (input < today || input > until) return '오늘부터 한 달 이내의 날짜를 입력해 주세요.';
       }
       return error;
     }
@@ -752,11 +795,12 @@
     capture(label, values, card) {
       const screen = this.screen.id;
       const no = this.scenario.no;
+      this.captureRouteMatches(label, values);
       if (card?.kind === 'partner') this.context.partnerCard = card;
       if (card?.kind === 'issuer') this.context.issuer = card;
       if ([3, 4, 5].includes(no) && values.카드번호) {
         this.context.payment = {
-          title: this.context.issuer?.title || '예시카드',
+          title: this.context.issuer?.title || '신한카드',
           masked: '••••-••••-••••-' + values.카드번호.replace(/\D/g, '').slice(-4)
         };
       }
@@ -802,11 +846,39 @@
       if (no === 17 && screen === 'S03') this.context.modifiedAddress = undefined;
     }
 
+    captureRouteMatches(label, values) {
+      const previous = this.context.routeMatches ?? {};
+      const matches = { ...previous };
+      const editable = new Set(this.fields.filter((field) => !field.readonly).map((field) => field.label));
+      for (const [id, data] of Object.entries(auditFlows[this.scenario.no]?.screens ?? {})) {
+        for (const [index, rule] of (data.resolve?.rules ?? []).entries()) {
+          const key = id + ':' + index;
+          const prior = matches[key] ?? [];
+          const eligible = rule.fields ?? ['$choice'];
+          const pattern = new RegExp(rule.match, 'iu');
+          const observed = eligible.filter((field) => field === '$choice'
+            ? pattern.test(label) : editable.has(field) && Object.hasOwn(values, field));
+          if (!observed.length) continue;
+          matches[key] = [
+            ...prior.filter((field) => !observed.includes(field)),
+            ...observed.filter((field) => {
+              const value = String(field === '$choice' ? label : values[field]);
+              return pattern.test(/휴대폰|전화번호/.test(field) ? value.replace(/\D/g, '') : value);
+            }),
+          ];
+        }
+      }
+      this.context.routeMatches = matches;
+    }
+
     openAuth(method, target) {
       this.context.auth = { method, target, source: this.screen.id, failure: this.screen.auth?.failure };
-      this.synthetic(`${method} 단계입니다. 예시 인증 결과를 선택해 주세요.`, {
-        id: '$auth', condition: '예시 인증',
-        actions: [[method === 'PASS 전자서명' ? '서명 완료' : '인증 완료', '$authSuccess'], ['인증 실패', '$authFailure'], ['취소', '$authCancel']]
+      const signing = method === 'PASS 전자서명';
+      this.synthetic(signing
+        ? 'PASS에서 자동이체 내용을 확인하고 전자서명을 진행해 주세요.'
+        : 'PASS 본인인증 화면에서 명의자 정보를 확인해 주세요.', {
+        id: '$auth', condition: method,
+        actions: [[signing ? '전자서명 확인' : '본인인증 확인', '$authSuccess'], ['취소', '$authCancel']]
       });
     }
 
@@ -839,7 +911,7 @@
           this.synthetic('상담을 마쳤어요. 다시 도움이 필요하시면 말씀해 주세요.', { kind: 'result', demo: false });
           break;
         case '$handoff':
-          this.synthetic('상담사 연결 요청을 확인했어요. 데모에서는 이 단계에서 연결 절차가 끝나요.', {
+          this.synthetic('요청하신 내용은 상담사가 확인해야 해요. 연결이 필요한 업무를 아래에서 확인해 주세요.', {
             id: '$handoff', kind: 'handoff', items: [{ title: '상담 분류', detail: this.scenario.displayTitle || this.scenario.title }]
           });
           break;
@@ -865,7 +937,7 @@
         case '$authCancel':
           this.goBack();
           this.goBack();
-          this.sayBot('예시 인증을 취소했어요. 다시 시도할 수 있어요.', { status: '인증 안내' });
+          this.sayBot('인증을 취소했어요. 다시 시도할 수 있어요.', { status: '인증 안내' });
           break;
         case '$nativeSmsConsent':
           this.context.nativeSmsConsent = true;
@@ -873,7 +945,7 @@
           break;
         case '$auditSms':
           this.context.auditAuth = this.screen.auth;
-          this.synthetic('휴대폰 확인을 위해 예시 연락처와 인증번호를 사용할게요. 개인정보 수집·이용 동의 단계를 체험하시겠어요?', {
+          this.synthetic(phoneConsent, {
             id: '$auditSmsConsent',
             actions: [['동의하고 계속', '$auditSmsInput'], ['동의하지 않음', '$auditSmsDecline']]
           });
@@ -884,40 +956,45 @@
           });
           break;
         case '$auditSmsInput':
-          this.form('확인에 사용할 예시 이름과 휴대폰 번호를 알려 주세요.', ['name', 'phone'], '$auditSendOtp', '인증번호 받기');
+          this.form('확인에 사용할 이름과 휴대폰 번호를 알려 주세요.', ['name', 'phone'], '$auditSendOtp', '인증번호 받기');
           break;
         case '$auditSendOtp':
           this.context.otpTries = 0;
-          this.synthetic(`예시 인증번호는 ${demoCode}이에요. 하단 메시지 입력창에 인증번호를 입력해 주세요.`, {
+          this.context.otpCode = nextOtp(this.context.otpCode);
+          this.synthetic('인증 문자를 확인하고 6자리 인증번호를 입력해 주세요.', {
             id: '$auditSmsCode', kind: 'input', fields: ['otp'],
             actions: [['확인', '$auditVerifyOtp'], ['인증번호 재전송', '$resendOtp']]
           });
           break;
         case '$sendOtp':
           this.context.otpTries = 0;
+          this.context.otpCode = nextOtp(this.context.otpCode);
           if (this.scenario.screens.some((item) => item.id === 'phoneConfirm')) {
             this.execute('phoneConfirm');
           } else {
-            this.synthetic('예시 문자로 받은 인증번호를 입력해 주세요.', {
-              id: '$phoneConfirm', kind: 'input', condition: '휴대폰 확인 · 예시 인증번호 발송',
+            this.synthetic('인증 문자를 확인하고 6자리 인증번호를 입력해 주세요.', {
+              id: '$phoneConfirm', kind: 'input', condition: '휴대폰 인증번호 확인',
               fields: [{ ...fieldTemplates.phone, readonly: true }, 'otp'],
               actions: [['확인', '$verifyOtp'], ['인증번호 재전송', '$resendOtp']]
             });
           }
-          this.sayBot(`예시 인증번호는 ${demoCode}이에요.`, { demo: true, status: '인증 안내' });
           break;
         case '$resendOtp':
-          this.fields = this.fields.map((field) => field.label === '인증번호' ? { ...field, error: undefined } : field);
-          this.sayBot(`예시 인증번호 ${demoCode}을 다시 표시했어요.`, { demo: true, status: '인증 안내' });
+          this.context.otpCode = nextOtp(this.context.otpCode);
+          this.fields = this.fields.map((field) => field.label === '인증번호'
+            ? { ...field, sample: this.context.otpCode, error: undefined } : field);
+          this.sayBot('인증번호를 다시 요청했어요. 새로 받은 6자리 번호를 입력해 주세요.', { status: '인증 안내' });
           break;
         case '$auditVerifyOtp':
         case '$verifyOtp':
           const shared = target === '$auditVerifyOtp';
-          if (values['인증번호'] === demoCode) {
+          if (this.context.otpCode && values['인증번호'] === this.context.otpCode) {
+            this.context.otpCode = undefined;
             this.execute(shared ? this.context.auditAuth?.success ?? '$finish' : this.screen.auth?.success ?? phoneSuccess[no]);
           } else {
             this.context.otpTries = (this.context.otpTries ?? 0) + 1;
             if (this.context.otpTries >= otpAttemptLimit) {
+              this.context.otpCode = undefined;
               this.execute(shared ? this.context.auditAuth?.failure ?? '$handoff' : this.screen.auth?.failure ?? phoneFailures[no]);
             } else {
               this.fields = this.fields.map((field) => field.label === '인증번호'
@@ -929,7 +1006,7 @@
           this.synthetic(this.scenario.no === 3 ? '등록할 카드의 카드사를 선택해 주세요.' : '결제에 사용할 카드의 카드사를 선택해 주세요.', { id: '$issuerPicker' });
           break;
         case '$savedPicker':
-          this.synthetic('등록된 예시 카드 중 납부에 사용할 카드를 골라 주세요.', { id: '$savedPicker' });
+          this.synthetic('등록된 카드 중 납부에 사용할 카드를 선택해 주세요.', { id: '$savedPicker' });
           break;
         case '$unavailableSavedCard':
           this.synthetic('다른 분 명의로 등록된 카드로는 납부할 수 없어요. 가상계좌 또는 상담사 연결을 선택해 주세요.', {
@@ -938,7 +1015,7 @@
           break;
         case '$confirmPayment':
           this.context.payment = { title: savedCard.title, masked: '••••-••••-••••-1234' };
-          this.synthetic('같은 요금을 이미 납부했는지 확인해 주세요. 등록된 본인 명의의 카드로 예시 요금을 납부할까요?', {
+          this.synthetic('같은 요금을 이미 납부하셨는지 확인해 주세요. 등록된 본인 명의의 카드로 납부할까요?', {
             actions: [['납부 요청', 'S07'], ['나가기', no === 5 ? 'S04' : 'S02']],
             items: [
               { title: '납부 방법', detail: savedCard.title + ' · ••••-••••-••••-1234' },
@@ -964,13 +1041,13 @@
           break;
         case '$address':
           this.context.checkedAddress = screen;
-          this.sayBot('예시 주소를 확인했어요. 주소 정보를 확인한 뒤 계속 진행해 주세요.', { demo: true });
+          this.sayBot('주소를 확인했어요. 입력하신 주소가 맞으면 계속 진행해 주세요.');
           break;
         case '$otherProduct':
           this.form('다른 제품의 모델명이나 제품명을 입력해 주세요.', ['product'], 'S04');
           break;
         case '$cardBenefits':
-          this.synthetic('예시 제휴카드는 이용 실적을 충족하면 구독료 청구 할인이 적용돼요. 할인 금액과 실적 조건은 카드별 상품 설명을 확인해 주세요.', {
+          this.synthetic('이용 실적을 충족하면 구독료 청구 할인이 적용될 수 있어요. 카드별 혜택과 이용 조건을 확인해 주세요.', {
             kind: 'result', actions: [['계속하기', 'S04']]
           });
           break;
@@ -987,7 +1064,7 @@
           break;
         case '$transferPerson':
         case '$transferBusiness':
-          this.form('새 계약자의 예시 정보를 입력해 주세요.', ['name', 'phone'], target === '$transferPerson' ? 'S08' : 'S07', '다음');
+          this.form('새 계약자의 정보를 입력해 주세요.', ['name', 'phone'], target === '$transferPerson' ? 'S08' : 'S07', '다음');
           break;
         case '$symptom':
           this.synthetic('제품에서 나타나는 증상을 선택해 주세요.', {
@@ -1005,7 +1082,7 @@
           this.execute('S05');
           break;
         case '$contactIdentity':
-          this.form('연락을 받으신 분의 예시 정보를 입력해 주세요.', ['name', 'phone'], 's5');
+          this.form('연락을 받으신 분의 정보를 입력해 주세요.', ['name', 'phone'], 's5');
           break;
         case '$alternateContact':
           this.synthetic('별도로 등록할 연락처가 있으신가요?', {
@@ -1016,7 +1093,7 @@
           this.execute(this.context.contactTopic === '배송·설치 연락' ? '@16' : this.context.contactTopic === '계약·위약금 연락' ? '@7' : '@13');
           break;
         case '$billingPeriod':
-          this.form('신청할 문서와 예시 조회 기간을 입력해 주세요.', [
+          this.form('신청할 문서와 조회 기간을 입력해 주세요.', [
             fromLabel('문서 종류', '예: 청구서, 수납내역서', 'text', '청구서'),
             fromLabel('조회 기간', '예: 2026년 11월', 'text', '2026년 11월')
           ], 's4');
@@ -1031,12 +1108,12 @@
           break;
         case '$slipDestination':
           this.context.channel = label;
-          this.form('상담사에게 전달할 예시 수신처를 입력해 주세요.', [
+          this.form('상담사에게 전달할 수신처를 입력해 주세요.', [
             label === '이메일' ? 'email' : label === '팩스' ? 'fax' : 'phone'
           ], '$slipHandoff', '상담 요청');
           break;
         case '$slipHandoff':
-          this.synthetic('카드매출전표 발송 요청을 담당 상담사에게 전달하는 예시 단계예요.', {
+          this.synthetic('카드매출전표는 담당 상담사가 확인한 뒤 발송해 드려요. 요청하신 수신처를 확인해 주세요.', {
             id: '$handoff', kind: 'handoff',
             items: [
               { title: '수신 방법', detail: this.context.channel },
@@ -1057,7 +1134,7 @@
           break;
         case '$existingAccount':
           this.context.channel = '알림톡';
-          this.synthetic('예시 가상계좌 발급 이력을 확인했어요. 등록된 번호로 확인서를 받으시겠어요?', {
+          this.synthetic('가상계좌 발급 이력을 확인했어요. 등록된 번호로 확인서를 받으시겠어요?', {
             actions: [['등록된 번호로 받기', 's6'], ['발급 이력 없음 체험', 's7']]
           });
           break;
@@ -1073,10 +1150,10 @@
           });
           break;
         case '$splitSome':
-          this.form('묶음에서 분리할 예시 계약을 입력해 주세요.', ['contract'], 's6', '분리 요청');
+          this.form('묶음에서 분리할 계약을 입력해 주세요.', ['contract'], 's6', '분리 요청');
           break;
         case '$userDetails':
-          this.form('주소나 사용자의 예시 정보를 입력해 주세요.', ['address', 'name'], 's7', '변경 요청');
+          this.form('주소나 사용자 정보를 입력해 주세요.', ['address', 'name'], 's7', '변경 요청');
           break;
         case '$resendUnavailable':
           this.synthetic('이미 발행된 세금계산서 재발송 가능 여부를 담당자가 확인해 드려요.', {
@@ -1087,7 +1164,7 @@
           this.synthetic('수령 여부는 배송 내역에 표시된 택배사와 운송장 번호로 확인할 수 있어요.', { kind: 'result' });
           break;
         case '$filterAddress':
-          this.form('필터를 받으실 예시 주소를 입력해 주세요.', ['address'], 's5', '재발송 요청');
+          this.form('필터를 받으실 주소를 입력해 주세요.', ['address'], 's5', '재발송 요청');
           break;
         case '$contactChanged':
           this.synthetic('안심OK 방문 안내를 받을 연락처를 변경했어요.', {
@@ -1101,7 +1178,7 @@
           this.execute(this.context.serviceKind === '이전설치' ? '@8' : this.context.serviceKind === '필터 교체' ? '@30' : '@12');
           break;
         case '$cancelOrder':
-          this.synthetic('선택하신 예시 주문을 취소할까요?', {
+          this.synthetic('선택하신 주문을 취소할까요?', {
             actions: [['주문 취소 확인', this.context.oneTimeOrder ? 's5' : 's4'], ['다시 확인', 's3']]
           });
           break;
@@ -1123,7 +1200,7 @@
           this.execute(this.context.refundKind === '설치 주문 취소' ? 's3' : 's4');
           break;
         case '$refundRegistered':
-          this.synthetic('환불 검토에 필요한 내용을 확인했어요. 담당자 확인 후 진행되는 예시 요청입니다.', {
+          this.synthetic('환불에 필요한 내용을 확인했어요. 담당자가 검토한 후 처리 결과를 안내해 드려요.', {
             kind: 'handoff', actions: [['상담사 연결', '$handoff']]
           });
           break;
@@ -1154,7 +1231,7 @@
       }
       this.context.deliveryTarget = target;
       const fields = no === 41 || !email && !fax ? ['phone'] : [email && 'email', fax && 'fax'].filter(Boolean);
-      this.form('문서를 받으실 예시 수신처를 입력해 주세요.', fields, '$deliverNow', '발송 요청');
+      this.form('문서를 받으실 수신처를 입력해 주세요.', fields, '$deliverNow', '발송 요청');
     }
   }
 
