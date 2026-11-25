@@ -57,7 +57,7 @@
   const pickerIcons = {
     "service-symptom": "tool", product: "bag", contract: "folder", appointment: "tool", order: "truck",
     address: "truck", date: "calendar", channel: "chat", document: "file", term: "file", consent: "lock",
-    payment: "wallet",
+    payment: "wallet", reason: "file",
   };
   const openCategories = new Set();
   let allCatalogItems = false;
@@ -203,6 +203,27 @@
     return img;
   }
 
+  function renderResultCards(items, title) {
+    const hasArtwork = items.some(({ mediaKey }) => Boolean(mediaKey));
+    const group = element(title ? "section" : "div", hasArtwork ? "result-cards" : "result-cards result-records");
+    if (title) {
+      group.setAttribute("aria-label", title);
+      group.append(element("h3", "result-record-title", title));
+    }
+    for (const item of items) {
+      const card = element("article", "result-card");
+      const art = cardImage(item.mediaKey);
+      if (art) {
+        card.classList.add("has-card-art");
+        card.append(art);
+      }
+      if (item.title) card.append(element(title ? "h4" : "h3", "", item.title));
+      if (item.detail) card.append(element("p", "", item.detail));
+      group.append(card);
+    }
+    return group;
+  }
+
   function renderTurn(message) {
     const user = message.role === "user";
     const turn = element("div", user ? "turn user" : "turn bot");
@@ -222,22 +243,9 @@
       else bubble.textContent = message.text;
       content.append(bubble);
     }
-    if (message.items?.length) {
-      const hasArtwork = message.items.some(({ mediaKey }) => Boolean(mediaKey));
-      const group = element("div", hasArtwork ? "result-cards" : "result-cards result-records");
-      for (const item of message.items) {
-        const card = element("article", "result-card");
-        const art = cardImage(item.mediaKey);
-        if (art) {
-          card.classList.add("has-card-art");
-          card.append(art);
-        }
-        if (item.title) card.append(element("h3", "", item.title));
-        if (item.detail) card.append(element("p", "", item.detail));
-        group.append(card);
-      }
-      content.append(group);
-    }
+    if (message.recordGroups?.length) {
+      for (const { title, items } of message.recordGroups) content.append(renderResultCards(items, title));
+    } else if (message.items?.length) content.append(renderResultCards(message.items));
     const details = (message.links ?? []).filter((link) => cardDetails.has(link.href));
     if (details.length) {
       const links = element("div", "card-detail-links");
@@ -464,12 +472,13 @@
       option.title = "SK매직몰 제휴카드 혜택 새 창";
     }
     option.dataset.action = action.id;
-    if (action.requiresFields && pendingField() && !/주소 검색/.test(action.label)) option.disabled = true;
+    if (action.disabled || action.requiresFields && pendingField() && !/주소 검색/.test(action.label)) option.disabled = true;
     if (!card) return option;
 
     option.classList.add("choice-card");
     option.dataset.cardKind = card.kind;
     option.setAttribute("aria-label", action.label);
+    if (card.kind === "reason") option.setAttribute("aria-pressed", String(action.variant === "selected"));
     if (card.kind !== "date" && (card.kind !== "symptom" || card.icon)) {
       const image = cardImage(card.mediaKey);
       const mark = image || element("span", "choice-card-icon");
@@ -577,12 +586,15 @@
     }
 
     const dates = actions.filter(({ label }) => dateChoice.test(label) || monthlyChoice.test(label));
-    const currentDate = schedulePickers.has(screenKey) ? flow.selectedDate : "";
+    const pairedSchedule = /^pair(Split|Install)Schedule$/u.test(screen.id);
+    const currentDate = pairedSchedule || schedulePickers.has(screenKey) ? flow.selectedDate : "";
     if (dates.length || currentDate) {
       const availability = items.find(({ title }) => title === "선택 가능일");
       if (availability) used.add(availability);
       const monthly = dates.some(({ label }) => monthlyChoice.test(label));
-      const title = monthly ? "정기 발송일 선택" : flow.scenario.no === 17 ? "배송일 선택"
+      const title = screen.id === "pairSplitSchedule" ? "분리 방문일 선택"
+        : screen.id === "pairInstallSchedule" ? "재설치 방문일 선택"
+        : monthly ? "정기 발송일 선택" : flow.scenario.no === 17 ? "배송일 선택"
         : flow.scenario.no === 36 ? "회수일 선택" : "방문일 선택";
       return picker("date", title, dates, ({ label }) => {
         const parsed = dateChoice.exec(label);
@@ -600,6 +612,10 @@
     if (screenKey === "45:prepaidPaymentMethods") {
       const kinds = { 카드: "credit", "실시간 계좌이체": "transfer", 가상계좌: "virtual" };
       return picker("payment", "선납 결제수단 선택", actions, ({ label }) => ({ kind: kinds[label], title: label }));
+    }
+    if (screenKey === "15:S03") {
+      const reasons = actions.filter(({ label }) => !["나가기", "취소 요청"].includes(label));
+      return picker("reason", "접수 취소 사유", reasons, ({ label }) => ({ kind: "reason", title: label }));
     }
     if (screenKey === "4:paymentScope") {
       const options = actions.filter(({ label }) => items.some(({ title }) => title === label));
@@ -711,7 +727,7 @@
     choices.addEventListener("click", (event) => {
       const option = event.target.closest("[data-action]");
       const action = actions.find((item) => item.id === option?.dataset.action);
-      if (!action) return;
+      if (!action || action.disabled) return;
       if (option.tagName === "A") {
         setTimeout(() => {
           if (option.isConnected) applyWorkflowAction(action);

@@ -27,6 +27,18 @@ function approvePass(chat) {
   return chat.choose("본인인증 확인");
 }
 
+function chooseAvailable(chat, label, inputs) {
+  const state = chat.getState();
+  const action = state.actions.find((item) => item.label === label);
+  assert.ok(action, `Missing ${label} at ${state.scenario?.no}:${state.screen?.id}`);
+  return chat.choose(action.id, inputs);
+}
+
+function verifyPhone(chat, phone = "010-0000-1234") {
+  const code = requestPhoneCode(chat, phone).verification.code;
+  return chooseAvailable(chat, "확인", { 인증번호: code });
+}
+
 test("first-phase plan identifies consultation codes and chat-and-callbot scenarios", () => {
   const firstPhase = Array.from(SKIX_SCENARIOS).filter(({ phase }) => phase === "1차");
   assert.equal(firstPhase.length, 17);
@@ -110,15 +122,23 @@ test("SMS codes rotate on resend and do not appear in the conversation", () => {
   assert.equal(ready.verification, null);
 });
 
-test("repeated first-phase phone authentication failure offers restart or a counselor", () => {
-  const chat = begin(16);
-  const code = requestPhoneCode(chat, "010-0000-1234").verification.code;
-  const wrong = code === "100000" ? "100001" : "100000";
-  for (let attempt = 0; attempt < 5; attempt++) chat.choose("확인", { 인증번호: wrong });
-  const failed = chat.getState();
-  assert.equal(failed.screen.id, "$phoneConfirmationFailed");
-  assert.deepEqual(Array.from(failed.actions, ({ label }) => label), ["처음으로", "상담사 연결"]);
-  assert.equal(failed.verification, null);
+test("delivery uses three phone verification attempts and AS keeps five", () => {
+  for (const [scenario, attempts, failureScreen] of [
+    [13, 5, "$phoneConfirmationFailed"], [16, 3, "deliveryPhoneFailed"], [17, 3, "deliveryPhoneFailed"],
+  ]) {
+    const chat = begin(scenario);
+    const code = requestPhoneCode(chat, "010-0000-1234").verification.code;
+    const wrong = code === "100000" ? "100001" : "100000";
+    for (let attempt = 1; attempt < attempts; attempt++) {
+      const inProgress = chooseAvailable(chat, "확인", { 인증번호: wrong });
+      assert.equal(inProgress.screen.id, "phoneConfirm");
+      assert.match(inProgress.fields.find(({ label }) => label === "인증번호")?.error, new RegExp(`${attempts - attempt}번`));
+    }
+    const failed = chooseAvailable(chat, "확인", { 인증번호: wrong });
+    assert.equal(failed.screen.id, failureScreen);
+    assert.ok(failed.actions.some(({ label }) => label === "상담사 연결"));
+    assert.equal(failed.verification, null);
+  }
 });
 
 test("the masked phone field does not replace the order lookup result", () => {
@@ -166,16 +186,99 @@ test("billing links keep the authenticated contract and require separate authori
   assert.equal(penalty.choose("위약금 조회", { "해약접수 예정일": "" }).screen.id, "S06");
 });
 
+test("air purifier billing reuses the selected contract and prioritizes older arrears", () => {
+  function selectAir() {
+    const chat = begin(1);
+    approvePass(chat);
+    chooseAvailable(chat, "공기청정기 선택");
+    return chat;
+  }
+  const change = selectAir();
+  chooseAvailable(change, "결제정보 상세 조회");
+  const detail = chooseAvailable(change, "결제정보 변경");
+  assert.equal(detail.scenario.no, 3);
+  assert.equal(detail.screen.id, "airPaymentDetails");
+  assert.match(detail.messages.at(-1).items.find(({ title }) => title === "공기청정기")?.detail, /ACL-1000/);
+  assert.ok(detail.actions.every(({ label }) => label !== "PASS 본인인증"));
+  assert.equal(chooseAvailable(change, "결제정보 변경").screen.id, "applyThisMonthSingle");
+  assert.equal(chooseAvailable(change, "결제정보 변경 진행").screen.id, "S03");
+
+  const pay = selectAir();
+  const previous = chooseAvailable(pay, "당월 납부 결과");
+  assert.equal(previous.scenario.no, 5);
+  assert.equal(previous.screen.id, "airArrears");
+  assert.match(previous.messages.at(-1).items.find(({ title }) => title === "청구·납부")?.detail, /미납금\(당월 미포함\) 59,700원/);
+  assert.ok(previous.actions.some(({ label }) => label === "미납금 납부"));
+});
+
 test("first-phase chat closing is distinct from asking another question", () => {
   const chat = begin(6);
   chat.choose("제휴카드 보기");
-  chat.choose(chat.getState().actions.find(({ card }) => card?.kind === "partner").id);
-  chat.choose("혜택 상세 보기");
-  chat.choose("계속하기");
+  const followup = chat.choose(chat.getState().actions.find(({ card }) => card?.kind === "partner").id);
+  assert.equal(followup.screen.id, "S04");
+  assert.ok(followup.actions.some(({ label }) => label === "추가 문의"));
   const finished = chat.choose("상담 종료");
   assert.equal(finished.screen.kind, "closed");
   assert.equal(finished.actions.length, 0);
   assert.equal(finished.inputDisabled, true);
+});
+
+test("registered card payment keeps the initial lookup PASS separate from transaction PASS", () => {
+  for (const [entry, pay] of [[4, "요금 납부"], [5, "미납금 납부"]]) {
+    const chat = begin(entry);
+    approvePass(chat);
+    chooseAvailable(chat, "직수 정수기 선택");
+    chooseAvailable(chat, pay);
+    chooseAvailable(chat, "등록 결제수단");
+    chooseAvailable(chat, "신한카드 선택");
+    const confirmation = chooseAvailable(chat, "PASS 본인인증");
+    assert.equal(confirmation.screen.id, "$auth");
+    assert.equal(confirmation.screen.condition, "PASS 본인인증");
+    const cancelled = chooseAvailable(chat, "취소");
+    assert.notEqual(cancelled.screen.id, "S07");
+    chooseAvailable(chat, "PASS 본인인증");
+    assert.equal(chooseAvailable(chat, "본인인증 확인").screen.id, "S07");
+  }
+});
+
+test("registered bank payment requires a transaction e-signature", () => {
+  for (const [no, contract, pay] of [
+    [4, "공기청정기 선택", "미납요금과 당월 요금 납부"], [5, "식기세척기 선택", "미납금 납부"],
+  ]) {
+    const chat = begin(no);
+    approvePass(chat);
+    chooseAvailable(chat, contract);
+    chooseAvailable(chat, pay);
+    chooseAvailable(chat, "등록 결제수단");
+    chooseAvailable(chat, "KB국민은행 선택");
+    const confirmation = chooseAvailable(chat, "PASS 전자서명");
+    assert.equal(confirmation.screen.condition, "PASS 전자서명");
+    assert.equal(chooseAvailable(chat, "전자서명 확인").screen.id, "S07");
+  }
+
+  const thirdParty = begin(5);
+  approvePass(thirdParty);
+  chooseAvailable(thirdParty, "공기청정기 선택");
+  chooseAvailable(thirdParty, "미납금 납부");
+  const blocked = chooseAvailable(thirdParty, "등록 결제수단");
+  assert.deepEqual(Array.from(blocked.actions, ({ label }) => label), ["가상계좌", "상담사 연결"]);
+});
+
+test("Naver separates two and three past-due cycles and keeps the registration contract", () => {
+  const current = begin(4);
+  approvePass(current);
+  const direct = chooseAvailable(current, "매트리스 선택");
+  assert.match(direct.messages.at(-1).text, /네이버에서 납부/);
+  assert.ok(direct.actions.every(({ label }) => label !== "결제정보 등록"));
+
+  const arrears = begin(5);
+  approvePass(arrears);
+  chooseAvailable(arrears, "매트리스 선택");
+  const registration = chooseAvailable(arrears, "결제정보 등록");
+  assert.equal(registration.scenario.no, 3);
+  assert.equal(registration.screen.id, "naverArrearsApplication");
+  assert.match(registration.messages.at(-1).items[0].detail, /MAT-2000/);
+  assert.equal(chooseAvailable(arrears, "결제정보 변경 진행").screen.id, "S03");
 });
 
 test("paying arrears with or without this month's charge shows the selected amount", () => {
@@ -185,6 +288,53 @@ test("paying arrears with or without this month's charge shows the selected amou
     chat.choose("공기청정기 선택");
     const payment = chat.choose(option);
     assert.match(payment.messages.at(-1).items.find(({ title }) => title === "납부 금액")?.detail, expected);
+  }
+});
+
+test("paired move services keep independent contact data, dates, and receipt cards", () => {
+  function pickDate(chat) {
+    const state = chat.getState();
+    const date = state.actions.find(({ label }) => /^\d+월\s*\d+일\s*\([월화수목금토일]\) 선택$/u.test(label));
+    assert.ok(date, `No date choices at ${state.screen.id}`);
+    return chat.choose(date.id).selectedDate;
+  }
+  const contact = "서비스 당일 연락받으실 휴대폰 번호";
+  for (const no of [8, 9]) {
+    const chat = begin(no);
+    chooseAvailable(chat, "분리·재설치 접수");
+    chooseAvailable(chat, "휴대폰 확인");
+    verifyPhone(chat);
+    chooseAvailable(chat, "이사·이동 완료");
+    const split = chooseAvailable(chat, "예약 가능일자 확인", {
+      "제품명 또는 모델명": "직수 정수기", 주소: "서울 영등포구 문래동 102호", [contact]: "010-0000-9876",
+    });
+    assert.equal(split.screen.id, "pairSplitSchedule");
+    assert.equal(split.actions.find(({ label }) => label === "다음")?.disabled, true);
+    const splitDate = pickDate(chat);
+    chooseAvailable(chat, "다음");
+
+    chooseAvailable(chat, "예약 가능일자 확인", { 주소: "서울 강서구 마곡동 909호", [contact]: "010-0000-6543" });
+    if (chat.getState().actions.some(({ label }) => label === "PASS 본인인증")) approvePass(chat);
+    for (const label of ["아니오", "기본 재설치만"]) {
+      if (chat.getState().actions.some((action) => action.label === label)) chooseAvailable(chat, label);
+    }
+    const install = chat.getState();
+    assert.equal(install.screen.id, "pairInstallSchedule");
+    assert.equal(install.actions.find(({ label }) => label === "분리·재설치 접수")?.disabled, true);
+    const installDate = pickDate(chat);
+    assert.notEqual(installDate, splitDate);
+    const receipt = chooseAvailable(chat, "분리·재설치 접수");
+    assert.equal(receipt.screen.id, "pairResult");
+    const groups = receipt.messages.at(-1).recordGroups;
+    assert.deepEqual(Array.from(groups, ({ title }) => title), ["분리 서비스 접수", "재설치 서비스 접수"]);
+    const field = (index, title) => groups[index].items.find((item) => item.title === title)?.detail;
+    assert.match(field(0, "주소"), /문래동/);
+    assert.match(field(1, "주소"), /마곡동/);
+    assert.equal(field(0, "연락처"), "010-••••-9876");
+    assert.equal(field(1, "연락처"), "010-••••-6543");
+    assert.equal(field(0, "방문 예정일"), splitDate);
+    assert.equal(field(1, "방문 예정일"), installDate);
+    assert.doesNotMatch(JSON.stringify(receipt.messages), /102호|909호|010-0000-9876|010-0000-6543/);
   }
 });
 
@@ -267,6 +417,89 @@ test("an authenticated AS lookup carries the selected appointment into editing",
   assert.equal(chat.choose("방문주소").screen.id, "S07");
 });
 
+test("direct AS editing shows a record before changing it and routes today's visit to a counselor", () => {
+  const single = begin(14);
+  const detail = verifyPhone(single, "010-0000-0008");
+  assert.equal(detail.screen.id, "visitDetails");
+  assert.ok(detail.messages.at(-1).items.some(({ title }) => title === "접수번호"));
+  assert.equal(chooseAvailable(single, "접수내용 변경").screen.id, "S02");
+
+  const today = begin(14);
+  verifyPhone(today, "010-0000-0001");
+  assert.equal(chooseAvailable(today, "직수 정수기 접수 선택").screen.id, "visitDetails");
+  const handoff = chooseAvailable(today, "접수내용 변경");
+  assert.equal(handoff.screen.id, "S06");
+  assert.ok(handoff.actions.some(({ label }) => label === "상담사 연결"));
+});
+
+test("AS cancellation selects a reason and submits on the same screen", () => {
+  const chat = begin(15);
+  verifyPhone(chat);
+  chooseAvailable(chat, "직수 정수기 접수 선택");
+  const reasons = chooseAvailable(chat, "접수취소");
+  assert.equal(reasons.screen.id, "S03");
+  assert.equal(reasons.actions.find(({ label }) => label === "취소 요청")?.disabled, true);
+  assert.ok(reasons.actions.some(({ label }) => label === "나가기"));
+  assert.equal(chooseAvailable(chat, "취소 요청").screen.id, "S03");
+
+  const selected = chooseAvailable(chat, "비용 부담");
+  assert.equal(selected.screen.id, "S03");
+  assert.equal(selected.actions.find(({ label }) => label === "비용 부담")?.variant, "selected");
+  assert.ok(!selected.actions.find(({ label }) => label === "취소 요청")?.disabled);
+  assert.equal(chooseAvailable(chat, "취소 요청").screen.id, "S05");
+});
+
+test("delivery inquiry details continue to additional questions without an edit shortcut", () => {
+  const chat = begin(16);
+  verifyPhone(chat);
+  const detail = chooseAvailable(chat, "직수 정수기 주문 선택");
+  assert.equal(detail.screen.id, "S03");
+  assert.equal(detail.messages.at(-1).text, "고객님, 제품 배송 정보 안내드립니다.");
+  assert.deepEqual(Array.from(detail.actions, ({ label }) => label), ["계속하기"]);
+  assert.equal(chooseAvailable(chat, "계속하기").screen.id, "S07");
+});
+
+test("delivery changes follow the original address, order update, and installer connectors", () => {
+  const created = begin(17);
+  verifyPhone(created, "010-0000-0006");
+  chooseAvailable(created, "직수 정수기 주문 선택");
+  chooseAvailable(created, "배송주소 수정");
+  const updated = chooseAvailable(created, "확인", { "배송 주소": " 서울  종로구   청계천로 85 " });
+  assert.equal(updated.screen.id, "S07");
+  assert.deepEqual(Array.from(created.context.deliveryEvents), [
+    "IF_AICC_R040", "IF_AICC_R037", "IF_AICC_P004", "IF_AICC_P021", "S07", "IF_AICC_P014",
+  ]);
+  assert.doesNotMatch(JSON.stringify(updated.messages), /IF_AICC_/);
+
+  const dateChange = begin(17);
+  verifyPhone(dateChange);
+  chooseAvailable(dateChange, "직수 정수기 주문 선택");
+  chooseAvailable(dateChange, "배송일정 수정");
+  const dates = chooseAvailable(dateChange, "예약 가능일자 확인", { "희망 배송일": dateChange.getState().fields[0].sample });
+  assert.equal(dates.actions.find(({ label }) => label === "확인")?.disabled, true);
+  const date = dates.actions.find(({ label }) => /일\s*\([월화수목금토일]\) 선택$/u.test(label));
+  assert.ok(date);
+  const selected = chooseAvailable(dateChange, date.label);
+  assert.match(selected.messages.at(-1).text, /확인 버튼/);
+  assert.equal(chooseAvailable(dateChange, "확인").screen.id, "S07");
+
+  const installer = begin(17);
+  verifyPhone(installer);
+  chooseAvailable(installer, "직수 정수기 주문 선택");
+  chooseAvailable(installer, "설치마스터 전달 요청");
+  const noted = chooseAvailable(installer, "확인", { "전달 요청 사항": "방문 전에 연락해 주세요" });
+  assert.equal(noted.screen.id, "S08");
+  assert.match(noted.messages.at(-1).text, /요청하신 사항은 설치 예정일 설치마스터가 확인할 수 있습니다\./);
+  assert.equal(noted.messages.at(-1).items.find(({ title }) => title === "요청사항")?.detail, "방문 전에 연락해 주세요");
+  assert.deepEqual(Array.from(installer.context.deliveryEvents), ["IF_AICC_P005", "IF_AICC_P021", "S08"]);
+
+  for (const [suffix, screen] of [["0004", "createdOrder"], ["0005", "pending5"]]) {
+    const handoff = verifyPhone(begin(17), `010-0000-${suffix}`);
+    assert.equal(handoff.screen.id, screen);
+    assert.equal(handoff.screen.kind, "handoff");
+  }
+});
+
 test("an unlisted bidet uses the documented nozzle symptom stages", () => {
   const chat = begin(11);
   const product = chat.choose("목록에 없는 제품");
@@ -339,7 +572,12 @@ test("ownership transfer keeps the sole-proprietor registration field", () => {
   const chat = begin(10);
   chat.choose("명의변경 신청");
   approvePass(chat);
-  const customerTypes = chat.choose("직수 정수기 선택");
+  const details = chooseAvailable(chat, "직수 정수기 선택");
+  assert.equal(details.screen.id, "transferContractDetails");
+  assert.deepEqual(Array.from(details.messages.at(-1).items, ({ title }) => title), [
+    "직수 정수기", "결제정보", "계약기간", "구독료·납부내역",
+  ]);
+  const customerTypes = chooseAvailable(chat, "명의변경 신청");
   assert.deepEqual(Array.from(customerTypes.actions, ({ label }) => label), ["개인", "개인사업자", "귀화", "주민등록번호 정정"]);
 
   const business = chat.choose("개인사업자");
@@ -351,6 +589,31 @@ test("ownership transfer keeps the sole-proprietor registration field", () => {
   });
   assert.equal(pending.screen.id, "transfereeConsent");
   assert.equal(chat.choose("동의하고 신청하기").screen.id, "S08");
+});
+
+test("ownership transfer separates package, prepaid and cross package restrictions", () => {
+  function lookup() {
+    const chat = begin(10);
+    chooseAvailable(chat, "명의변경 신청");
+    approvePass(chat);
+    return chat;
+  }
+  const packageDetails = chooseAvailable(lookup(), "정수기·공기청정기 묶음 선택");
+  assert.equal(packageDetails.screen.id, "S05");
+  assert.match(packageDetails.messages.at(-1).text, /패키지 할인/);
+
+  for (const [number, screen, message] of [
+    ["CT-250601-005", "transferPrepaid", /선납 할인/],
+    ["CT-250601-006", "transferCrossPackage", /크로스 패키지/],
+  ]) {
+    const chat = lookup();
+    chooseAvailable(chat, "계약번호로 확인");
+    const result = chooseAvailable(chat, "계약 확인", { 계약번호: number });
+    assert.equal(result.screen.id, screen);
+    assert.match(result.messages.at(-1).text, message);
+    assert.ok(result.actions.some(({ label }) => label === "상담사 연결"));
+    assert.ok(result.actions.every(({ label }) => label !== "명의변경 신청"));
+  }
 });
 
 test("a sole proprietor can group giro notices by contract", () => {

@@ -20,7 +20,7 @@
     title: '제휴카드 혜택', detail: '이용실적에 따라 구독료 청구 할인', kind: 'partner'
   };
   const methodCards = {
-    '등록 결제수단': { kind: 'saved', detail: '등록된 카드 선택', title: '등록 결제수단' },
+    '등록 결제수단': { kind: 'saved', detail: '계약에 등록된 카드 또는 계좌', title: '등록 결제수단' },
     '신용·체크카드': { kind: 'credit', detail: '카드 등록 · PASS 본인인증', title: '신용·체크카드' },
     '카드': { kind: 'credit', detail: '신용카드·체크카드 · PASS 본인인증', title: '카드' },
     '일회성 납부수단': { kind: 'credit', detail: '카드·계좌이체·가상계좌', title: '일회성 납부수단' },
@@ -29,7 +29,10 @@
     '가상계좌': { kind: 'virtual', detail: '발급된 계좌로 직접 입금', title: '가상계좌' }
   };
   const savedCard = {
-    title: '신한카드', detail: '••••-••••-••••-1234 · 계약자 본인 명의', kind: 'saved'
+    title: '신한카드', masked: '••••-••••-••••-1234', kind: 'saved'
+  };
+  const savedAccount = {
+    title: 'KB국민은행', masked: '••••-••••-4321', kind: 'transfer'
   };
   const sampleTransaction = {
     title: '2026년 11월 카드 결제', detail: '신한카드 · 끝자리 1234 · 29,900원', kind: 'payment-record'
@@ -191,6 +194,7 @@
   const phoneFailures = { 8: 'S08', 9: 'S08', 12: 'S09', 13: 'S07', 14: 'S11', 15: 'S08', 16: 'S06', 17: 'S10', 49: 's3' };
   const dateScenarios = new Set([8, 9, 12, 14, 17]);
   const schedulingScreens = { 8: 'S05', 9: 'S05', 12: 'S05', 14: 'S04', 17: 'S05' };
+  const pairedDateKeys = { split: 'splitDate', reinstall: 'reinstallDate' };
   const addressScreens = new Set(['8:S04', '9:S04', '12:S04', '14:S03', '17:S04']);
 
   const fromLabel = (label, placeholder, type = 'text', sample = '') => ({ label, placeholder, type, sample });
@@ -427,7 +431,7 @@
         scenario: this.scenario,
         screen: this.screen,
         selection: this.activeSelection(),
-        selectedDate: this.context.date || '',
+        selectedDate: this.selectedScheduleDate(),
         messages: [...this.messages],
         actions: this.actionList().map(({ target, ...action }) => action),
         fields: this.fields.map((field) => ({ ...field })),
@@ -484,8 +488,6 @@
         && previous.serviceProduct && previous.serviceSymptom;
       const reuseVisit = !echo && previous.phoneVerified && ((scenario.no === 13 && [12, 14, 15].includes(previousNo))
         || ([13, 14].includes(previousNo) && [14, 15].includes(scenario.no) && previous.serviceVisit));
-      const reuseDelivery = !echo && previous.phoneVerified && previousNo === 16 && scenario.no === 17
-        && this.screen?.id === 'S03';
       const billingEntry = billingLookupTarget(scenario.no);
       const reuseBilling = !echo && previous.billingVerified && billingEntry;
       this.scenario = scenario;
@@ -503,23 +505,23 @@
         const contractScreen = billingContractScreens[scenario.no];
         const choices = auditFlows[scenario.no]?.screens?.[contractScreen]?.actions;
         const selected = previous.product && choices?.find(([label]) => label === previous.product + ' 선택');
-        entry = (scenario.no !== 7 || /위약금|해약비/.test(customerText))
-          ? selected?.[1] ?? billingEntry : billingEntry;
+        if (scenario.no === 3 && this.screen?.naverRegistrationRequired) {
+          entry = 'naverArrearsApplication';
+        } else {
+          entry = (scenario.no !== 7 || /위약금|해약비/.test(customerText))
+            ? selected?.[1] ?? billingEntry : billingEntry;
+        }
       }
       if (reuseVisit) {
         Object.assign(this.context, { phoneVerified: true, maskedPhone: previous.maskedPhone,
           serviceVisit: previous.serviceVisit, sameDayVisit: previous.sameDayVisit, subscriptionVisit: previous.subscriptionVisit,
-          visitProfile: previous.visitProfile, visitEdits: previous.visitEdits, cancelledVisits: previous.cancelledVisits });
+          visitProfile: previous.visitProfile, visitEdits: previous.visitEdits, cancelledVisits: previous.cancelledVisits,
+          visitAddressNeedsDate: previous.visitAddressNeedsDate });
         if (scenario.no === 13) {
           this.showVisitResults();
           return;
         }
         entry = this.visitRequestEntry();
-      }
-      if (reuseDelivery) {
-        Object.assign(this.context, { phoneVerified: true, maskedPhone: previous.maskedPhone,
-          deliveryType: previous.deliveryType, deliveryProfile: previous.deliveryProfile, deliveryOrderKey: previous.deliveryOrderKey });
-        entry = this.deliveryOrderEntry();
       }
       const first = this.screenSource(entry) ?? originalEntry;
       if (echo && first?.kind !== 'internal-only') this.sayUser(customerText || scenario.displayTitle || scenario.title);
@@ -586,6 +588,7 @@
       if (typeof screen.paymentAmount === 'number') {
         this.context.paymentAmount = screen.paymentAmount;
         this.context.paymentOptions = screen.id;
+        this.context.registeredPayment = screen.registeredPayment === 'account' ? savedAccount : savedCard;
         this.context.paymentReceiptRequested = false;
       }
       this.candidates = [];
@@ -621,10 +624,13 @@
     sayScreen(properties) {
       const screen = this.screen;
       const no = this.scenario.no;
-      const items = screen.items?.map((item) => ({ ...item, title: this.fill(item.title), detail: this.fill(item.detail) })) ?? [];
+      const displayItems = (entries = []) => entries.map((item) => ({ ...item, title: this.fill(item.title), detail: this.fill(item.detail) }));
+      const recordGroups = screen.recordGroups?.map(({ title, items }) => ({ title, items: displayItems(items) }));
+      const items = recordGroups ? recordGroups.flatMap((record) => record.items) : displayItems(screen.items);
       const message = {
         role: 'bot', text: this.fill(screen.message), items,
-        demo: Boolean(screen.demo || properties.demo), status: properties.status, links: screen.links
+        demo: Boolean(screen.demo || properties.demo), status: properties.status, links: screen.links,
+        ...(recordGroups && { recordGroups })
       };
       if (this.activeSelection()?.kind === 'service-product') message.items = [];
       if (visitListScreens[no] === screen.id) {
@@ -636,7 +642,7 @@
         }));
       }
       const visitKey = this.context.serviceVisit;
-      if (no === 13 && ['S03', 'S04'].includes(screen.id) || no === 14 && ['S02', 'S10'].includes(screen.id)
+      if (no === 13 && ['S03', 'S04'].includes(screen.id) || no === 14 && ['visitDetails', 'S02', 'S10'].includes(screen.id)
         || no === 15 && ['visitDetails', 'S03', 'S04', 'S05'].includes(screen.id)) {
         const key = visitKey ?? (screen.id === 'S04' && no === 13 ? 'bidet' : 'water');
         message.items = this.visitItems(key);
@@ -655,11 +661,12 @@
       if ([16, 17].includes(no) && ['S03', 'subscriptionOrder'].includes(screen.id)) {
         message.items = this.deliveryItems();
       }
-      if (no === 17 && screen.id === 'S07' && (this.context.modifiedAddress || this.context.date)) {
-        message.items = this.deliveryItems({ address: this.context.modifiedAddress, date: this.context.dateIso });
+      if (no === 17 && screen.id === 'S07' && this.context.deliveryChange) {
+        message.items = this.deliveryItems(this.context.deliveryChange);
         if (this.deliveryOrderType() === 'created') {
-          message.text += ' 변경 내용은 설치마스터에게 전달하는 처리로 이어져요.';
+          message.text += ' 납품생성 주문의 변경 내용은 설치마스터에게 안내돼요.';
         }
+        message.text += ' 추가로 문의하실 내용이 있으신가요?';
       }
       if (no === 17 && screen.id === 'S08' && this.context.deliveryNote) {
         message.items = [{ title: '요청사항', detail: this.context.deliveryNote }];
@@ -714,7 +721,7 @@
         message.items = [];
         if (this.partnerCards().length) message.demo = false;
       }
-      if (no === 6 && screen.id === 'S03' && this.context.partnerCard) {
+      if (no === 6 && screen.id === 'S04' && this.context.partnerCard) {
         const { id, title, issuer, detail, phone, phoneLabel, href } = this.context.partnerCard;
         message.items = [{ title, detail: [issuer, detail].filter(Boolean).join('\n'), mediaKey: id }];
         if (phone) message.items.push({ title: phoneLabel || '카드사 신청 문의', detail: phone });
@@ -741,6 +748,8 @@
             '분리 방문 주소': this.context.splitVisitAddress || demoAddress,
             '재설치 방문 주소': this.context.reinstallVisitAddress || demoAddress,
             '방문 연락처': this.context.visitPhone || this.context.maskedPhone || maskNumber(demoPhone),
+            '분리 방문 연락처': this.context.splitVisitPhone || this.context.maskedPhone || maskNumber(demoPhone),
+            '재설치 방문 연락처': this.context.reinstallVisitPhone || this.context.maskedPhone || maskNumber(demoPhone),
             '분리 방문일': this.context.splitDate ? dateLabel(this.context.splitDate) : undefined,
             '재설치 방문일': this.context.reinstallDate ? dateLabel(this.context.reinstallDate) : undefined,
             '접수 제품': this.serviceProductLabel() || registeredServiceProduct.title,
@@ -827,7 +836,7 @@
       if (!visits.length) this.execute({ 13: 'S06', 14: 'S09', 15: 'S06' }[no]);
       else if (visits.length === 1) {
         this.context.serviceVisit = visits[0];
-        this.execute(no === 13 ? this.visitDetailScreen() : no === 14 ? this.visitRequestEntry() : 'visitDetails');
+        this.execute(no === 13 ? this.visitDetailScreen() : 'visitDetails');
       } else this.execute(visitListScreens[no]);
     }
 
@@ -868,6 +877,10 @@
       return { subscription: 'subscriptionOrder', dispatched: 'createdOrder' }[this.deliveryOrderType()] || 'S03';
     }
 
+    recordDeliveryEvent(event) {
+      this.context.deliveryEvents = [...(this.context.deliveryEvents ?? []), event];
+    }
+
     serviceRegistrationEntry() {
       return this.context.serviceProduct?.detail || this.context.serviceProduct?.model ? 'S02' : 'serviceModel';
     }
@@ -890,16 +903,41 @@
       return category?.groups.find((item) => item.title === path[1])?.issues ?? [];
     }
 
-    scheduleDates(all = false) {
+    selectedScheduleDate() {
+      const key = pairedDateKeys[this.screen?.bookingStage];
+      return key ? (this.context[key] ? dateLabel(this.context[key]) : '') : this.context.date || '';
+    }
+
+    saveScheduleDate(label, stage = this.screen.bookingStage) {
+      const date = label.replace(/ 선택$/, '');
+      const key = pairedDateKeys[stage];
+      if (key) {
+        this.context[key] = this.scheduleDates(true, stage).find((day) => dateLabel(day) === date);
+      } else {
+        this.context.date = date;
+        if ([14, 17].includes(this.scenario.no)) {
+          this.context.dateIso = this.scheduleDates(true).find((day) => dateLabel(day) === date);
+        }
+      }
+      return date;
+    }
+
+    scheduleDates(all = false, stage = this.screen?.bookingStage) {
       const no = this.scenario.no;
       const { today } = estimateDateRange();
       let first = offsetDate(today, [14, 17].includes(no) ? 0 : 1);
       let last = offsetDate(today, 30);
       const move = this.context.moveDate;
       const visitService = serviceVisits[this.context.serviceVisit]?.service;
-      if (move && (no === 8 || no === 14 && visitService === '분리') && move <= last) last = offsetDate(move, -1);
-      if (move && (no === 9 || no === 14 && visitService === '재설치')) {
-        const minimum = no === 9 ? offsetDate(move, 1) : nextWeekday(move);
+      const split = stage === 'split' || !stage && (no === 8 || no === 14 && visitService === '분리');
+      const reinstall = stage === 'reinstall' || !stage && (no === 9 || no === 14 && visitService === '재설치');
+      if (move && split && move <= last) last = offsetDate(move, -1);
+      if (move && reinstall) {
+        const minimum = no === 14 ? nextWeekday(move) : offsetDate(move, 1);
+        if (minimum > first) first = minimum;
+      }
+      if (stage === 'reinstall' && this.context.splitDate) {
+        const minimum = offsetDate(this.context.splitDate, 1);
         if (minimum > first) first = minimum;
       }
       if (no === 17 && this.deliveryOrderType() === 'unavailable') return [];
@@ -949,7 +987,7 @@
         return { kind: 'partner-card', title: '제휴카드 선택', detail: '카드별 혜택과 신청 안내를 확인해 주세요.' };
       }
       if (id === '$issuerPicker' || id === '$installmentIssuerPicker' || id === '$savedPicker') {
-        return { kind: 'card-issuer', title: id === '$savedPicker' ? '등록된 카드 선택' : '사용할 카드 선택' };
+        return { kind: 'card-issuer', title: id === '$savedPicker' ? '등록된 결제수단 선택' : '사용할 카드 선택' };
       }
       if (id === '$receiptPicker') {
         return { kind: 'card-transaction', title: '카드 결제 내역 선택' };
@@ -967,7 +1005,7 @@
       const id = this.screen.id;
       if (visitListScreens[no] === id) {
         const visits = this.availableVisits();
-        const target = { 13: '$visitDetails', 14: '$visitChange', 15: 'visitDetails' }[no];
+        const target = no === 13 ? '$visitDetails' : 'visitDetails';
         const actions = visits.slice(0, 5).map((key) => {
           const { product, service } = serviceVisits[key];
           return { id: 'visit:' + key, label: [product, service, '접수 선택'].filter(Boolean).join(' '),
@@ -992,7 +1030,7 @@
       if (no === 6 && id === 'S02') {
         const cards = list.length ? list : [samplePartner];
         return cards.map((card, index) => ({
-          id: 'partner:' + index, target: 'S03',
+          id: 'partner:' + index, target: 'S04',
           label: list.length ? card.title : '제휴카드 혜택 보기',
           card: {
             id: card.id, title: card.title, issuer: card.issuer, detail: card.detail, phone: card.phone,
@@ -1000,10 +1038,11 @@
           }
         }));
       }
-      if (no === 6 && id === 'S03' && this.context.partnerCard?.id) {
+      if (no === 6 && id === 'S04' && this.context.partnerCard) {
         return [
           { id: 'partner:restart', label: '다른 제휴카드 보기', target: 'S02' },
-          { id: 'partner:continue', label: '계속하기', target: 'S04' }
+          { id: 'partner:ask', label: '추가 문의', target: '$menu' },
+          { id: 'partner:finish', label: '상담 종료', target: '$finish' }
         ];
       }
       if (id === '$issuerPicker' || id === '$installmentIssuerPicker') {
@@ -1013,8 +1052,10 @@
         }));
       }
       if (id === '$savedPicker') {
+        const instrument = this.context.registeredPayment ?? savedCard;
         return [
-          { id: 'saved:sample', label: '신한카드 선택', target: '$confirmPayment', card: savedCard },
+          { id: 'saved:sample', label: instrument.title + ' 선택', target: '$confirmPayment',
+            card: { ...instrument, detail: instrument.masked + ' · 계약자 본인 명의' } },
           { id: 'saved:back', label: '다른 납부 방법', target: '$paymentOptions' }
         ];
       }
@@ -1036,17 +1077,21 @@
       const extras = screen.explicitActions ? [] : continuation[no]?.[screen.id] ?? [];
       const custom = this.selectionActions();
       const defaults = [...steps, ...extras];
-      if (schedulingScreens[no] === screen.id && defaults.some(([, target]) => target === '$date')) {
+      const selectedDate = this.selectedScheduleDate();
+      if ((schedulingScreens[no] === screen.id || screen.bookingStage) && defaults.some(([, target]) => target === '$date')) {
         const dates = this.scheduleDates();
         const ordinary = defaults.filter(([, target]) => target !== '$date' && target !== '$moreDates');
-        if (!dates.length) return [{ id: 'schedule:unavailable', label: '예약 상담 연결', target: '$handoff', variant: 'primary' }];
+        if (!dates.length) return [
+          { id: 'schedule:unavailable', label: '예약 상담 연결', target: '$handoff', variant: 'primary' },
+          ...ordinary.filter(([label]) => label === '뒤로').map(([label, target]) => ({ id: 'schedule:back', label, target, variant: 'secondary' }))
+        ];
         const initialCount = no === 17 ? 5 : 4;
         defaults.splice(0, defaults.length, ...dates.slice(0, initialCount).map((date) => [dateLabel(date) + ' 선택', '$date']),
           ...(this.scheduleDates(true).length > Math.min(dates.length, initialCount) ? [['더보기', '$moreDates']] : []), ...ordinary);
       }
       const additions = (screen.addActions ?? []).filter(([label]) => !defaults.some(([original]) => original === label));
       const defaultActions = [...defaults, ...additions].map(([label, target], index) => ({ id: `action:${index}`, label, target }))
-        .filter(({ target, label }) => (target !== '$date' || label !== `${this.context.date} 선택`)
+        .filter(({ target, label }) => (target !== '$date' || label !== `${selectedDate} 선택`)
           && (target !== '$address' || this.context.checkedAddress !== screen.id));
       const actions = custom ?? defaultActions;
       const selectionKind = this.activeSelection()?.kind;
@@ -1068,7 +1113,12 @@
       return actions.map((action, index) => ({
         ...action,
         requiresFields: Boolean(this.fields.length && action.target !== '$resendOtp' && !/재전송|취소|뒤로|나가기/.test(action.label)),
-        variant: action.label === this.context.date + ' 선택' ? 'selected' : index === 0 ? 'primary' : 'secondary'
+        ...(action.target === '$commitVisitCancellation' && { disabled: !this.context.cancellationReason }),
+        ...(screen.bookingStage && ['다음', '분리·재설치 접수'].includes(action.label) && { disabled: !selectedDate }),
+        ...(no === 17 && screen.id === 'S05' && action.target === '$commitDeliveryChange' && { disabled: !selectedDate }),
+        variant: (action.label === selectedDate + ' 선택'
+          || action.target === '$selectCancellationReason' && action.label === this.context.cancellationReason)
+          ? 'selected' : index === 0 ? 'primary' : 'secondary'
       }));
     }
 
@@ -1146,7 +1196,7 @@
 
     choose(actionId, values = {}, options = {}) {
       const action = this.actionList().find((item) => item.id === actionId || item.label === actionId);
-      if (!action) return this.getState();
+      if (!action || action.disabled) return this.getState();
       return action.requiresFields ? this.submitFields(values, action.id, options) : this.applyAction(action, {}, options);
     }
 
@@ -1212,6 +1262,7 @@
     }
 
     applyAction(action, values, options = {}) {
+      if (action.disabled) return this.getState();
       this.remember();
       if (options.echo !== false) this.sayUser(action.label);
       if (this.candidates.length) {
@@ -1250,13 +1301,15 @@
           this.context.sameDayVisit = digits === '01000000001';
           this.context.subscriptionVisit = digits === '01000000007';
           this.context.visitProfile = { '01000000008': 'single', '01000000009': 'multiple' }[digits];
+          this.context.visitAddressNeedsDate = digits === '01000000011';
         }
       }
       if ([16, 17].includes(no) && label === '인증번호 받기' && values['휴대폰 번호']) {
         const digits = values['휴대폰 번호'].replace(/\D/g, '');
         this.context.deliveryProfile = digits === '01000000001' ? 'multiple' : undefined;
         this.context.deliveryType = { '01000000003': 'subscription', '01000000004': 'dispatched',
-          '01000000006': 'created', '01000000007': 'package', '01000000009': 'unavailable' }[digits];
+          '01000000006': 'created', '01000000007': 'package', '01000000009': 'unavailable',
+          '01000000011': 'reschedule' }[digits];
       }
       if ([16, 17].includes(no) && actionId.startsWith('delivery:')) {
         this.context.deliveryOrderKey = actionId.slice(9);
@@ -1274,8 +1327,14 @@
         }
         const phone = values['서비스 당일 연락받으실 휴대폰 번호'];
         if (phone) this.context.visitPhone = maskNumber(phone);
-        if (values['분리 방문 희망일']) this.context.splitDate = values['분리 방문 희망일'];
-        if (values['재설치 방문 희망일']) this.context.reinstallDate = values['재설치 방문 희망일'];
+        if (screen === 'pairSplitAddress' && phone) {
+          this.context.splitVisitPhone = maskNumber(phone);
+          this.context.splitDate = undefined;
+        }
+        if (screen === 'pairInstallAddress' && phone) {
+          this.context.reinstallVisitPhone = maskNumber(phone);
+          this.context.reinstallDate = undefined;
+        }
       }
       this.captureRouteMatches(label, values);
       if (card?.kind === 'partner') this.context.partnerCard = card;
@@ -1332,6 +1391,9 @@
       const requestedDate = no === 7 && Object.hasOwn(values, '해약접수 예정일')
         ? values['해약접수 예정일'] || estimateDateRange().today : values['희망 날짜'];
       if (requestedDate) this.context.date = dateLabel(requestedDate);
+      if (['moveStatus', 'customMoveStatus', 'pairMoveStatus'].includes(screen) && ['이사·이동 완료', '기타 · 공사 등'].includes(label)) {
+        this.context.moveDate = undefined;
+      }
       if ([8, 9, 14, 17].includes(no) && (Object.hasOwn(values, '이사 예정일') || Object.hasOwn(values, '희망 배송일'))) {
         if (Object.hasOwn(values, '이사 예정일')) this.context.moveDate = values['이사 예정일'];
         if (Object.hasOwn(values, '희망 배송일')) this.context.deliveryDate = values['희망 배송일'];
@@ -1345,7 +1407,6 @@
         this.context.dateIso = undefined;
         this.context.date = undefined;
       }
-      if (no === 15 && screen === 'S03') this.context.cancellationReason = label;
       if (no === 17 && ['S03', 'subscriptionOrder'].includes(screen)) {
         this.context.modifiedAddress = undefined;
         this.context.dateIso = undefined;
@@ -1382,8 +1443,9 @@
     openAuth(method, target) {
       this.context.auth = { method, target, source: this.screen.id, failure: this.screen.auth?.failure };
       const signing = method === 'PASS 전자서명';
+      const transfer = [4, 5].includes(this.scenario.no) ? '계좌이체' : '자동이체';
       this.synthetic(signing
-        ? 'PASS에서 자동이체 내용을 확인하고 전자서명을 진행해 주세요.'
+        ? `PASS에서 ${transfer} 내용을 확인하고 전자서명을 진행해 주세요.`
         : 'PASS 본인인증 화면에서 명의자 정보를 확인해 주세요.', {
         id: '$auth', condition: method,
         actions: [[signing ? '전자서명 확인' : '본인인증 확인', '$authSuccess'], ['취소', '$authCancel']]
@@ -1554,10 +1616,13 @@
             this.execute(shared ? this.context.auditAuth?.success ?? '$finish' : this.screen.auth?.success ?? phoneSuccess[no]);
           } else {
             this.context.otpTries = (this.context.otpTries ?? 0) + 1;
-            if (this.context.otpTries >= otpAttemptLimit) {
+            const attempts = [16, 17].includes(no) ? 3 : otpAttemptLimit;
+            if (this.context.otpTries >= attempts) {
               this.context.otpCode = undefined;
               this.context.otpExpiresAt = undefined;
-              if (this.scenario.phase === '1차') {
+              if ([16, 17].includes(no)) {
+                this.execute(this.screen.auth?.failure ?? phoneFailures[no]);
+              } else if (this.scenario.phase === '1차') {
                 this.synthetic('인증번호 입력 횟수를 모두 사용해 휴대폰 확인을 완료하지 못했어요.', {
                   id: '$phoneConfirmationFailed', kind: 'exception',
                   actions: [['처음으로', '$menu'], ['상담사 연결', '$handoff']]
@@ -1567,7 +1632,7 @@
               }
             } else {
               this.fields = this.fields.map((field) => field.label === '인증번호'
-                ? { ...field, error: `인증번호가 일치하지 않아요. ${otpAttemptLimit - this.context.otpTries}번 더 입력할 수 있어요.` } : field);
+                ? { ...field, error: `인증번호가 일치하지 않아요. ${attempts - this.context.otpTries}번 더 입력할 수 있어요.` } : field);
             }
           }
           break;
@@ -1585,44 +1650,48 @@
           this.execute(this.context.paymentOptions ?? (no === 5 ? 'S04' : 'S02'));
           break;
         case '$savedPicker':
-          this.synthetic('등록된 카드 중 납부에 사용할 카드를 선택해 주세요.', { id: '$savedPicker' });
+          this.synthetic('선택하신 계약에 등록된 본인 명의의 결제수단을 확인해 주세요.', { id: '$savedPicker' });
           break;
         case '$unavailableSavedCard':
           this.synthetic('다른 분 명의로 등록된 카드로는 납부할 수 없어요. 가상계좌 또는 상담사 연결을 선택해 주세요.', {
             kind: 'choice', actions: [['가상계좌', 'S06'], ['상담사 연결', '$handoff']]
           });
           break;
-        case '$confirmPayment':
-          this.context.payment = { title: savedCard.title, masked: '••••-••••-••••-1234' };
-          this.synthetic('같은 요금을 이미 납부하셨는지 확인해 주세요. 등록된 본인 명의의 카드로 납부할까요?', {
-            actions: [['납부 요청', 'S07'], ['나가기', '$paymentOptions']],
+        case '$confirmPayment': {
+          const { title, masked, kind } = this.context.registeredPayment ?? savedCard;
+          const account = kind === 'transfer';
+          this.context.payment = account ? { account: true, bank: title, masked } : { title, masked };
+          this.synthetic('등록된 본인 명의의 결제수단으로 납부하시겠어요?', {
+            actions: [[account ? 'PASS 전자서명' : 'PASS 본인인증', 'S07'], ['나가기', '$paymentOptions']],
             items: [
-              { title: '납부 방법', detail: savedCard.title + ' · ••••-••••-••••-1234' },
+              { title: '납부 방법', detail: `${title} · ${masked}` },
               { title: '납부 금액', detail: this.fill('[납부 금액]') }
             ]
           });
           break;
-        case '$date':
-          this.context.date = label.replace(/ 선택$/, '');
-          if ([14, 17].includes(no)) this.context.dateIso = this.scheduleDates(true)
-            .find((date) => dateLabel(date) === this.context.date);
-          this.sayBot(`${this.context.date}을 선택했어요. 다음 버튼을 눌러 요청을 완료해 주세요.`, { demo: true });
+        }
+        case '$date': {
+          const date = this.saveScheduleDate(label);
+          const next = no === 17 ? '확인' : this.screen.bookingStage === 'reinstall' ? '분리·재설치 접수' : '다음';
+          this.sayBot(`${date}을 선택했어요. ${next} 버튼을 눌러 주세요.`, { demo: true });
           break;
+        }
         case '$moreDates':
-          this.context.dateScreen = screen;
+          this.context.dateScreen = { id: screen, stage: this.screen.bookingStage };
           const shownDates = this.scheduleDates().slice(0, no === 17 ? 5 : 4);
           this.synthetic('추가로 예약할 수 있는 날짜예요.', {
             actions: this.scheduleDates(true).filter((date) => !shownDates.includes(date))
               .map((date) => [`${dateLabel(date)} 선택`, '$pickExtraDate'])
           });
           break;
-        case '$pickExtraDate':
-          this.context.date = label.replace(/ 선택$/, '');
-          if ([14, 17].includes(no)) this.context.dateIso = this.scheduleDates(true)
-            .find((date) => dateLabel(date) === this.context.date);
-          this.execute(this.context.dateScreen);
-          this.sayBot(`${this.context.date}을 선택했어요. ${no === 17 ? '확인' : '변경 요청'}을 눌러 주세요.`, { demo: true });
+        case '$pickExtraDate': {
+          const { id, stage } = this.context.dateScreen;
+          const date = this.saveScheduleDate(label, stage);
+          this.execute(id);
+          const next = stage === 'reinstall' ? '분리·재설치 접수' : stage === 'split' ? '다음' : no === 17 ? '확인' : '변경 요청';
+          this.sayBot(`${date}을 선택했어요. ${next} 버튼을 눌러 주세요.`, { demo: true });
           break;
+        }
         case '$address':
           this.context.checkedAddress = screen;
           this.sayBot('주소를 확인했어요. 입력하신 주소가 맞으면 계속 진행해 주세요.');
@@ -1725,6 +1794,9 @@
         case '$visitCancel':
           this.execute(this.visitRequestEntry());
           break;
+        case '$visitAddressSchedule':
+          this.execute(this.context.visitAddressNeedsDate ? 'moveDateForChange' : '$commitVisitChange');
+          break;
         case '$commitVisitChange': {
           const key = this.context.serviceVisit;
           if (key) {
@@ -1738,7 +1810,11 @@
           this.execute('S10');
           break;
         }
+        case '$selectCancellationReason':
+          this.context.cancellationReason = label;
+          break;
         case '$commitVisitCancellation':
+          if (!this.context.cancellationReason || !this.context.serviceVisit) break;
           this.context.cancelledVisits = [...(this.context.cancelledVisits ?? []), this.context.serviceVisit];
           this.execute('S05');
           break;
@@ -1758,8 +1834,32 @@
         case '$confirmPackageChange':
           this.execute(this.context.deliveryEdit);
           break;
+        case '$checkDeliveryAddress':
+          this.recordDeliveryEvent('IF_AICC_R040');
+          this.context.modifiedAddress = this.context.modifiedAddress.normalize('NFKC').replace(/\s+/g, ' ');
+          this.recordDeliveryEvent('IF_AICC_R037');
+          this.execute('deliveryAddressCheck');
+          break;
+        case '$deliveryAddressSchedule':
+          this.execute(['reschedule', 'unavailable'].includes(this.deliveryOrderType()) ? 'deliveryAddressSchedule' : '$commitDeliveryChange');
+          break;
         case '$deliveryDateLookup':
+          this.recordDeliveryEvent('IF_AICC_R040');
           this.execute(this.deliveryOrderType() === 'unavailable' ? 'noDeliveryDates' : 'S05');
+          break;
+        case '$commitDeliveryChange':
+          this.recordDeliveryEvent('IF_AICC_P004');
+          this.context.deliveryChange = { address: this.context.modifiedAddress, date: this.context.dateIso };
+          this.recordDeliveryEvent('IF_AICC_P021');
+          this.execute('S07');
+          this.recordDeliveryEvent('S07');
+          if (this.deliveryOrderType() === 'created') this.recordDeliveryEvent('IF_AICC_P014');
+          break;
+        case '$commitDeliveryMemo':
+          this.recordDeliveryEvent('IF_AICC_P005');
+          this.recordDeliveryEvent('IF_AICC_P021');
+          this.execute('S08');
+          this.recordDeliveryEvent('S08');
           break;
         case '$editSymptom':
           this.context.symptomPath = [];

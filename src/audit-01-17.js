@@ -28,6 +28,8 @@
   const paymentStatus = [
     ['결제정보 변경', '@3'], ['미납요금 조회', '@5'], ['상담사 연결', '$handoff'], ['다른 문의', '$menu']
   ];
+  const paymentSchedule = [item('이체·결제 예정일', '매월 25일')];
+  const currentMonthApplication = '이번 달부터 변경한 결제정보로 결제돼요. 오늘 결제내역은 반영까지 시간이 걸릴 수 있어요. 정확한 납부 결과는 다음 날 확인할 수 있고, 변경 시점에 따라 제휴카드 혜택이 적용되지 않을 수 있어요.';
   const contractedProduct = (name, code, method, masked, start, end, months, monthly, overdue, paid) => [
     item(name, `제품코드 ${code}\n사용자 주소 서울 영등포구 문래동`),
     item('결제정보', `출금유형 ${method}\n${masked}\n이체일·결제일 매월 25일`),
@@ -38,6 +40,8 @@
     '신한카드 · ••••-••••-••••-1234', '2025.06.01', '2030.05.31', 17, '29,900원', overdue, paid);
   const airDetails = () => contractedProduct('공기청정기', 'ACL-1000', '계좌 자동이체',
     'KB국민은행 · ••••-••••-4321', '2025.09.01', '2030.08.31', 14, '19,900원', '59,700원', false);
+  const dishwasherDetails = () => contractedProduct('식기세척기', 'DWA-1000', '계좌 자동이체',
+    'KB국민은행 · ••••-••••-4321', '2025.07.01', '2030.06.30', 16, '24,900원', '24,900원', false);
   const paymentUnavailable = (returnTo) => notice('일치하는 계약을 찾지 못했어요. 설치 전이나 설치 당일에는 계약이 조회되지 않을 수 있어요.', [
     ['다시 조회하기', returnTo], ['상담사 연결', '$handoff'], ['다른 문의', '$menu']
   ]);
@@ -46,11 +50,17 @@
   const paymentDay = Number(today.slice(-2));
   const penaltyDate = { label: '해약접수 예정일', type: 'date', sample: today, required: false };
   const choosePayment = (registered, oneTime) => [['등록 결제수단', registered], ['일회성 납부수단', oneTime], ['나가기', '$finish']];
-  const platformPayment = (list, needsRegistration) => notice(needsRegistration
-    ? '네이버를 통해 구독 신청하신 경우 미납금 납부 전 결제정보 등록이 필요해요.'
-    : '네이버를 통해 구독 신청하신 경우 네이버에서 납부해 주세요.', [
-    ...(needsRegistration ? [['결제정보 등록 안내', '@3']] : []), ['다른 계약 확인', list], ['다른 문의', '$menu']
-  ]);
+  const platformPayment = (list, overdueCycles) => {
+    const needsRegistration = overdueCycles >= 3;
+    return {
+      ...notice(needsRegistration
+        ? '네이버를 통해 구독 신청하신 경우 미납금 납부 전 결제정보 등록이 필요해요.'
+        : '네이버를 통해 구독 신청하신 경우 네이버에서 납부해 주세요.', [
+        ...(needsRegistration ? [['결제정보 등록', '@3']] : []), ['목록으로', list], ['다른 문의', '$menu']
+      ]),
+      naverRegistrationRequired: needsRegistration
+    };
+  };
   const individualReceiptNotice = (next) => choice('납부하면 고객님의 등록된 휴대폰 번호로 현금영수증이 자동 발급돼요.', [
     ['납부 진행하기', next], ['뒤로', 'oneTimeMethods']
   ]);
@@ -60,24 +70,25 @@
       screens: {
         S01: { actions: [['PASS 본인인증', 'exampleLookup']], auth: { failure: 'S08' } },
         S02: { actions: [['직수 정수기 선택', 'paymentPurpose'], ['공기청정기 선택', 'airPaymentPurpose']] },
-        S03: { items: waterDetails(), addActions: [['당월 납부 결과 확인', 'S04'], ['다른 계약 확인', 'S02']] },
+        S03: { items: waterDetails(), addActions: [['당월 납부 결과 확인', 'waterPaymentStatus'], ['다른 계약 확인', 'S02']] },
         S04: { actions: [['다른 계약 확인', 'S02'], ['다른 문의', '$menu']] },
-        S05: { actions: [...paymentStatus, ['다른 계약 확인', 'S02']], items: [item('이체·결제 예정일', '매월 25일')] },
-        S06: { actions: [...paymentStatus, ['다른 계약 확인', 'S02']] },
+        S05: { actions: [...paymentStatus, ['다른 계약 확인', 'S02']], items: paymentSchedule },
+        S06: { actions: [...paymentStatus, ['다른 계약 확인', 'S02']], items: paymentSchedule },
         S07: paymentUnavailable('S01'),
         S08: { actions: [['PASS 본인인증', 'exampleLookup']], auth: { failure: 'S09' } },
         exampleLookup: resolved('S02'),
         noCustomer: notice('일치하는 고객 정보를 확인하지 못했어요.', [['PASS 본인인증 다시 시도', 'exampleLookup'], ['상담사 연결', '$handoff']]),
         payerDenied: handoff('결제 정보는 계약자 본인에게 안내해 드려요. 납부자가 계약자와 다른 경우 상담에서 확인해 주세요.'),
-        paymentPurpose: choice('직수 정수기의 어떤 결제 정보를 확인할까요?', [['결제정보 상세 조회', 'S03'], ['당월 납부 결과', 'S04']]),
+        paymentPurpose: choice('직수 정수기의 어떤 결제 정보를 확인할까요?', [['결제정보 상세 조회', 'S03'], ['당월 납부 결과', 'waterPaymentStatus']]),
         airPaymentPurpose: choice('공기청정기의 어떤 결제 정보를 확인할까요?', [['결제정보 상세 조회', 'airPaymentDetails'], ['당월 납부 결과', 'airPaymentStatus']]),
         airPaymentDetails: result('선택하신 공기청정기 계약의 결제정보예요.', [
           ['결제정보 변경', '@3'], ['위약금 문의', '@7'], ['당월 납부 결과 확인', 'airPaymentStatus'], ['다른 계약 확인', 'S02']
         ], airDetails()),
-        airPaymentStatus: resolved(paymentDay < 25 ? 'airPaymentBefore' : paymentDay === 25 ? 'S06' : 'S05'),
-        airPaymentBefore: result('아직 이번 달 결제일 전이라 당월 요금이 납부되지 않았어요.', [
-          ...paymentStatus, ['다른 계약 확인', 'S02']
-        ], [item('이체·결제 예정일', '매월 25일'), item('미납금(당월 제외)', '59,700원')])
+        airPaymentStatus: resolved('@5'),
+        waterPaymentStatus: resolved(paymentDay < 25 ? 'paymentBefore' : 'S04'),
+        paymentBefore: result('아직 이번 달 결제일 전이라 당월 요금이 납부되지 않았어요.', [
+          ['다른 계약 확인', 'S02'], ['추가 문의', '$menu'], ['상담 종료', '$finish']
+        ], paymentSchedule)
       }
     },
     2: {
@@ -109,24 +120,40 @@
           actions: [['다른 계약 변경', 'changeContract'], ['다른 문의', '$menu']]
         },
         changeContract: choice('변경할 계약을 선택해 주세요.', [
-          ['직수 정수기 선택', 'ordinaryPaymentDetails'], ['정수기·공기청정기 묶음 선택', 'bundlePaymentDetails'], ['비데 선택', 'naverContract']
+          ['직수 정수기 선택', 'ordinaryPaymentDetails'], ['공기청정기 선택', 'airPaymentDetails'],
+          ['정수기·공기청정기 묶음 선택', 'bundlePaymentDetails'], ['비데 선택', 'naverContract'],
+          ['식기세척기 선택', 'dishwasherPaymentDetails']
         ], [
           item('직수 정수기', 'WPU-1000 · 개별 결제 · 신한카드'),
+          item('공기청정기', 'ACL-1000 · 개별 결제 · KB국민은행'),
           item('정수기·공기청정기 묶음', '묶음 결제 · 대표 계약 결제일 매월 25일'),
-          item('비데', 'BID-1000 · 네이버 구독')
+          item('비데', 'BID-1000 · 네이버 구독'),
+          item('식기세척기', 'DWA-1000 · 개별 결제 · KB국민은행')
         ]),
         ordinaryPaymentDetails: result('직수 정수기에 등록된 결제정보를 확인해 주세요.', [
           ['결제정보 변경', 'applyNextMonth'], ['위약금 조회', '@7'], ['다른 계약 확인', 'changeContract']
         ], waterDetails()),
+        airPaymentDetails: result('선택하신 공기청정기에 등록된 결제정보를 확인해 주세요.', [
+          ['결제정보 변경', 'applyThisMonthSingle'], ['위약금 조회', '@7'], ['다른 계약 확인', 'changeContract']
+        ], airDetails()),
+        dishwasherPaymentDetails: result('선택하신 식기세척기에 등록된 결제정보를 확인해 주세요.', [
+          ['결제정보 변경', 'applyThisMonthSingle'], ['다른 계약 확인', 'changeContract']
+        ], dishwasherDetails()),
         bundlePaymentDetails: result('묶음 계약에 등록된 결제정보를 확인해 주세요.', [
           ['결제정보 변경', 'applyThisMonth'], ['위약금 조회', '@7'], ['다른 계약 확인', 'changeContract']
         ], [...airDetails(), item('결제 적용 범위', '같은 묶음 번호의 상품 전체')]),
         applyNextMonth: choice('이번 달 요금을 이미 납부하셔서 다음 달부터 변경한 결제정보로 결제돼요.', [
           ['결제정보 변경 진행', 'S03'], ['다른 계약 확인', 'changeContract']
         ]),
-        applyThisMonth: choice('이번 달부터 변경한 결제정보로 결제돼요. 오늘 결제내역은 반영까지 시간이 걸릴 수 있어요. 정확한 납부 결과는 다음 날 확인할 수 있고, 변경 시점에 따라 제휴카드 혜택이 적용되지 않을 수 있어요.', [
+        applyThisMonth: choice(currentMonthApplication, [
           ['결제정보 변경 진행', 'S02'], ['다른 계약 확인', 'changeContract']
         ]),
+        applyThisMonthSingle: choice(currentMonthApplication, [
+          ['결제정보 변경 진행', 'S03'], ['다른 계약 확인', 'changeContract']
+        ]),
+        naverArrearsApplication: choice(currentMonthApplication, [
+          ['결제정보 변경 진행', 'S03'], ['다른 계약 확인', 'changeContract']
+        ], [item('대상 계약', '매트리스 · MAT-2000 · 네이버 구독')]),
         naverContract: result('네이버에서 구독한 계약의 결제정보는 네이버에서 변경하실 수 있어요.', [['다른 계약 확인', 'changeContract'], ...close])
       }
     },
@@ -154,10 +181,10 @@
         paymentScope: choice('공기청정기의 지난 미납요금과 이번 달 요금이 남아 있어요. 납부할 범위를 선택해 주세요.', [
           ['미납요금만 납부', 'chargePast'], ['미납요금과 당월 요금 납부', 'chargeCombined'], ['다른 계약 확인', 'chargeContract']
         ], [item('미납요금만 납부', '59,700원'), item('미납요금과 당월 요금 납부', '79,600원')]),
-        chargePast: { ...choice('계약의 지난 미납요금 전체를 납부해요. ' + invoiceWarning, choosePayment('S03', 'receiptPaymentMethods'), [item('납부 금액', '[납부 금액]')]), paymentAmount: 59700 },
-        chargeCombined: { ...choice('지난 미납요금과 이번 달 요금을 함께 납부해요. ' + invoiceWarning, choosePayment('S03', 'receiptPaymentMethods'), [item('납부 금액', '[납부 금액]')]), paymentAmount: 79600 },
+        chargePast: { ...choice('계약의 지난 미납요금 전체를 납부해요. ' + invoiceWarning, choosePayment('$savedPicker', 'receiptPaymentMethods'), [item('납부 금액', '[납부 금액]')]), paymentAmount: 59700, registeredPayment: 'account' },
+        chargeCombined: { ...choice('지난 미납요금과 이번 달 요금을 함께 납부해요. ' + invoiceWarning, choosePayment('$savedPicker', 'receiptPaymentMethods'), [item('납부 금액', '[납부 금액]')]), paymentAmount: 79600, registeredPayment: 'account' },
         chargePaid: result('비데의 이번 달 요금은 이미 납부됐어요.', [['결제정보 변경', '@3'], ['위약금 조회', '@7'], ['다른 계약 확인', 'chargeContract']], [item('당월 납부 상태', '납부 완료')]),
-        naverPayment: platformPayment('chargeContract', false),
+        naverPayment: platformPayment('chargeContract', 2),
         chargeNotFound: paymentUnavailable('S01'),
         oneTimeMethods: paymentMethods('personalTransferReceipt', 'personalVirtualReceipt'),
         personalTransferReceipt: individualReceiptNotice('S05'),
@@ -181,14 +208,25 @@
         S08: { actions: [['다른 계약 보기', 'arrearsContract'], ['다른 문의', '$menu']] },
         S09: { actions: [['다른 계약 보기', 'arrearsContract'], ['상담사 연결', '$handoff'], ['다른 문의', '$menu']] },
         arrearsContract: choice('미납요금을 조회할 계약을 선택해 주세요.', [
-          ['직수 정수기 선택', 'S02'], ['공기청정기 선택', 'airArrears'], ['비데 선택', 'S03'], ['매트리스 선택', 'naverPayment']
-        ], [item('직수 정수기', 'WPU-1000 · 문래동 · 29,900원 (당월 미포함)'), item('공기청정기', 'ACL-1000 · 문래동 · 59,700원 (당월 미포함)'), item('비데', 'BID-1000 · 문래동 · 0원 (당월 미포함)'), item('매트리스', 'MAT-1000 · 문래동 · 네이버 구독')]),
+          ['직수 정수기 선택', 'S02'], ['공기청정기 선택', 'airArrears'], ['비데 선택', 'S03'],
+          ['매트리스 선택', 'naverPayment'], ['식기세척기 선택', 'dishwasherArrears']
+        ], [item('직수 정수기', 'WPU-1000 · 문래동 · 29,900원 (당월 미포함)'),
+          item('공기청정기', 'ACL-1000 · 문래동 · 59,700원 (당월 미포함)'), item('비데', 'BID-1000 · 문래동 · 0원 (당월 미포함)'),
+          item('매트리스', 'MAT-2000 · 문래동 · 네이버 구독'), item('식기세척기', 'DWA-1000 · 문래동 · 24,900원 (당월 미포함)')]),
         airArrears: result('공기청정기의 지난달까지 미납요금을 확인했어요.', [
           ['미납금 납부', 'highArrearsPayment'], ['결제정보 변경', '@3'], ['다른 계약 확인', 'arrearsContract']
         ], airDetails()),
+        dishwasherArrears: result('식기세척기의 지난달까지 미납요금을 확인했어요.', [
+          ['미납금 납부', 'registeredAccountArrears'], ['결제정보 변경', '@3'], ['다른 계약 확인', 'arrearsContract']
+        ], dishwasherDetails()),
+        registeredAccountArrears: {
+          ...choice('계약의 지난 미납요금 전체를 납부해요. ' + invoiceWarning,
+            choosePayment('$savedPicker', 'oneTimeMethods'), [item('납부 금액', '[납부 금액]')]),
+          paymentAmount: 24900, registeredPayment: 'account'
+        },
         highArrearsPayment: { ...choice('계약의 지난 미납요금 전체를 납부해요. ' + invoiceWarning, choosePayment('otherPayer', 'receiptPaymentMethods'), [item('납부 금액', '[납부 금액]')]), paymentAmount: 59700 },
         otherPayer: choice('등록된 결제수단은 다른 분 명의예요. 가상계좌로 입금하거나 상담사를 통해 납부 방법을 확인해 주세요.', [['가상계좌', 'receiptVirtual'], ['상담사 연결', '$handoff']]),
-        naverPayment: platformPayment('arrearsContract', true),
+        naverPayment: platformPayment('arrearsContract', 3),
         arrearsNotFound: paymentUnavailable('S01'),
         oneTimeMethods: paymentMethods('personalTransferReceipt', 'personalVirtualReceipt'),
         personalTransferReceipt: individualReceiptNotice('S05T'),
@@ -256,9 +294,9 @@
   const birthdate = { label: '양수인 생년월일', placeholder: '생년월일', type: 'date', minAge: 19, sample: '1990-01-01' };
   const businessRegistrationNumber = { label: '사업자등록번호', placeholder: '사업자등록번호', type: 'password', sample: '000-00-00000' };
   const changedDates = [['11월 27일(금) 선택', '$date'], ['더보기', '$moreDates']];
-  const bookingDetails = (service, number, product, date, address) => [
+  const bookingDetails = (service, number, product, date, address, phone = '[방문 연락처]') => [
     item('서비스 종류', service), item('접수번호', number), item('접수제품', product), item('방문 예정일', date),
-    item('담당 매니저', '방문 담당 매니저'), item('이름', '[받으실 분]'), item('연락처', '[방문 연락처]'), item('주소', address)
+    item('담당 매니저', '방문 담당 매니저'), item('이름', '[받으실 분]'), item('연락처', phone), item('주소', address)
   ];
   const visitUnavailable = (retry) => notice('입력하신 주소로는 방문 서비스를 접수하기 어려워요. 주소를 다시 입력하거나 상담사에게 문의해 주세요.', [
     ['주소 다시 입력', retry], ['상담사 연결', '$handoff']
@@ -350,28 +388,28 @@
         pairAuth: splitAuth,
         pairLookup: { resolve: { default: 'pairMoveStatus', rules: moveEligibility } },
         pairMoveStatus: choice('분리와 재설치를 진행할 제품의 이사 상태를 선택해 주세요.', [
-          ['이사 예정', 'pairSplitAddress'], ['이사·이동 완료', 'pairCompletedSplitAddress'], ['기타 · 공사 등', 'pairCompletedSplitAddress']
+          ['이사 예정', 'pairMoveDate'], ['이사·이동 완료', 'pairSplitAddress'], ['기타 · 공사 등', 'pairSplitAddress']
         ]),
-        pairSplitAddress: field('먼저 분리 방문 정보를 입력해 주세요. 이사 예정일 전날까지 분리할 수 있어요.', [
-          'product', 'address', visitPhone, moveDate('이사 예정일', '2026-11-30'), moveDate('분리 방문 희망일', '2026-11-27')
-        ], [['재설치 주소 입력', 'pairSplitCheck'], ['뒤로', 'pairMoveStatus']], { validate: { dateOrder: [['분리 방문 희망일', '이사 예정일']] } }),
-        pairCompletedSplitAddress: field('먼저 분리 방문 정보를 입력해 주세요.', [
-          'product', 'address', visitPhone, moveDate('분리 방문 희망일', '2026-11-27')
-        ], [['재설치 주소 입력', 'pairCompletedSplitCheck'], ['뒤로', 'pairMoveStatus']]),
-        pairSplitCheck: { resolve: { default: 'pairInstallAddress', rules: [
+        pairMoveDate: field('이사 예정일을 입력해 주세요. 분리는 예정일 전날까지, 재설치는 예정일 다음 날부터 가능해요.', [
+          moveDate('이사 예정일', '2026-11-30')
+        ], [['다음', 'pairSplitAddress'], ['뒤로', 'pairMoveStatus']]),
+        pairSplitAddress: field('먼저 분리할 제품과 방문 주소, 당일 연락받을 번호를 입력해 주세요.', [
+          'product', 'address', visitPhone
+        ], [['주소 검색', '$address'], ['예약 가능일자 확인', 'pairSplitCheck'], ['뒤로', 'pairMoveStatus']]),
+        pairSplitCheck: { resolve: { default: 'pairSplitSchedule', rules: [
           { ...unsupportedAddress, target: 'pairSplitUnavailable' }, { ...duplicateVisit, target: 'pairDuplicate' }
         ] } },
-        pairCompletedSplitCheck: { resolve: { default: 'pairInstallAddress', rules: [
-          { ...unsupportedAddress, target: 'pairCompletedSplitUnavailable' }, { ...duplicateVisit, target: 'pairDuplicate' }
-        ] } },
         pairSplitUnavailable: visitUnavailable('pairSplitAddress'),
-        pairCompletedSplitUnavailable: visitUnavailable('pairCompletedSplitAddress'),
         pairDuplicate: choice('같은 제품과 주소로 이미 접수한 분리 방문이 있어요. 새로 분리와 재설치를 접수할까요?', [
-          ['접수내역 보기', '@13'], ['새로 접수하기', 'pairInstallAddress'], ['상담사 연결', '$handoff']
+          ['접수내역 보기', '@13'], ['새로 접수하기', 'pairSplitSchedule'], ['상담사 연결', '$handoff']
         ], [item('접수번호', 'ES-261125-002'), item('방문 예정일', '11월 30일(월)')]),
+        pairSplitSchedule: {
+          ...choice('분리 방문 가능일 중 원하시는 날짜를 선택해 주세요.', [...changedDates, ['다음', 'pairInstallAddress'], ['뒤로', 'pairSplitAddress']]),
+          bookingStage: 'split'
+        },
         pairInstallAddress: field('이사 후 재설치할 주소와 방문 정보를 입력해 주세요. 분리 접수 주소와 별도로 확인해요.', [
-          'address', visitPhone, moveDate('재설치 방문 희망일', '2026-12-02')
-        ], [['입력 확인', 'pairInstallCheck'], ['뒤로', 'pairMoveStatus']]),
+          'address', visitPhone
+        ], [['주소 검색', '$address'], ['예약 가능일자 확인', 'pairInstallCheck'], ['뒤로', 'pairSplitSchedule']]),
         pairInstallCheck: { resolve: { default: 'pairPass', rules: [
           { ...unsupportedAddress, target: 'pairInstallUnavailable' },
           { fields: ['휴대폰 번호'], match: '^010-?0000-?0000$', target: 'pairValveCheck' }
@@ -384,19 +422,23 @@
         pairAddressOwner: { resolve: { default: 'pairAddressConsent', rules: [{ ...alternateOwner, target: 'pairValveCheck' }] } },
         pairAddressConsent: consent('pairValveCheck', 'pairContractAddressConfirmed'),
         pairContractAddressConfirmed: result('새 주소를 계약자 주소에도 반영하도록 선택하셨어요.', [['계속', 'pairValveCheck']]),
-        pairValveCheck: { resolve: { default: 'pairReview', rules: [
+        pairValveCheck: { resolve: { default: 'pairInstallSchedule', rules: [
           { fields: ['제품명 또는 모델명'], match: '정수기|WPU', target: 'pairValveOption' }
         ] } },
         pairValveOption: choice('재설치할 정수기에 조리수 밸브도 설치할까요?', [
-          ['조리수 밸브 포함', 'pairReview'], ['기본 재설치만', 'pairReview']
+          ['조리수 밸브 포함', 'pairInstallSchedule'], ['기본 재설치만', 'pairInstallSchedule']
         ]),
-        pairReview: choice('두 방문을 함께 신청할까요? 분리·재설치 환경에 따라 비용이 추가될 수 있어요.', [
-          ['분리·재설치 접수 요청', 'pairResult'], ['뒤로', 'pairMoveStatus']
-        ]),
-        pairResult: result('분리와 재설치 두 건의 방문 접수가 완료됐어요.', unrestrictedService, [
-          ...bookingDetails('분리', 'ES-261125-003', '[방문 제품]', '[분리 방문일]', '[분리 방문 주소]'),
-          ...bookingDetails('재설치', 'ES-261125-004', '[방문 제품]', '[재설치 방문일]', '[재설치 방문 주소]')
-        ])
+        pairInstallSchedule: {
+          ...choice('재설치 방문일을 선택한 뒤 분리와 재설치를 함께 접수해 주세요.', [...changedDates, ['분리·재설치 접수', 'pairResult'], ['뒤로', 'pairInstallAddress']]),
+          bookingStage: 'reinstall'
+        },
+        pairResult: {
+          ...result('분리와 재설치 두 건의 방문 접수가 완료됐어요.', unrestrictedService),
+          recordGroups: [
+            { title: '분리 서비스 접수', items: bookingDetails('분리', 'ES-261125-003', '[방문 제품]', '[분리 방문일]', '[분리 방문 주소]', '[분리 방문 연락처]') },
+            { title: '재설치 서비스 접수', items: bookingDetails('재설치', 'ES-261125-004', '[방문 제품]', '[재설치 방문일]', '[재설치 방문 주소]', '[재설치 방문 연락처]') }
+          ]
+        }
       }
     };
   }
@@ -417,12 +459,42 @@
         },
         S04: { actions: [['미납요금 조회·납부', '@5'], ['당월 요금 납부', '@4'], ['뒤로', 'S03']] },
         S03: {
-          actions: [['직수 정수기 선택', 'S06'], ['공기청정기 선택', 'S04'], ['정수기·공기청정기 묶음 선택', 'S05'], ['비데 선택', 'platformOrder']],
+          actions: [['직수 정수기 선택', 'transferContractDetails'], ['공기청정기 선택', 'S04'], ['정수기·공기청정기 묶음 선택', 'S05'],
+            ['비데 선택', 'platformOrder'], ['계약번호로 확인', 'transferContractNumber']],
           items: [item('직수 정수기', 'WPU-1000 · 구독 이용 중'), item('공기청정기', 'ACL-1000 · 미납금 있음'), item('정수기·공기청정기 묶음', '패키지 할인 계약'), item('비데', 'BID-1000 · 네이버 구독')]
         },
+        transferContractDetails: result('선택하신 직수 정수기 계약의 상세 정보예요. 확인하신 뒤 명의변경을 신청해 주세요.', [
+          ['명의변경 신청', 'S06'], ['다른 계약 선택', 'S03']
+        ], [
+          item('직수 정수기', '제품코드 WPU-1000 · 서울 영등포구 문래동'),
+          item('결제정보', '신용카드 자동납부 · 신한카드\n카드번호 ••••-••••-••••-1234\n결제일 매월 25일'),
+          item('계약기간', '계약일 2025년 6월 1일\n계약종료일 2030년 5월 31일\n의무 사용 36개월 · 전체 60개월 · 이용 17개월'),
+          item('구독료·납부내역', '월 29,900원\n당월 제외 미납금 0원 · 이번 달 납부 완료')
+        ]),
+        transferContractNumber: field('명의변경을 확인할 계약번호를 입력해 주세요.', [
+          { label: '계약번호', placeholder: '계약번호 입력', sample: 'CT-250601-005' }
+        ], [['계약 확인', 'transferContractLookup'], ['뒤로', 'S03']]),
+        transferContractLookup: { resolve: { default: 'transferContractUnavailable', rules: [
+          { target: 'transferContractDetails', fields: ['계약번호'], match: '^CT-250601-001$' },
+          { target: 'S04', fields: ['계약번호'], match: '^CT-250601-002$' },
+          { target: 'S05', fields: ['계약번호'], match: '^CT-250601-003$' },
+          { target: 'platformOrder', fields: ['계약번호'], match: '^CT-250601-004$' },
+          { target: 'transferPrepaid', fields: ['계약번호'], match: '^CT-250601-005$' },
+          { target: 'transferCrossPackage', fields: ['계약번호'], match: '^CT-250601-006$' }
+        ] } },
+        transferContractUnavailable: notice('입력하신 번호와 일치하는 명의변경 대상 계약을 찾지 못했어요.', [
+          ['계약번호 다시 입력', 'transferContractNumber'], ['다른 계약 선택', 'S03'], ['상담사 연결', '$handoff']
+        ]),
         S05: {
-          message: '선납 할인을 받고 있거나 묶음·크로스 패키지로 할인받는 계약은 명의변경 조건을 먼저 확인해 주세요. 묶음 중 일부만 변경하면 할인 반환금이나 구독료 조정이 발생할 수 있어요.'
+          message: '패키지 할인 계약은 일부 제품만 명의변경하면 할인 반환금이 발생하고 묶음 제품의 구독료가 오를 수 있어요. 명의변경을 원하시면 상담사에게 문의해 주세요.',
+          actions: [['상담사 연결', '$handoff'], ['다른 계약 선택', 'S03']]
         },
+        transferPrepaid: handoff('선납 할인이 적용 중인 계약은 그대로 명의변경을 신청할 수 없어요. 선납 취소와 할인 반환 조건은 상담사에게 문의해 주세요.', [
+          ['상담사 연결', '$handoff'], ['다른 계약 선택', 'S03']
+        ]),
+        transferCrossPackage: handoff('크로스 패키지 할인 계약을 명의변경하면 할인 반환금이 발생하고 연결된 제품들의 구독료가 오를 수 있어요. 명의변경을 원하시면 상담사에게 문의해 주세요.', [
+          ['상담사 연결', '$handoff'], ['다른 계약 선택', 'S03']
+        ]),
         S06: { fields: [], kind: 'choice', message: '명의를 넘겨받을 분의 유형을 선택해 주세요.', actions: [
           ['개인', 'transfereePersonal'], ['개인사업자', 'transfereeBusiness'],
           ['귀화', 'transfereePapers'], ['주민등록번호 정정', 'transfereePapers']
@@ -625,13 +697,14 @@
           { target: 'S11', fields: ['휴대폰 번호'], match: '^010-?0000-?0002$' },
           { target: 'S09', fields: ['휴대폰 번호'], match: '^010-?0000-?0003$' }
         ] } },
-        S02: { message: '선택하신 접수 내역이에요. 변경할 항목을 선택해 주세요.', actions: [
+        visitDetails: choice('선택하신 서비스 접수 내역이에요.', [
+          ['접수내용 변경', '$visitChange'], ['다른 접수 확인', '$visitResults']
+        ]),
+        S02: { message: '변경할 항목을 선택해 주세요.', actions: [
           ['방문주소', '$changeVisitAddress'], ['방문예정일', 'moveDateForChange'], ['접수 증상', '$editSymptom'], ['방문 연락처', '$editPhone']
         ] },
-        S03: { actions: [['주소 검색', '$address'], ['변경 요청', 'visitAddressCheck'],
-          ['예약일을 변경해 계속하기', 'visitAddressDateCheck'], ['나가기', 'S02']] },
-        visitAddressCheck: { resolve: { default: '$commitVisitChange', rules: [{ ...unsupportedAddress, target: 'S08' }] } },
-        visitAddressDateCheck: { resolve: { default: 'moveDateForChange', rules: [{ ...unsupportedAddress, target: 'S08' }] } },
+        S03: { actions: [['주소 검색', '$address'], ['확인', 'visitAddressCheck'], ['나가기', 'S02']] },
+        visitAddressCheck: { resolve: { default: '$visitAddressSchedule', rules: [{ ...unsupportedAddress, target: 'S08' }] } },
         S04: { actions: [...changedDates, ['변경 요청', '$commitVisitChange']] },
         S05: field('서비스 당일에 연락받으실 전화번호를 입력해 주세요.', [
           { label: '연락요청번호', placeholder: '휴대폰 번호 또는 지역번호 포함', type: 'tel', sample: '010-0000-1234' }
@@ -657,10 +730,11 @@
         ] } },
         visitDetails: choice('선택하신 접수 내역이에요.', [['접수취소', '$visitCancel'], ['다른 접수 확인', '@13']]),
         S03: { actions: [
-          ['개인 일정으로 다음에 다시 신청', 'S04'], ['정상 작동 또는 직접 처리', 'S04'],
-          ['미사용 또는 새 제품 구입 예정', 'S04'], ['비용 부담', 'S04'], ['기타', 'S04']
+          ['개인 일정으로 다음에 다시 신청', '$selectCancellationReason'], ['정상 작동 또는 직접 처리', '$selectCancellationReason'],
+          ['미사용 또는 새 제품 구입 예정', '$selectCancellationReason'], ['비용 부담', '$selectCancellationReason'],
+          ['기타', '$selectCancellationReason'], ['나가기', '$menu'], ['취소 요청', '$commitVisitCancellation']
         ] },
-        S04: { message: '이 사유로 서비스 접수를 취소할까요?', actions: [['취소 요청', '$commitVisitCancellation'], ['나가기', 'visitDetails']] },
+        S04: { resolve: { default: 'S03' } },
         S05: { addActions: [['접수 내역 확인', '@13'], ['상담 종료', '$finish']] },
         missingCustomer: noMatch('S01')
       }
@@ -671,7 +745,8 @@
         deliveryBusinessInput: field('개인사업자 주문을 조회할 신청자 정보와 사업자등록번호를 입력해 주세요.', [
           'name', 'phone', businessRegistrationNumber
         ], [['인증번호 받기', '$sendOtp']], { secure: true }),
-        phoneConfirm: { auth: { success: 'deliveryLookup', failure: 'S06' } },
+        phoneConfirm: { auth: { success: 'deliveryLookup', failure: 'deliveryPhoneFailed' } },
+        deliveryPhoneFailed: handoff('인증번호를 세 번 잘못 입력해 휴대폰 확인을 마치지 못했어요. 배송 정보는 상담사에게 확인해 주세요.'),
         deliveryLookup: { resolve: { default: 'S02', rules: [
           { target: 'S04', fields: ['휴대폰 번호'], match: '^010-?0000-?0000$' },
           { target: 'S05', fields: ['휴대폰 번호'], match: '^010-?0000-?0002$' },
@@ -679,8 +754,8 @@
           { target: 'S05', fields: ['휴대폰 번호'], match: '^010-?0000-?0008$' }
         ] } },
         S03: {
-          message: '선택하신 주문의 배송 정보예요. 방문 시간은 설치마스터가 방문 당일 오전 10시 전에 연락해 조율해요.',
-          addActions: [['배송 주소·일정 변경 문의', '@17']]
+          message: '고객님, 제품 배송 정보 안내드립니다.',
+          actions: [['계속하기', 'S07']]
         },
         pending5: { ...handoff('배송 주문을 확인하려면 상담사에게 문의해 주세요.'), condition: '배송 주문 상담 확인' }
       }
@@ -692,7 +767,8 @@
           'name', 'phone', businessRegistrationNumber
         ], [['인증번호 받기', '$sendOtp']], { secure: true }),
         S02: { message: '배송 정보를 변경하거나 설치마스터에게 요청을 전달할 주문을 선택해 주세요.' },
-        phoneConfirm: { auth: { success: 'deliveryLookup', failure: 'S10' } },
+        phoneConfirm: { auth: { success: 'deliveryLookup', failure: 'deliveryPhoneFailed' } },
+        deliveryPhoneFailed: handoff('인증번호를 세 번 잘못 입력해 휴대폰 확인을 마치지 못했어요. 배송 변경은 상담사에게 문의해 주세요.'),
         deliveryLookup: { resolve: { default: 'S02', rules: [
           { target: 'S11', fields: ['휴대폰 번호'], match: '^010-?0000-?0000$' },
           { target: 'S10', fields: ['휴대폰 번호'], match: '^010-?0000-?0002$' },
@@ -709,10 +785,9 @@
         ]),
         S04: field('새 배송 주소를 입력해 주세요.', [
           { label: '배송 주소', placeholder: '도로명 또는 지번과 상세주소', sample: '서울 영등포구 문래동' }
-        ], [['주소 검색', '$address'], ['확인', 'deliveryAddressCheck'], ['나가기', 'S03']]),
-        deliveryAddressCheck: { resolve: { default: 'S07', rules: [
-          { ...unsupportedAddress, fields: ['배송 주소'], target: 'S09' },
-          { target: 'deliveryAddressSchedule', fields: ['배송 주소'], match: '^(?:세종특별자치시|세종시)' }
+        ], [['주소 검색', '$address'], ['확인', '$checkDeliveryAddress'], ['나가기', 'S03']]),
+        deliveryAddressCheck: { resolve: { default: '$deliveryAddressSchedule', rules: [
+          { ...unsupportedAddress, fields: ['배송 주소'], target: 'S09' }
         ] } },
         deliveryAddressSchedule: choice('변경하신 배송지에는 기존 날짜로 배송하기 어려워요. 새 배송일을 선택해 주세요.', [
           ['배송일 선택', 'requestedDeliveryDate'], ['주소 다시 입력', 'S04']
@@ -722,18 +797,17 @@
         ], [['예약 가능일자 확인', '$deliveryDateLookup'], ['뒤로', '$deliveryOrder']]),
         noDeliveryDates: handoff('선택할 수 있는 배송일이 없어요. 상담사에게 배송 일정을 문의해 주세요.'),
         S05: {
-          actions: [['배송 가능일 선택', '$date'], ['더보기', '$moreDates'], ['확인', 'S07']]
+          actions: [['배송 가능일 선택', '$date'], ['더보기', '$moreDates'], ['확인', '$commitDeliveryChange']]
         },
         S06: field('설치마스터에게 전달할 내용을 입력해 주세요. 요청한 내용은 설치 예정일에 확인할 수 있어요.', [
           { label: '전달 요청 사항', placeholder: '전달 요청 사항을 입력해 주세요', sample: '방문 전에 연락해 주세요.' }
-        ], [['확인', 'S08'], ['뒤로', '$deliveryOrder']]),
-        S08: { message: '요청하신 내용이 배송 메모에 반영됐어요. 추가로 문의하실 내용이 있으신가요?', actions: close },
+        ], [['확인', '$commitDeliveryMemo'], ['뒤로', '$deliveryOrder']]),
+        S07: { actions: close },
+        S08: { message: '요청하신 사항은 설치 예정일 설치마스터가 확인할 수 있습니다. 추가로 문의하실 내용이 있으신가요?', actions: close },
         subscriptionOrder: choice('구독 주문의 배송주소는 구독 주문처에 변경을 요청해 주세요. 배송일 문의나 설치 요청 전달을 계속할 수 있어요.', [
           ['배송주소 변경 안내', 'subscriptionAddress'], ['배송일정 수정 문의', '$deliveryEditDate'], ['설치마스터 전달 요청', 'S06'], ['다른 문의', '$menu']
         ]),
-        subscriptionAddress: result('구독 신청처에 배송주소 변경을 요청해 주세요. 주문처에서 변경 가능 여부와 새 설치 일정을 확인해요.', [
-          ['뒤로', 'subscriptionOrder'], ['다른 문의', '$menu']
-        ]),
+        subscriptionAddress: result('구독 신청처에 배송주소 변경을 요청해 주세요. 주문처에서 변경 가능 여부와 새 설치 일정을 확인해요.', close),
         createdOrder: handoff('주문이 출고됐어요. 배송 변경이나 요청사항 전달은 상담사가 도와드려요.'),
         pending5: { ...handoff('배송 주문 변경 가능 여부는 상담사에게 문의해 주세요.'), condition: '배송 주문 상담 확인' }
       }
