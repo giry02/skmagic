@@ -15,16 +15,44 @@
   const resolved = (fallback, rules = []) => ({ resolve: { default: fallback, rules } });
   const contractCase = (target, suffix) => ({ target, fields: ["계약 또는 제품명"], match: "^SK-261125-" + suffix + "$" });
   const phoneCase = (target, suffix) => ({ target, fields: ["휴대폰 번호"], match: "^010-?0000-?" + suffix + "$" });
-  const seoulDay = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Seoul", day: "2-digit" }).format(new Date()));
+  const seoulDate = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const [seoulYear, seoulMonth, seoulDay] = seoulDate.split("-").map(Number);
   const recipient = ["name", "phone", "address"];
   const cancellation = [{ label: "취소 사유", placeholder: "취소하는 이유를 짧게 입력해 주세요", type: "text", sample: "일정 변경" }];
-  const withdrawal = [{ label: "철회 사유", placeholder: "해약 신청을 철회하는 이유", type: "text", sample: "계약을 계속 이용하고 싶어요" }];
+  const withdrawal = [
+    { label: "해약취소 사유", placeholder: "해약 신청을 철회하는 이유", type: "text", sample: "계약을 계속 이용하고 싶어요" },
+    { label: "취소 상세내용", placeholder: "담당자가 추가로 알아야 할 내용", type: "text", sample: "기존 계약 조건 유지 요청", required: false }
+  ];
   const bank = { label: "은행", placeholder: "은행명 입력", type: "text", sample: "KB국민은행" };
   const account = { label: "계좌번호", placeholder: "숫자만 입력", type: "password", sample: "000000001234" };
-  const confirmOrder = (product, orderNumber, state, next) => ({
-    ...choice("조회된 주문이 취소하려는 주문과 일치하는지 확인해 주세요.", [["이 주문이 맞아요", next], ["다른 주문 선택", "orderSelect"]]),
+  const confirmOrder = (product, orderNumber, state, next, back = "orderSelect") => ({
+    ...choice(back === "orderSelect" ? "조회된 주문이 취소하려는 주문과 일치하는지 확인해 주세요."
+      : "조회된 주문이 문의하신 주문과 일치하는지 확인해 주세요.", [["이 주문이 맞아요", next], ["다른 주문 선택", back]]),
     items: [detail("제품", product), detail("주문번호", orderNumber), detail("배송 상태", state)]
   });
+  const cancellableOrder = (product, model, orderNumber, state, next) => {
+    const screen = confirmOrder(product, orderNumber, state, next);
+    screen.items = [detail("받는 분", "김○○"), detail("배송지", "서울 영등포구 문래동"), detail("제품코드", model), ...screen.items];
+    return screen;
+  };
+  const orderIdentity = { target: "orderSelect", fields: ["이름", "휴대폰 번호", "주소"], all: true, match: "", patterns: {
+    "이름": "^김매직$", "휴대폰 번호": "^01000001234$", "주소": "^(?:서울(?:특별시)?\\s*)?영등포구\\s*문래동(?:\\s*.*)?$"
+  } };
+  const knownProduct = (target) => ({ target, fields: ["계약 또는 제품명"], match: "^(?:직수\\s*정수기(?:\\s*계약)?|WPU-1000)$" });
+  const coveredPeriod = (contractDay) => {
+    const lastOfPrevious = new Date(Date.UTC(seoulYear, seoulMonth - 1, 0)).getUTCDate();
+    const lastOfCurrent = new Date(Date.UTC(seoulYear, seoulMonth, 0)).getUTCDate();
+    const start = new Date(Date.UTC(seoulYear, seoulMonth - 2, Math.min(contractDay, lastOfPrevious)));
+    const end = new Date(Date.UTC(seoulYear, seoulMonth - 1, Math.min(contractDay, lastOfCurrent) - 1));
+    const formatDay = (date) => `${date.getUTCMonth() + 1}월 ${date.getUTCDate()}일`;
+    return result(`${seoulMonth}월 납부 대상 사용 기간을 확인했어요.`, [detail("계약 기준일", `매월 ${contractDay}일`), detail("사용 기간", `${formatDay(start)}~${formatDay(end)}`)]);
+  };
+  const paymentDay = (day, isPaid) => {
+    if (seoulDay < day) return result("이번 달 정기 결제일이 아직 오지 않았어요. 결제일이 지나면 납부 여부를 확인할 수 있어요.", [detail("정기 결제일", `매월 ${day}일`)]);
+    return result(isPaid ? `${seoulMonth}월 납부가 확인된 상태예요.` : `${seoulMonth}월 납부가 확인되지 않아요.`, [
+      detail("정기 결제일", `매월 ${day}일`), detail("당월 납부 여부", isPaid ? "납부" : "미납")
+    ], isPaid ? [] : [["미납요금 납부", "@5"], ["결제정보 변경", "@3"]]);
+  };
 
   const prepaidRates = [4, 6, 8, 10, 12];
   const prepaidQuotes = Object.fromEntries(prepaidRates.slice(1).map((rate, index) => {
@@ -58,67 +86,84 @@
           actions: [["전월분 받기", "documentAuthority"], ["다음에 요청하기", "$finish"]]
         },
         s3: { message: "서류를 받을 계약을 확인해 주세요.", fields: contract, items: [], actions: [["계약 확인", "documentLookup"]] },
-        documentLookup: resolved("s5", [contractCase("s4", "000")]),
+        documentLookup: resolved("s4", [knownProduct("s5"), contractCase("s5", "048")]),
         documentAuthority: choice("개인과 개인사업자 계약은 계약자 본인이 서류를 요청할 수 있어요.", [
-          ["계약자 본인", "s3"], ["계약자 아님", "s4"]
+          ["계약자 본인", "documentAuth"], ["계약자 아님", "s4"]
         ]),
+        documentAuth: byPass("s3", "s4"),
+        s4: { actions: [["다시 확인", "documentAuthority"], ["상담 요청 안내", "$handoff"], ["여기서 마치기", "$finish"]] },
         s6: {
           fields: [{
             label: "정기 발송일", placeholder: "12~28일 중 하루 또는 말일", type: "text", sample: "15일",
             options: [...Array.from({ length: 17 }, (_, i) => `${i + 12}일`), "매월 말일"]
           }],
           actions: [["이 날짜로 계속", "s7"]]
-        }
+        },
+        s7: { delivery: { target: "s8", useRegisteredNumber: false } },
+        s8: { message: "서류 발송 요청 정보를 확인했어요.", items: [], actions: [["상담 요청 안내", "$handoff"], ["다른 서류 확인", "s1"], ["여기서 마치기", "$finish"]] }
       }
     },
     38: {
       screens: {
         s2: input("배송받으실 분의 성함, 연락처, 주소를 차례로 입력해 주세요. 주문을 찾아볼게요.", recipient, "주문 조회", "orderLookup"),
-        orderLookup: resolved("orderSelect", [phoneCase("orderNotFound", "0000")]),
+        orderLookup: resolved("orderNotFound", [orderIdentity]),
         orderSelect: {
-          ...choice("취소를 요청할 주문을 선택해 주세요. 출고를 준비 중인 주문은 설치 담당자가 확인해요.", [
+          ...choice("취소를 요청할 주문을 선택해 주세요. 납품이 생성됐거나 출고된 주문은 설치 담당자가 확인해요.", [
             ["직수 정수기 · 구독 · 납품대기", "subscriptionOrder"], ["공기청정기 · 일시불 · 납품대기", "singleOrder"],
-            ["비데 · 출고 준비", "dispatchOrder"]
+            ["비데 · 납품생성", "dispatchOrder"], ["식기세척기 · 출고", "shippedOrder"]
           ]),
           items: [detail("배송지", "서울 영등포구 문래동")]
         },
-        subscriptionOrder: confirmOrder("직수 정수기 · 구독", "DL-261125-001", "납품대기", "subscriptionReason"),
-        singleOrder: confirmOrder("공기청정기 · 일시불", "DL-261125-002", "납품대기", "singleReason"),
-        dispatchOrder: confirmOrder("비데", "DL-261125-003", "출고 준비", "s6"),
-        subscriptionReason: input("구독 주문은 묶음 상품 전체가 취소돼요. 취소 사유를 입력해 주세요.", cancellation, "구독 주문 취소 요청", "s4"),
+        subscriptionOrder: cancellableOrder("직수 정수기 · 구독", "WPU-1000", "DL-261125-001", "납품대기", "subscriptionReason"),
+        singleOrder: cancellableOrder("공기청정기 · 일시불", "ACL-2000", "DL-261125-002", "납품대기", "singleReason"),
+        dispatchOrder: cancellableOrder("비데", "BID-1500", "DL-261125-003", "납품생성", "s6"),
+        shippedOrder: cancellableOrder("식기세척기", "DWA-3000", "DL-261125-004", "출고", "s6"),
+        subscriptionReason: input("구독 주문의 취소는 묶음 상품 전체에 적용돼요. 취소 사유를 입력해 주세요.", cancellation, "구독 주문 취소 요청", "s4"),
         singleReason: input("공기청정기 일시불 주문의 취소 사유를 입력해 주세요.", cancellation, "일시불 주문 취소 요청", "s5"),
         orderNotFound: handoff("일치하는 주문을 찾지 못했어요. 주문자의 성함과 배송지를 다시 확인해 주세요.", [["주문 다시 확인", "s2"], ["상담 요청", "$handoff"]]),
-        s4: { message: "직수 정수기 구독 주문의 묶음 취소가 처리됐어요.", addActions: [["선납 환불 확인", "@46"]] },
+        s4: { message: "직수 정수기 구독 주문의 묶음 취소 요청 내용을 확인했어요. 실제 취소 여부는 주문을 접수한 곳에서 확인할 수 있어요.",
+          items: [detail("취소 요청 범위", "직수 정수기 구독 묶음 전체")],
+          actions: [["취소 상담 안내", "$handoff"], ["선납 환불 확인", "@46"], ["여기서 마치기", "$finish"]] },
         s5: {
-          message: "공기청정기 일시불 주문의 취소가 처리됐어요.",
-          items: [detail("취소 대상", "공기청정기 일시불 주문"), detail("처리 상태", "취소 완료")],
-          addActions: [["선납 환불 확인", "@46"]]
+          message: "공기청정기 일시불 주문의 취소 요청 내용을 확인했어요. 실제 취소 여부는 주문을 접수한 곳에서 확인할 수 있어요.",
+          items: [detail("취소 요청 대상", "공기청정기 일시불 주문")],
+          actions: [["취소 상담 안내", "$handoff"], ["여기서 마치기", "$finish"]]
         },
         s6: {
-          message: "주문의 출고 준비가 시작됐어요. 설치 담당자가 취소 가능 여부를 확인하도록 요청 내용을 전달할 수 있어요.",
-          actions: [["담당자에게 취소 요청", "dispatchReason"], ["주문 다시 선택", "orderSelect"]]
+          message: "납품생성 또는 출고 단계의 주문은 설치 담당자가 취소 가능 여부를 확인해야 해요.",
+          items: [],
+          actions: [["설치 담당자 확인이 필요한 사유 입력", "dispatchReason"], ["주문 다시 선택", "orderSelect"]]
         },
-        dispatchReason: input("설치 담당자에게 전달할 취소 사유를 입력해 주세요.", cancellation, "취소 요청 전달", "orderHandoff"),
-        orderHandoff: handoff("취소 요청 내용을 확인했어요. 취소 가능 여부는 설치 담당자가 확인해요.", [["다른 문의", "$menu"]])
+        dispatchReason: input("설치 담당자가 확인할 취소 사유를 입력해 주세요.", cancellation, "취소 사유 확인", "orderHandoff"),
+        orderHandoff: handoff("취소 사유를 확인했어요. 설치 담당자에게 취소 가능 여부를 문의해 주세요.", [["취소 상담 안내", "$handoff"], ["주문 다시 선택", "orderSelect"], ["다른 문의", "$menu"]])
       }
     },
     39: {
       screens: {
         s2: { fields: contract, actions: [["계약 확인", "paymentContractLookup"]] },
-        paymentContractLookup: resolved("reuse006Pass", [contractCase("s3", "000")]),
-        s4: { resolve: { rules: [contractCase("beforeDebit", "039"), contractCase("s6", "040"), contractCase("s5", "041"),
-          contractCase("contractClosed", "042"), contractCase("schoolWaiver", "043")] } },
+        paymentContractLookup: resolved("s3", [knownProduct("reuse006Pass"), {
+          target: "reuse006Pass", fields: ["계약 또는 제품명"], match: "^SK-261125-(?:039|04[0-57])$"
+        }]),
+        s4: { resolve: { rules: [contractCase("payment10", "039"), contractCase("payment20", "040"), contractCase("s5", "041"),
+          contractCase("contractClosed", "042"), contractCase("schoolWaiver", "043")] },
+          ...paymentDay(25, true),
+          items: seoulDay < 25 ? [detail("정기 결제일", "매월 25일")]
+            : [detail("정기 결제일", "매월 25일"), detail("청구 금액", "29,900원"), detail("납부 금액", "29,900원")] },
+        s5: { message: `${seoulMonth}월은 이 계약의 구독료 면제 프로모션이 적용되는 달이에요.`,
+          items: [detail("당월 청구 금액", "0원"), detail("확인된 면제 사유", "구독료 면제 프로모션 적용 기간")] },
+        s7: { ...coveredPeriod(25), resolve: { rules: [contractCase("paymentPeriod12", "039"), contractCase("paymentPeriod18", "040")] } },
+        paymentPeriod12: coveredPeriod(12),
+        paymentPeriod18: coveredPeriod(18),
+        payment10: paymentDay(10, true),
+        payment20: paymentDay(20, false),
         s8: { actions: [["가상계좌 입금 처리 확인", "depositConditions"], ["환불 등록·이력 문의", "@47"], ["상담 요청", "$handoff"]] },
-        beforeDebit: result("이 계약의 정기 결제일은 매월 25일이에요. 결제일이 지나면 당월 납부 여부를 확인할 수 있어요.", [
-          detail("정기 결제일", "매월 25일")
-        ]),
         contractClosed: result("계약이 종료됐어요. 종료 후에는 이 계약의 정기 구독료가 청구되지 않아요."),
-        schoolWaiver: result("방학 면제 조건이 적용되는 계약이에요. 이 조건에는 1월과 8월의 구독료 면제가 포함돼요.", [
-          detail("확인된 면제 사유", "방학 면제")
+        schoolWaiver: result("학교특별 계약의 방학 면제는 1월과 8월에만 적용돼요.", [
+          detail("확인된 계약 조건", "방학 면제"), detail("당월 면제 여부", [1, 8].includes(seoulMonth) ? "면제 적용 · 청구 금액 0원" : "방학 면제 대상 월 아님")
         ]),
         depositConditions: resolved("depositTomorrow", [contractCase("depositCarry", "044"), contractCase("depositReturn", "042"), contractCase("@47", "047")]),
         depositTomorrow: result("오늘 추가로 결제한 금액은 다음 날부터 확인할 수 있어요."),
-        depositCarry: choice("중복 입금액을 다음 달 구독료에 반영할 수 있어요. 어떤 방식으로 처리하시겠어요?", [
+        depositCarry: choice("중복 입금액과 납부 귀속 월이 확인되면 다음 달 구독료에 반영을 요청할 수 있어요. 어떤 확인을 원하시나요?", [
           ["다음 달 구독료에 반영 요청", "depositCarryRequest"], ["환불 문의", "@47"]
         ]),
         depositCarryRequest: handoff("다음 달 구독료에 반영해 달라는 요청을 확인했어요. 상담사가 입금 상태와 적용 가능 여부를 확인해요."),
@@ -128,26 +173,38 @@
     40: {
       screens: {
         s2: { fields: contract, actions: [["계약 확인", "withdrawalLookup"]] },
-        withdrawalLookup: resolved("authWithdrawal", [contractCase("s3", "000")]),
+        withdrawalLookup: resolved("s3", [knownProduct("authWithdrawal"), {
+          target: "authWithdrawal", fields: ["계약 또는 제품명"], match: "^SK-261125-(?:042|05[1-4])$"
+        }]),
         authWithdrawal: byPass("withdrawalCases", "s3"),
-        withdrawalCases: resolved("s5", [contractCase("s4", "042"), contractCase("cardWithdrawal", "051"), contractCase("accountWithdrawal", "052")]),
+        withdrawalCases: resolved("s5", [contractCase("s4", "042"), contractCase("cardWithdrawal", "051"), contractCase("accountWithdrawal", "052"),
+          contractCase("paymentPendingWithdrawal", "053"), contractCase("withdrawalAlreadyClosed", "054")]),
         s5: { actions: [["해약철회 진행", "withdrawalReason"], ["해약 신청 유지", "$finish"]] },
+        paymentPendingWithdrawal: { ...choice("해약 정산금을 아직 납부하지 않은 상태예요. 해약철회 요청 내용을 입력하시겠어요?", [["해약철회 진행", "withdrawalReason"], ["해약 신청 유지", "$finish"]]),
+          items: [detail("해약 상태", "입금대기")] },
+        withdrawalAlreadyClosed: result("이 계약은 해약 요청이 이미 취소된 상태예요.", [detail("해약 상태", "해약요청 취소")], [["여기서 마치기", "$finish"]]),
         withdrawalReason: input("해약 신청을 철회하는 이유를 입력해 주세요.", withdrawal, "철회 요청", "s8"),
         cardWithdrawal: choice("해약금을 카드로 납부했어요. 해약 신청을 철회하고 기존 카드 결제도 취소할까요?", [
           ["해약철회 진행", "withdrawalCardReason"], ["해약 신청 유지", "$finish"]
         ]),
         withdrawalCardReason: input("해약 신청을 철회하는 이유를 입력해 주세요.", withdrawal, "철회와 카드 취소 요청", "s6"),
-        s6: { message: "해약금 카드 결제를 취소했어요. 카드사 반영 안내는 영업일 기준 3~5일이에요." },
+        s6: { message: "해약철회와 카드 결제 취소 요청 내용을 확인했어요. 카드 취소가 처리되면 카드사 반영까지 영업일 기준 3~5일이 걸릴 수 있어요.",
+          actions: [["취소 상담 안내", "$handoff"], ["여기서 마치기", "$finish"]] },
         accountWithdrawal: choice("해약금을 계좌로 납부했어요. 해약 신청을 철회하시겠어요?", [
           ["해약철회 진행", "withdrawalAccountReason"], ["해약 신청 유지", "$finish"]
         ]),
         withdrawalAccountReason: input("해약 신청을 철회하는 이유를 입력해 주세요.", withdrawal, "철회와 환불 조건 확인", "s7"),
-        s7: { actions: [["환불 진행", "refundAccount"], ["진행하지 않기", "$finish"]] },
-        refundAccount: input("계약자 명의의 환불 계좌를 입력해 주세요.", [bank, account], "환불 요청", "refundRequest"),
-        refundRequest: result("해약철회와 환불 요청을 접수했어요. 이 경로에서는 계약자 계좌 확인 후 환불을 진행해요.", [
-          detail("환불 유형", "선수금 · 해약철회"), detail("지급 조건", "계약자 명의 계좌 확인")
+        s7: { actions: [["환불 진행", "refundOwnership"], ["진행하지 않기", "$finish"]] },
+        refundOwnership: choice("환불은 계약자 본인 명의 계좌로만 받을 수 있어요. 계약자 본인 명의인가요?", [
+          ["계약자 본인 명의예요", "refundAccount"], ["계좌 명의를 확인할게요", "s7"], ["상담 요청 안내", "$handoff"]
         ]),
-        s8: { message: "계약의 해약 신청이 취소됐어요." }
+        refundAccount: input("계약자 명의의 환불 계좌를 입력해 주세요.", [bank, account], "환불 요청", "refundRequest"),
+        refundRequest: result("해약철회와 환불 요청 내용을 확인했어요. 해약금 수납과 계좌 명의가 확인돼야 환불 일정을 안내받을 수 있어요.", [
+          detail("환불 유형", "선수금 · 해약철회"), detail("지급 조건", "수납 반영 · 계약자 명의 계좌 확인"),
+          detail("정기 환불 기준", "목요일 정오~월요일 정오 등록분 화요일 · 월요일 정오~목요일 정오 등록분 금요일")
+        ], [["환불 상담 안내", "$handoff"], ["여기서 마치기", "$finish"]]),
+        s8: { message: "해약철회 요청 내용을 확인했어요. 실제 철회 상태는 담당 상담사가 확인할 수 있어요.", items: [],
+          actions: [["철회 상담 안내", "$handoff"], ["여기서 마치기", "$finish"]] }
       }
     },
     41: {
@@ -166,9 +223,30 @@
           ["가스·전기·인덕션 레인지 또는 전기오븐레인지", "s2"], ["전기오븐레인지 EONB450", "s7"],
           ["필립스 커피·에스프레소 머신", "s5"], ["삼성전자 제품", "s6"], ["그 외 제품", "s7"]
         ]),
-        s2: { message: "영업양도 대상 조리기기는 경동나비엔 고객센터에서 서비스 상담과 접수를 맡아요. 전기오븐레인지 EONB450의 담당 여부는 별도 확인이 필요해요." },
-        s4: { message: "연락처 안내를 받으실 정보를 확인했어요." },
-        s7: { message: "이 제품은 유형만으로 대행업체를 확인하기 어려워요. 모델명을 확인한 뒤 서비스 상담을 이어갈 수 있어요.", addActions: [["서비스 접수 확인", "@12"]] }
+        s2: {
+          message: "선택하신 조리기기의 AS 상담과 접수는 경동나비엔 고객센터에서 도와드려요. 고객센터 연락처를 문자로 받으시겠어요?",
+          items: [detail("서비스 담당 업체", "경동나비엔"), detail("고객센터", "1588-1144")],
+          actions: [["문자로 받기", "$delivery"], ["문자 필요 없음", "$finish"]],
+          links: [{ label: "경동나비엔 서비스 안내", href: "https://next.kdnavien.co.kr/ko/service" }]
+        },
+        s4: {
+          message: "경동나비엔 고객센터 연락처를 문자로 받을 번호를 확인했어요.",
+          items: [detail("안내 연락처", "1588-1144"), detail("받는 번호", "[마스킹된 수신처]")]
+        },
+        s5: {
+          message: "필립스 커피머신과 에스프레소 머신의 AS는 필립스 고객센터에 문의해 주세요.",
+          items: [detail("서비스 담당 업체", "필립스"), detail("고객센터", "1661-0083")],
+          links: [{ label: "필립스 제품 지원", href: "https://www.home.id/ko-KR/support" }]
+        },
+        s6: {
+          message: "삼성전자 제품의 AS는 삼성전자서비스에 문의해 주세요.",
+          items: [detail("서비스 담당 업체", "삼성전자서비스"), detail("고객센터", "1588-3366")],
+          links: [{ label: "삼성전자서비스 이용 안내", href: "https://www.samsungsvc.co.kr/utils/guide/11040" }]
+        },
+        s7: {
+          message: "이 모델은 SK매직 서비스 상담에서 담당 업체와 접수 가능 여부를 확인해 드려요.",
+          actions: [["서비스 접수 확인", "@12"], ["상담사 연결", "$handoff"]]
+        }
       }
     },
     42: {
@@ -192,11 +270,30 @@
         renewalArrears: result("갱신 시점에 연체가 해소되지 않으면 멤버십이 자동 종료돼요.", [
           detail("갱신 상태", "미납 확인 필요")
         ], [["미납요금 확인", "@5"]]),
-        E7: { addActions: [["원복 불가 안내 확인", "s4"]] },
-        s3: { addActions: [["자동연장 거부 검토", "E7"], ["교체 구독 상담", "s7"]] },
-        s4: { actions: [["자동연장 거부에 동의", "s5"], ["유지하기", "$finish"]] },
-        s5: { message: "멤버십의 자동연장 거부를 등록했어요. 이 계약은 안내한 만료 시점까지 유지돼요.", demo: true },
-        s6: { addActions: [["상담 요청", "$handoff"]] },
+        E7: {
+          message: "자동연장을 거부하면 현재 만료월까지 이용할 수 있어요. 만료 처리에는 위약금이 없으며 정상 연장 상태로 되돌릴 수 없어요.",
+          items: [detail("만료 예정월", "2026년 12월")],
+          actions: [["원복 불가 안내 확인", "s4"], ["유지하기", "$finish"]]
+        },
+        s3: {
+          message: "멤버십은 최초 설치일부터 최대 7년까지 연장할 수 있어요. 갱신 시점에 미납이 없으면 자동으로 연장돼요. 만료 2개월 전에 알림톡을 보내드리며, 연장을 원하지 않으시면 만료월 전에 요청해 주세요.",
+          addActions: [["자동연장 거부 검토", "E7"], ["교체 구독 상담", "s7"]]
+        },
+        s4: { actions: [["자동연장 거부에 동의", "optOutReason"], ["유지하기", "$finish"]] },
+        optOutReason: input("멤버십 연장을 원하지 않으시는 이유를 입력해 주세요.", [
+          { label: "연장 거부 사유", type: "text", placeholder: "연장을 원하지 않는 이유", sample: "만료 후 이용 계획이 없어요" }
+        ], "연장 거부 등록", "s5"),
+        s5: {
+          message: "멤버십의 자동연장 거부를 등록했어요. 이 계약은 안내한 만료 시점까지 유지돼요.",
+          actions: [["멤버십 상태 확인", "optOutStatus"], ["상담 종료", "$finish"]], demo: true
+        },
+        optOutStatus: result("이 멤버십은 자동연장 없이 현재 계약 만료월에 종료돼요.", [
+          detail("만료 예정월", "2026년 12월"), detail("자동연장", "제외")
+        ]),
+        s6: {
+          message: "만료 전에 해약하시려면 해약 사유와 희망일, 정산할 멤버십료를 확인해야 해요. 상담사가 해약 접수를 도와드려요.",
+          actions: [["상담 요청", "$handoff"]]
+        },
         s7: { addActions: [["교체 구독 상담 요청", "$handoff"]] }
       }
     },
@@ -206,20 +303,37 @@
           ["혜택 종류·발송일", "giftLookup"], ["사은품 변경", "giftChangeLookup"],
           ["불량 또는 판매처 문의", "giftSupportLookup"], ["주문하지 않은 택배", "s6"]
         ] },
-        giftLookup: input("사은품 혜택을 확인할 계약을 입력해 주세요.", contract, "계약 확인", "giftCases"),
-        giftChangeLookup: input("변경하려는 사은품의 계약을 입력해 주세요.", contract, "계약 확인", "giftChangeCases"),
-        giftSupportLookup: input("문의하실 사은품의 계약을 입력해 주세요.", contract, "계약 확인", "giftSupportCases"),
-        giftCases: resolved("s3", [contractCase("s7", "043"), contractCase("s2", "000"),
-          contractCase("naverBenefit", "061"), contractCase("physicalGift", "062")]),
+        giftLookup: input("사은품 혜택을 확인할 계약을 입력해 주세요.", contract, "계약 확인", "giftAuth"),
+        giftChangeLookup: input("변경하려는 사은품의 계약을 입력해 주세요.", contract, "계약 확인", "giftChangeAuth"),
+        giftSupportLookup: input("문의하실 사은품의 계약을 입력해 주세요.", contract, "계약 확인", "giftSupportAuth"),
+        giftAuth: byPass("giftCases", "s2"),
+        giftChangeAuth: byPass("giftChangeCases", "s2"),
+        giftSupportAuth: byPass("giftSupportCases", "s2"),
+        giftCases: resolved("giftUnconfirmed", [contractCase("s7", "043"), contractCase("s2", "000"),
+          contractCase("naverBenefit", "061"), contractCase("physicalGift", "062"),
+          { target: "s3", fields: ["계약 또는 제품명"], match: "^(?:직수 정수기(?: 계약)?|정수기(?: 계약)?|SK-261125-060)$" }]),
+        giftUnconfirmed: handoff("현재 확인된 주문 정보만으로는 사은품 종류와 지급일을 안내하기 어려워요. 판매 부서에서 주문에 적용된 혜택을 확인해요."),
         giftChangeCases: resolved("s4", [contractCase("s2", "000")]),
         giftSupportCases: resolved("giftSupport", [contractCase("s2", "000")]),
-        s3: { message: "이 주문에는 구독 포인트 혜택이 있어요. 설치 완료일로부터 15일 후 매직몰 가입 아이디로 적립돼요." },
-        naverBenefit: result("이 주문의 네이버페이 혜택은 설치 다음 달 20일경 알림톡이나 문자로 발송돼요."),
-        physicalGift: result("이 주문의 사은품은 설치 완료일로부터 15일 이내 별도로 배송돼요."),
+        s3: {
+          message: "이 주문에는 월 구독료 1개월분의 포인트 혜택이 있어요. 설치일로부터 15일 후 매직몰 가입 아이디로 적립돼요.",
+          items: [detail("혜택 종류", "구독 포인트"), detail("적립 예정 포인트", "29,900원 상당"),
+            detail("설치 완료일", "2026년 11월 20일"), detail("적립 예정일", "2026년 12월 5일")]
+        },
+        naverBenefit: result("네이버페이 혜택은 설치 다음 달 20일경 기프티엘에서 알림톡이나 문자로 보내드려요.", [
+          detail("혜택 종류", "네이버페이"), detail("발신 번호", "1644-4276"), detail("발송 예정", "2026년 12월 20일경")
+        ]),
+        physicalGift: result("사은품은 설치 완료일부터 15일 이내에 제품과 별도로 배송돼요.", [
+          detail("사은품", "휴대용 선풍기"), detail("설치 완료일", "2026년 11월 20일"), detail("별도 발송 예정", "2026년 12월 5일 이내")
+        ]),
         giftSupport: choice("어떤 확인이 필요한가요?", [["사은품 불량", "giftEvidence"], ["판매처 연락 요청", "s7"]]),
         giftEvidence: handoff("사은품 불량을 확인할 수 있도록 사진을 준비해 주세요. 판매 부서가 교환 가능 여부를 확인해요."),
-        s4: { actions: [["개봉 또는 사용했어요", "s5"], ["아직 개봉하거나 사용하지 않았어요", "giftReview"]] },
-        giftReview: handoff("미개봉 상태인 사은품이에요. 판매처에서 조건을 확인한 뒤 교환 가능 여부를 안내해요."),
+        s4: { actions: [["개봉 또는 사용했어요", "s5"], ["아직 개봉하거나 사용하지 않았어요", "giftReceivedDate"]] },
+        giftReceivedDate: choice("사은품을 받으신 지 7일이 지났나요?", [
+          ["받은 지 7일 이내예요", "giftReview"], ["받은 지 7일이 지났어요", "giftLate"]
+        ]),
+        giftReview: handoff("미개봉 사은품은 판매처에서 증정 조건과 교환 가능 여부를 확인해요."),
+        giftLate: handoff("수령 후 7일이 지났어요. 불량이나 배송 오류가 있다면 판매처에서 상황을 확인해 드려요."),
         s6: {
           kind: "choice", fields: [], actions: [
             ["송장과 주문 내역이 일치해요", "s7"], ["받는 분·배송지가 달라요", "unmatchedParcel"]
@@ -236,12 +350,21 @@
           actions: [["설치 환경 확인", "$installationResult"]]
         },
         s5: {
-          message: "재설치 방문을 접수할까요? 이사로 재설치하시면 이사 예정일도 확인해요.",
-          actions: [["재설치 방문 접수", "s6"], ["이사 후 재설치 접수", "@9"], ["안내만 받기", "$finish"]]
+          message: "서비스매니저가 방문해 설치 가능 여부를 확인해요. 현장에서 설치가 어렵다고 판단되어 접수를 취소하셔도 출장료가 발생할 수 있어요.",
+          actions: [["재설치 방문 접수", "s6"], ["이사 후 설치 환경 확인", "installationMoveDate"],
+            ["보유 제품으로 재설치 접수", "@9"], ["안내만 받기", "$finish"]]
+        },
+        installationMoveDate: input("이사 예정일을 입력해 주세요. 이사일 다음 영업일부터 현장 방문을 요청할 수 있어요.", [
+          { label: "이사 예정일", type: "date", placeholder: "YYYY-MM-DD" }
+        ], "이사 예정일 확인", "s6"),
+        s3: {
+          message: "모델에 따라 급수·배수 호스와 타공 규격이 달라요. 설치 환경을 확인한 뒤 필요한 규격을 안내해 드려요.",
+          actions: [["설치 가능 여부 확인", "s4"], ["상담사 연결", "$handoff"]]
         },
         s6: {
-          message: "재설치할 주소와 방문 희망일, 당일 연락받을 번호를 입력해 주세요.",
-          fields: ["address", "date", "phone"], actions: [["재설치 방문 정보 확인", "installationEquipmentCheck"]]
+          message: "성함과 재설치 주소, 방문 희망일, 당일 연락받을 번호를 차례로 입력해 주세요. 계약에 따라 방문 비용이 달라질 수 있어요.",
+          items: [],
+          fields: ["name", "address", "date", "phone"], actions: [["재설치 방문 정보 확인", "installationEquipmentCheck"]]
         },
         installationEquipmentCheck: resolved("s7", [
           { target: "valveChoice", fields: ["제품명 또는 모델명"], match: "정수기|wpu" }
@@ -251,14 +374,22 @@
         ]),
         s7: {
           message: "재설치 방문 요청을 확인했어요. 방문 시 설치 환경을 확인한 뒤 설치 가능 여부를 안내해요.",
-          items: [detail("방문 희망일", "[선택한 날짜]")]
+          items: [detail("접수번호", "ES-261125-044"), detail("방문 희망일", "[선택한 날짜]"), detail("방문 연락처", "[마스킹된 번호]"),
+            detail("재설치 예상 비용", "35,000원"),
+            detail("접수 내용", "재설치 및 현장 설치 가능 여부 확인")]
         },
         valveBooked: result("재설치 요청에 조리수 밸브 설치도 포함했어요. 방문 시 설치 환경을 확인해요.", [
-          detail("요청 범위", "재설치 · 조리수 밸브"),
-          detail("방문 희망일", "[선택한 날짜]"),
+          detail("접수번호", "ES-261125-044"), detail("요청 범위", "재설치 · 조리수 밸브"),
+          detail("방문 희망일", "[선택한 날짜]"), detail("방문 연락처", "[마스킹된 번호]"),
+          detail("재설치 예상 비용", "35,000원 · 밸브 비용은 현장 확인"),
           detail("안내", "알림톡으로 접수 정보 확인")
         ], [["계속하기", "s8"]]),
-        s8: { actions: [["사전 연락 요청", "E8"], ["추가 요청 없음", "$finish"]] }
+        s8: { actions: [["사전 연락 요청", "E8"], ["추가 요청 없음", "$finish"]] },
+        E8: {
+          message: "접수하신 재설치 방문에 대해 담당 매니저에게 연락 요청을 전달할 수 있어요.",
+          items: [detail("대상 접수", "ES-261125-044"), detail("방문 희망일", "[선택한 날짜]")],
+          actions: [["사전 연락 요청", "@34"], ["추가 요청 없음", "$finish"]]
+        }
       }
     },
     45: {
@@ -268,7 +399,7 @@
         ] },
         prepaidLookup: input("선납 조건을 확인할 계약을 입력해 주세요.", contract, "대상 계약 확인", "prepaidCases"),
         prepaidCases: byPass("prepaidEligibility", "s2"),
-        prepaidEligibility: resolved("prepaidTerms", [contractCase("specialPrepaid", "045"), contractCase("s2", "000")]),
+        prepaidEligibility: resolved("s2", [contractCase("specialPrepaid", "045"), knownProduct("prepaidTerms")]),
         prepaidTerms: {
           ...choice("일반 계약의 선납 기간별 할인율이에요. 적용 조건을 확인해 주세요.", [
             ["1년 금액 확인", "s3"], ["2년 금액 확인", "prepaidQuote2"], ["3년 금액 확인", "prepaidQuote3"],
@@ -278,11 +409,21 @@
           demo: true
         },
         ...prepaidQuotes,
-        specialPrepaid: handoff("프로모션·패키지 등 기존 할인 계약은 추가 할인 조건이 달라요. 자유개월 선납 적용 여부와 기간은 계약별 확인이 필요해요.", [
-          ["견적서 요청", "quoteDelivery"], ["선납 조건 확인 요청", "$handoff"]
-        ]),
+        specialPrepaid: {
+          ...input("이 계약에는 기존 할인이 적용되어 있어요. 원하는 선납 개월 수를 입력해 주세요. 실제 납부 가능 기간은 남은 계약 회차를 확인해 안내해요.", [
+            { label: "선납 개월 수", type: "text", placeholder: "원하는 개월 수", sample: "12" }
+          ], "선납 금액 확인", "freeMonthsQuote"),
+          items: [detail("월 구독료", "29,900원"), detail("추가 할인율", "0%")]
+        },
+        freeMonthsQuote: result("입력하신 개월 수를 기준으로 선납 예상 금액을 계산했어요.", [
+          detail("선납 적용 기간", "[선납 기간]"), detail("추가 할인율", "0%"), detail("수납 예정금액", "[선납 금액]")
+        ], [["납부 가능 회차 확인", "freeMonthsReview"], ["개월 수 다시 입력", "specialPrepaid"], ["안내만 받기", "$finish"]]),
+        freeMonthsReview: handoff("남은 계약 회차가 확인되어야 이 기간으로 선납할 수 있어요. 지금 확인할 수 있는 잔여 회차가 없어 상담사가 계약별 납부 가능 기간을 확인해 드려요."),
         s3: { addActions: [["다른 기간 보기", "prepaidTerms"]] },
-        s4: { actions: [["선납 진행", "s5"], ["견적서 받기", "quoteDelivery"], ["안내만 받기", "$finish"]] },
+        s4: {
+          actions: [["선납 진행", "s5"], ["견적서 받기", "quoteDelivery"], ["안내만 받기", "$finish"]],
+          items: [detail("선납 적용 기간", "[선납 기간]"), detail("수납 예정금액", "[선납 금액]")]
+        },
         s5: { actions: [["세금계산서 발행", "taxPrepaid"], ["발행하지 않기", "ordinaryPrepaid"]] },
         taxPrepaid: choice("세금계산서 발행을 선택했어요. 선납 결제수단을 확인하거나 견적서를 받을 수 있어요.", [
           ["선납 결제수단 확인", "prepaidPaymentMethods"], ["견적서 먼저 받기", "quoteDelivery"]
@@ -293,45 +434,137 @@
         prepaidPaymentMethods: choice("선납에 사용할 결제수단을 선택해 주세요.", [
           ["카드", "prepaidCard"], ["실시간 계좌이체", "prepaidTransfer"], ["가상계좌", "prepaidVirtual"]
         ]),
-        prepaidCard: handoff("선납 금액을 확인한 뒤 등록된 카드나 고객이 선택한 카드로 결제를 진행합니다. 상담사가 선납 등록과 결제 절차를 안내해요."),
-        prepaidTransfer: handoff("선납 금액과 사용할 은행 계좌를 확인한 뒤 실시간 계좌이체를 진행합니다. 상담사가 선납 등록과 결제 절차를 안내해요."),
-        prepaidVirtual: handoff("선납 금액을 확인하고 입금기한과 은행을 선택하면 가상계좌를 발급할 수 있어요. 상담사가 발급과 확인서 수신 절차를 안내해요."),
+        prepaidCard: {
+          ...choice("어떤 카드로 선납하시겠어요?", [
+            ["등록 카드로 납부", "prepaidCardConfirm"], ["다른 카드로 납부", "prepaidNewCard"], ["뒤로", "prepaidPaymentMethods"]
+          ]),
+          items: [detail("등록 카드", "신한카드 · ••••-••••-••••-1234")]
+        },
+        prepaidNewCard: {
+          ...input("선납에 사용할 카드번호, 유효기간, 할부기간을 차례로 입력해 주세요.", [
+            { label: "카드번호", type: "password", sample: "0000000000001234" },
+            { label: "유효기간", type: "password", placeholder: "MM/YY", sample: "12/30" },
+            { label: "할부기간", type: "text", sample: "일시불", options: ["일시불", "2개월", "3개월"] }
+          ], "카드 정보 확인", "prepaidCardConfirm"),
+          secure: true
+        },
+        prepaidCardConfirm: {
+          ...choice("선택한 카드로 선납 금액을 결제할까요?", [["PASS 본인인증", "prepaidPaid"], ["뒤로", "prepaidCard"]]),
+          items: [detail("수납 예정금액", "[선납 금액]")]
+        },
+        prepaidTransfer: {
+          ...choice("어떤 계좌에서 선납 금액을 이체할까요?", [
+            ["등록 계좌로 이체", "prepaidTransferSign"], ["다른 계좌로 이체", "prepaidNewAccount"], ["뒤로", "prepaidPaymentMethods"]
+          ]),
+          items: [detail("등록 계좌", "KB국민은행 · ••••-••••-1234")]
+        },
+        prepaidNewAccount: {
+          ...input("이체할 은행과 계약자 명의 계좌번호를 입력해 주세요.", [bank, account], "계좌 확인", "prepaidTransferSign"),
+          secure: true
+        },
+        prepaidTransferSign: {
+          ...choice("선택하신 계좌와 선납 금액을 확인한 뒤 이체에 동의해 주세요.", [
+            ["PASS 전자서명", "prepaidPaid"], ["뒤로", "prepaidTransfer"]
+          ]),
+          items: [detail("수납 예정금액", "[선납 금액]")]
+        },
+        prepaidPaid: result("선납 결제 내역을 확인했어요. 결제가 완료되어 선납 영수증을 받을 수 있어요.", [
+          detail("선납 상태", "결제 완료"), detail("결제 금액", "[선납 금액]"), detail("세금계산서", "[선납 계산서]")
+        ], [["선납 영수증 받기", "prepaidReceipt"], ["견적서 받기", "quoteDelivery"], ["다른 문의", "$menu"]]),
+        prepaidVirtual: input("선납 금액을 입금할 은행과 납부 마감일을 선택해 주세요.", [
+          bank, { label: "납부 마감일", type: "date", placeholder: "YYYY-MM-DD" }
+        ], "가상계좌 발급", "prepaidVirtualIssued"),
+        prepaidVirtualIssued: result("선납 가상계좌와 입금기한을 확인해 주세요. 입금이 완료되면 선납 영수증을 받을 수 있어요.", [
+          detail("납부 은행", "[선납 가상계좌 은행]"), detail("가상계좌", "••••-••••-1234"),
+          detail("입금 금액", "[선납 금액]"), detail("납부 마감일", "[선택한 날짜]")
+        ], [["가상계좌 확인서 받기", "prepaidVirtualDocument"], ["선납 견적서 받기", "quoteDelivery"], ["다른 문의", "$menu"]]),
+        prepaidVirtualDocument: {
+          ...choice("가상계좌 확인서를 어떤 방법으로 받으시겠어요?", [
+            ["알림톡", "$delivery"], ["이메일", "$delivery"], ["팩스", "$delivery"]
+          ]),
+          delivery: { target: "prepaidVirtualSent", useRegisteredNumber: false }
+        },
+        prepaidVirtualSent: result("가상계좌 확인서 발송 요청을 확인했어요.", [
+          detail("발송 방법", "[발송 방법]"), detail("수신처", "[마스킹된 수신처]")
+        ]),
         prepaidFilesLookup: input("선납 서류를 확인할 계약을 입력해 주세요.", contract, "선납 상태 확인", "prepaidDocumentsAuth"),
         prepaidDocumentsAuth: byPass("prepaidDocumentState", "s2"),
         prepaidDocumentState: resolved("prepaidDocuments", [contractCase("s2", "000")]),
         prepaidDocuments: choice("어떤 선납 서류를 받으실까요?", [
           ["선납 견적서", "quoteDelivery"], ["선납 영수증", "prepaidReceiptCheck"],
-          ["세금계산서 재발송 문의", "prepaidTaxInvoice"]
+          ["세금계산서 재발송 문의", "prepaidTaxInvoiceState"]
         ]),
         prepaidReceiptCheck: resolved("prepaidReceipt", [contractCase("s6", "059"), contractCase("prepaidReceiptUnavailable", "058")]),
         s6: { actions: [["견적서 받기", "quoteDelivery"]] },
         quoteDelivery: input("견적서를 받으실 이메일 주소를 입력해 주세요.", ["email"], "견적서 발송 요청", "s7"),
-        s7: { message: "선납 견적서 발송 요청을 확인했어요.", items: [detail("문서", "선납 견적서"), detail("발송 채널", "이메일")], demo: true },
+        s7: {
+          message: "선납 견적서 발송 요청을 확인했어요.",
+          items: [detail("문서", "선납 견적서"), detail("발송 채널", "이메일"), detail("수신처", "[마스킹된 수신처]")],
+          demo: true
+        },
         prepaidReceipt: {
           ...choice("결제가 완료된 계약의 선납영수증을 어떤 방법으로 받으시겠어요?", [
             ["알림톡", "$delivery"], ["이메일", "$delivery"], ["팩스", "$delivery"]
           ]),
           delivery: { target: "prepaidReceiptSent", useRegisteredNumber: false }
         },
-        prepaidReceiptSent: result("결제가 완료된 계약의 선납영수증 발송 요청을 확인했어요.", [detail("발송 방법", "[발송 방법]")]),
+        prepaidReceiptSent: result("결제가 완료된 계약의 선납영수증 발송 요청을 확인했어요.", [
+          detail("발송 방법", "[발송 방법]"), detail("수신처", "[마스킹된 수신처]")
+        ]),
         prepaidReceiptUnavailable: result("선납이 취소된 계약은 이 선납영수증을 발송할 수 없어요.", [], [["선납 문의", "$handoff"]]),
-        prepaidTaxInvoice: handoff("선납 세금계산서는 수신미승인 상태에서 재발송할 수 있어요. 상담사가 문서와 수신 상태를 확인해요.")
+        prepaidTaxInvoiceState: resolved("prepaidTaxApproved", [contractCase("prepaidTaxInvoice", "063")]),
+        prepaidTaxInvoice: {
+          ...choice("선납 세금계산서가 아직 수신 승인되지 않았어요. 등록된 이메일로 다시 보내드릴까요?", [
+            ["등록된 이메일로 재발송", "prepaidTaxSent"], ["다른 문의", "$menu"]
+          ]),
+          items: [detail("발행 상태", "수신미승인"), detail("등록 이메일", "m••@example.com")]
+        },
+        prepaidTaxSent: result("등록된 이메일로 선납 세금계산서를 다시 보내는 요청을 확인했어요.", [
+          detail("등록 이메일", "m••@example.com")
+        ]),
+        prepaidTaxApproved: result("수신 승인된 선납 세금계산서는 이 화면에서 다시 보낼 수 없어요.", [
+          detail("발행 상태", "수신 승인")
+        ])
       }
     },
     46: {
       screens: {
         s1: { actions: [["설치 주문 취소", "s3"], ["선납 환불 확인", "s2"]] },
+        s3: {
+          message: "설치 전 주문은 주문 상태를 먼저 확인한 뒤 취소를 진행해요. 납품생성·출고 주문은 설치 담당자가 확인해요.",
+          items: [],
+          actions: [["설치 주문 취소 안내", "@38"], ["선납 환불 확인", "s2"]]
+        },
         s2: input("설치받으실 분의 성함, 연락처, 주소를 차례로 입력해 주세요. 주문을 찾아볼게요.", recipient, "대상 주문 조회", "refundOrder"),
-        refundOrder: resolved("virtualRefundOrder", [phoneCase("cardRefundOrder", "0004"), phoneCase("s6", "0000")]),
+        refundOrder: resolved("virtualRefundOrder", [
+          phoneCase("cardRefundOrder", "0004"), phoneCase("s6", "0000"), phoneCase("refundPendingOrder", "0011"),
+          phoneCase("refundReasonOrder", "0012")
+        ]),
         virtualRefundOrder: {
-          ...choice("선납 환불을 확인할 주문을 선택해 주세요.", [["직수 정수기 주문 선택", "s4"], ["다른 주문 확인", "s2"]]),
+          ...choice("선납 환불을 확인할 주문을 선택해 주세요.", [["직수 정수기 주문 선택", "confirmVirtualRefund"], ["다른 주문 확인", "s2"]]),
           items: [detail("직수 정수기 · DL-261125-001", "가상계좌 선납")]
         },
         cardRefundOrder: {
-          ...choice("선납 환불을 확인할 주문을 선택해 주세요.", [["공기청정기 주문 선택", "s5"], ["다른 주문 확인", "s2"]]),
+          ...choice("선납 환불을 확인할 주문을 선택해 주세요.", [["공기청정기 주문 선택", "confirmCardRefund"], ["다른 주문 확인", "s2"]]),
           items: [detail("공기청정기 · DL-261125-002", "카드 선납")]
         },
-        s4: { message: "가상계좌로 선납한 주문의 환불 정보를 확인했어요. 환불 예정일은 납부·등록 상태에 따라 확인이 필요해요.", items: [detail("환불 계좌", "KB국민은행 · ••••-••••-1234"), detail("환불 예정일", "등록 상태 확인 필요")] },
+        refundPendingOrder: choice("선납 환불을 확인할 주문을 선택해 주세요.", [
+          ["직수 정수기 주문 선택", "confirmPendingRefund"], ["다른 주문 확인", "s2"]
+        ]),
+        refundReasonOrder: choice("선납 환불을 확인할 주문을 선택해 주세요.", [
+          ["직수 정수기 주문 선택", "confirmRefundReason"], ["다른 주문 확인", "s2"]
+        ]),
+        confirmVirtualRefund: confirmOrder("직수 정수기", "DL-261125-001", "취소 완료", "s4", "virtualRefundOrder"),
+        confirmCardRefund: confirmOrder("공기청정기", "DL-261125-002", "취소 완료", "s5", "cardRefundOrder"),
+        confirmPendingRefund: confirmOrder("직수 정수기", "DL-261125-011", "취소 완료", "s6", "refundPendingOrder"),
+        confirmRefundReason: confirmOrder("직수 정수기", "DL-261125-012", "취소 완료", "refundReasonMismatch", "refundReasonOrder"),
+        refundReasonMismatch: result("이 주문에 연결된 환불 사유는 계약접수취소가 아니에요. 별도 환불 요청 내역에서 확인해 주세요.", [],
+          [["환불 이력 확인", "@47"], ["다른 주문 확인", "s2"]]),
+        s4: {
+          message: "설치 전에 취소한 주문의 선납금은 아래 계좌로 돌려드려요. 지급일은 환불 등록 시점과 처리 상태를 확인해 안내해요.",
+          items: [detail("환불 사유", "계약접수취소"), detail("환불 계좌", "KB국민은행 · ••••-••••-1234"), detail("처리 상태", "환불대기")],
+          actions: [["환불 이력 확인", "@47"], ["다른 문의", "$menu"]]
+        },
         s5: { message: "카드로 선납한 주문의 결제 취소를 확인했어요. 영업일 기준 5일 이내 카드사 문자 또는 결제 내역에서 확인할 수 있어요." },
         s6: { addActions: [["환불 등록·이력 문의", "@47"]] }
       }
@@ -348,13 +581,16 @@
         wrongDepositLookup: input("오입금 관련 계약을 입력해 주세요.", contract, "계약 확인", "wrongDepositAuth"),
         refundHistoryAuth: byPass("refundHistoryState", "s2"),
         refundHistoryState: resolved("s3", [contractCase("s2", "000"), contractCase("refundRequested", "047"), contractCase("refundComplete", "048")]),
-        refundRequested: result("환불을 요청한 상태예요. 승인 여부가 확인되면 지급 일정을 안내할 수 있어요.", [detail("환불 상태", "환불의뢰")]),
+        refundRequested: result("환불을 요청한 상태예요. 승인 여부가 확인되면 지급 일정을 안내할 수 있어요.", [
+          detail("환불 상태", "환불의뢰"), detail("환불 요청 금액", "29,900원")
+        ]),
         s3: {
           message: "환불이 결정됐고 지급을 기다리고 있어요. 등록 시점에 따라 화요일 또는 금요일에 지급돼요.",
-          items: [detail("환불 상태", "환불대기"), detail("환불 계좌", "KB국민은행 · ••••-••••-1234")]
+          items: [detail("환불 상태", "환불대기"), detail("환불 금액", "29,900원"), detail("환불 계좌", "KB국민은행 · ••••-••••-1234")]
         },
         refundComplete: result("조회한 환불은 지급이 완료됐어요.", [
-          detail("환불 상태", "환불승인"), detail("환불 계좌", "KB국민은행 · ••••-••••-1234")
+          detail("환불 상태", "환불승인"), detail("환불 금액", "29,900원"), detail("환불 계좌", "KB국민은행 · ••••-••••-1234"),
+          detail("입금 완료일", "2026년 11월 24일")
         ]),
         retryPaymentAuth: byPass("retryPaymentStates", "s2"),
         refundReasonAuth: byPass("refundReasonState", "s2"),
@@ -362,15 +598,31 @@
         refundReasonState: resolved("refundReasons", [contractCase("s2", "000")]),
         wrongDepositState: resolved("s7", [contractCase("s2", "000")]),
         retryPaymentStates: resolved("s5", [contractCase("s2", "000"), contractCase("s4", "046"),
-          contractCase("retryAfterPayment", "052")]),
+          contractCase("retryAfterPayment", "052"), contractCase("retryPriorMonth", "055"),
+          contractCase("retryCms", "056")]),
+        retryPriorMonth: result("제휴카드 재결제는 당월 납부 건을 확인한 뒤 진행할 수 있어요.", [
+          detail("결제 구분", "지난달 납부")
+        ], [["당월 납부 내역 확인", "@39"], ["다른 문의", "$menu"]]),
+        retryCms: choice("기존 자동이체 건은 계약자 명의 계좌로 환불해야 해요. 환불 계좌를 확인해 주세요.", [
+          ["환불 계좌 확인", "s6"], ["다른 문의", "$menu"]
+        ]),
+        s5: {
+          ...choice("이번 달 카드 납부 건을 새 제휴카드로 다시 결제할 수 있어요. 상담사가 제휴카드 등록, 기존 카드 취소, 새 카드 결제 순서로 처리해요.", [
+            ["제휴카드 재결제 상담", "retryCardCancellation"], ["다른 문의", "$menu"]
+          ]),
+          items: [detail("현재 결제수단", "신한카드 · ••••-••••-••••-1234"), detail("다시 결제할 금액", "29,900원")]
+        },
+        retryCardCancellation: handoff("상담사가 제휴카드 정보를 안전한 입력 절차로 확인해요. 기존 결제를 취소한 뒤 이번 달 요금을 새 카드로 다시 결제하며, 이전 결제 취소는 카드사에서 영업일 기준 5일 이내 확인할 수 있어요."),
         retryAfterPayment: result("이번 달 요금을 이미 납부한 뒤 결제수단을 바꾸셨다면 다음 달부터 새 결제수단으로 청구돼요.", [
           detail("변경 수단 적용", "다음 달")
         ], [["이번 달 납부 내역 문의", "@39"], ["다른 문의", "$menu"]]),
         refundReasons: choice("어떤 변경 이후 환불을 문의하시나요?", [
           ["교체 구독", "s6"], ["전환 멤버십", "switchRefund"], ["명의변경", "transferRefund"], ["중복 납부", "s6"]
         ]),
-        switchRefund: handoff("전환 멤버십의 환불 문의예요. 담당자가 전체 필터 교체와 수납 이력을 확인한 뒤 환불 가능 여부를 안내해요."),
-        transferRefund: handoff("명의변경에 따른 환불 문의예요. 담당자가 계약 변경 상태와 환불 대상 회차를 확인해요."),
+        switchRefund: resolved("switchRefundReview", [contractCase("s6", "053")]),
+        switchRefundReview: handoff("전환 멤버십을 취소하셨군요. 전체 필터 교체 내역과 해당 비용 결제가 확인되면 환불 여부를 안내해 드려요."),
+        transferRefund: resolved("transferRefundReview", [contractCase("s6", "054")]),
+        transferRefundReview: handoff("명의변경 후 출금된 금액은 양수인이 이번 달 요금을 납부했는지 확인한 뒤 환불을 안내해 드려요."),
         s6: input("환불 은행과 계약자 명의 계좌를 입력해 주세요.", [bank, account], "환불 정보 확인", "refundAccountReview"),
         refundAccountReview: handoff("환불 정보를 확인했어요. 계약자와 예금주가 일치하는지 확인한 뒤 접수를 진행해요.", [
           ["상담 요청", "$handoff"], ["다른 문의", "$menu"]
@@ -379,7 +631,13 @@
           { ...account, label: "입금한 가상계좌번호" }, { label: "입금자 이름", type: "text", sample: "김매직" },
           { label: "입금일", type: "date", sample: "2026-11-25" },
           { label: "입금 금액", placeholder: "원 단위 금액 입력", type: "text", sample: "29900", inputMode: "numeric" }
-        ], "입금 정보 확인", "s8"),
+        ], "입금 정보 확인", "$checkRefundDeposit"),
+        depositNotFound: {
+          ...choice("입금일, 입금자 이름, 금액이 일치하는 입금 내역을 확인하지 못했어요.", [
+            ["입금 정보 다시 확인", "s7"], ["상담사 연결", "$handoff"]
+          ]),
+          kind: "exception"
+        },
         s8: { items: [detail("준비할 서류", "입금증, 환불받을 통장 사본, 입금자 신분증 사본"), detail("신분증", "주민등록번호 뒷자리를 가려 주세요.")] }
       }
     },
@@ -387,7 +645,7 @@
       screens: {
         s1: { actions: [
           ["발행 여부 확인", "receiptLookup"], ["영수증 받기", "receiptLookup"],
-          ["새로 발행 신청", "receiptLookup"], ["전월분 소급 발행", "retroactiveLookup"], ["발행번호 안내", "receiptNumberCases"]
+          ["새로 발행 신청", "receiptLookup"], ["전월분 소급 발행", "retroactiveLookup"], ["발행번호 안내", "receiptNumberLookup"]
         ] },
         receiptLookup: input("현금영수증을 확인할 계약을 입력해 주세요.", contract, "계약 확인", "receiptAuth"),
         retroactiveLookup: input("전월 현금영수증을 확인할 계약을 입력해 주세요.", contract, "계약 확인", "retroactiveAuth"),
@@ -398,7 +656,7 @@
           contractCase("receiptPendingApproval", "050"), contractCase("s3", "051"),
           { target: "s5", fields: ["$choice"], match: "^영수증 받기$" }
         ]),
-        receiptApproved: result("이 계약은 현금영수증을 발행하고 있어요.", [detail("발행 상태", "발행")], [
+        receiptApproved: result("이 계약은 현금영수증을 발행하고 있어요. 정기 발송은 제공하지 않아 필요할 때 요청해 주세요. 국세청 홈택스에서도 확인할 수 있어요.", [detail("발행 상태", "발행")], [
           ["영수증 받기", "s5"], ["발행번호 안내", "receiptNumberCases"], ["다른 문의", "$menu"]
         ]),
         receiptPendingApproval: result("현금영수증 거래가 아직 승인되지 않았어요. 승인된 내역은 다시 요청하시면 보내드릴 수 있어요.", [
@@ -410,33 +668,65 @@
           ]),
           kind: "exception"
         },
-        receiptNumberCases: choice("결제 유형에 따라 현금영수증 발행번호 변경 여부가 달라요.", [
-          ["정기결제", "receiptNumberFixed"], ["개인 일회성 계좌이체·가상계좌", "receiptNumberAllowed"],
-          ["세금계산서 발행 중", "taxReceiptConflict"], ["결제 유형을 모르겠어요", "receiptLookup"]
+        receiptNumberLookup: input("현금영수증 발행번호를 확인할 계약을 입력해 주세요.", contract, "계약 확인", "receiptNumberAuth"),
+        receiptNumberAuth: byPass("receiptNumberCases", "s2"),
+        receiptNumberCases: resolved("receiptNumberFixed", [
+          contractCase("s2", "000"), contractCase("taxReceiptConflict", "049"), contractCase("s3", "051"),
+          contractCase("receiptBusinessFixed", "064"), contractCase("receiptNumberAllowed", "065")
         ]),
-        receiptNumberFixed: result("정기결제는 개인 계약자의 휴대폰번호 또는 개인사업자의 사업자번호로 현금영수증을 발행해요. 발행번호는 변경할 수 없어요."),
+        receiptNumberFixed: result("이 계약은 정기결제라 계약자 휴대폰 번호로 현금영수증을 발행해요. 정기결제의 발행번호는 변경할 수 없어요.", [
+          detail("발행 구분", "개인 · 정기결제"), detail("발행번호", "010-••••-1234")
+        ]),
+        receiptBusinessFixed: result("이 계약의 현금영수증 발행번호는 등록된 사업자등록번호예요. 정기결제의 발행번호는 변경할 수 없어요.", [
+          detail("발행 구분", "개인사업자 · 정기결제"), detail("발행번호", "123-••-•••90")
+        ]),
         receiptNumberAllowed: choice("개인의 일회성 실시간 이체 또는 가상계좌 납부에 한해 발행번호 변경 여부를 확인할 수 있어요.", [
           ["요금 납부 절차 확인", "@4"], ["상담 요청", "$handoff"]
         ]),
         retroactiveEligibility: resolved("receiptDates", [
           contractCase("s2", "000"), contractCase("s3", "051"), contractCase("taxReceiptConflict", "049")
         ]),
-        receiptDates: resolved(seoulDay <= 10 ? "s8" : "receiptNextMonth"),
+        receiptDates: resolved("$receiptRetroactive"),
         s8: {
           message: "전월분 소급 발행은 매월 10일 이내에 요청할 수 있어요. 발행 가능 여부는 결제와 기존 발행 상태를 확인한 뒤 안내해요.",
           items: [detail("대상", "전월 결제분"), detail("처리 상태", "발행 조건 확인")],
           actions: [["발행 가능 여부 확인 요청", "$handoff"], ["다른 문의", "$menu"]]
         },
         receiptNextMonth: result("전월분 소급 요청 기간이 지났어요. 신규 발행 신청은 신청월부터 적용되는 조건을 확인해 주세요."),
-        s6: { message: "현금영수증을 [발송 방법]으로 보냈어요. 필요할 때마다 발송을 요청하실 수 있어요." },
+        s5: {
+          ...choice("보낼 현금영수증을 선택해 주세요. 거래 상태가 승인된 영수증을 발송할 수 있어요.", [
+            ["11월 25일 승인 내역", "approvedReceiptDelivery"]
+          ]),
+          items: [detail("발행일", "2026년 11월 25일"), detail("승인번호", "••••1234"), detail("결제액", "29,900원")]
+        },
+        approvedReceiptDelivery: {
+          ...choice("선택한 현금영수증을 어떤 방법으로 받으시겠어요?", [
+            ["알림톡", "$delivery"], ["이메일", "$delivery"], ["팩스", "$delivery"]
+          ]),
+          delivery: { target: "s6", useRegisteredNumber: false }
+        },
+        s6: {
+          message: "현금영수증을 [발송 방법]으로 보내는 요청을 확인했어요. 영수증이 필요할 때 다시 요청해 주세요.",
+          items: [detail("발송 방법", "[발송 방법]"), detail("수신처", "[마스킹된 수신처]")]
+        },
         s7: { actions: [["발행으로 변경", "receiptChangeReview"], ["현재 상태 유지", "$finish"]] },
         receiptChangeReview: choice("신규 발행을 선택하면 신청월부터 적용돼요. 이 조건으로 변경을 요청하시겠어요?", [
-          ["발행 변경 요청", "$receiptEnabled"], ["현재 상태 유지", "$finish"]
-        ])
+          ["발행 변경 요청", "receiptEnabled"], ["현재 상태 유지", "$finish"]
+        ]),
+        receiptEnabled: result("앞으로 현금영수증을 발행하도록 변경했어요. 새 설정은 신청월부터 적용돼요.", [
+          detail("발행 상태", "발행"), detail("적용 시점", "신청월부터")
+        ], [["전월분 소급 발행 확인", "retroactiveEligibility"], ["다른 문의", "$menu"]])
       }
     },
     49: {
       screens: {
+        s2: {
+          ...input("동의 상태를 조회할 성함과 휴대폰 번호를 입력해 주세요.", ["name", "phone"], "인증번호 받기", "$sendOtp"),
+          secure: true
+        },
+        consentAuthFailed: handoff("인증번호를 확인하지 못했어요. 휴대폰 인증을 다시 하거나 상담사에게 문의해 주세요.", [
+          ["휴대폰 다시 확인", "s2"], ["상담사 연결", "$handoff"]
+        ]),
         s4: {
           resolve: { rules: [phoneCase("s3", "0000")] },
           actions: [["SK매직 항목 확인", "consentItems"], ["현재 상태 유지", "$finish"]]
@@ -445,7 +735,7 @@
           ...choice("상태를 확인하거나 바꿀 항목을 선택해 주세요.", [
             ["마케팅 활용", "marketingConsent"], ["영리성 정보 수신", "commercialConsent"], ["현재 상태 유지", "$finish"]
           ]),
-          items: [detail("회사", "SK매직"), detail("현재 상태", "마케팅 활용 동의 · 영리성 정보 수신 동의")],
+          items: [detail("회사", "SK매직"), detail("마케팅 활용", "[마케팅 활용 상태]"), detail("영리성 정보 수신", "[영리성 수신 상태]")],
           demo: true
         },
         marketingConsent: choice("SK매직의 마케팅 활용 동의를 어떻게 할까요?", [
@@ -454,17 +744,22 @@
         commercialConsent: choice("SK매직의 영리성 정보 수신 동의를 어떻게 할까요?", [
           ["동의하기", "commercialAccepted"], ["동의 철회", "commercialWithdrawn"], ["현재 상태 유지", "$finish"]
         ]),
-        marketingAccepted: result("SK매직의 마케팅 활용 동의 변경 요청을 확인했어요.", [detail("마케팅 활용", "동의")]),
-        marketingWithdrawn: result("SK매직의 마케팅 활용 동의 철회 요청을 확인했어요.", [detail("마케팅 활용", "미동의")]),
-        commercialAccepted: result("SK매직의 영리성 정보 수신 동의 변경 요청을 확인했어요.", [detail("영리성 정보 수신", "동의")]),
-        commercialWithdrawn: result("SK매직의 영리성 정보 수신 동의 철회 요청을 확인했어요.", [detail("영리성 정보 수신", "미동의")])
+        marketingAccepted: result("SK매직의 마케팅 활용 상태를 확인했어요.", [detail("회사", "SK매직"), detail("마케팅 활용", "동의")], [["동의 상태 다시 보기", "consentItems"], ["상담 종료", "$finish"]]),
+        marketingWithdrawn: result("SK매직의 마케팅 활용 동의를 철회했어요.", [detail("회사", "SK매직"), detail("마케팅 활용", "미동의")], [["동의 상태 다시 보기", "consentItems"], ["상담 종료", "$finish"]]),
+        commercialAccepted: result("SK매직의 영리성 정보 수신 상태를 확인했어요.", [detail("회사", "SK매직"), detail("영리성 정보 수신", "동의")], [["동의 상태 다시 보기", "consentItems"], ["상담 종료", "$finish"]]),
+        commercialWithdrawn: result("SK매직의 영리성 정보 수신 동의를 철회했어요.", [detail("회사", "SK매직"), detail("영리성 정보 수신", "미동의")], [["동의 상태 다시 보기", "consentItems"], ["상담 종료", "$finish"]])
       }
     },
     50: {
       screens: {
         s1: {
           kind: "internal-only", fields: [], actions: [],
-          message: "구독 체결 심사는 상담사가 계약자에게 연락해 진행하는 아웃바운드 업무예요. 채팅 적용 범위는 별도 검토 중이에요."
+          message: "구독 체결 심사는 담당 상담사가 계약자에게 연락해 진행하는 업무예요.",
+          items: [
+            detail("업무 채널", "상담사 발신"),
+            detail("업무 흐름", "배정 건 확인 → 계약자 및 동의 확인 → 주문·계약 확인 → 상담 상태 등록"),
+            detail("채팅 적용", "별도 검토")
+          ]
         }
       }
     }

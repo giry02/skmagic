@@ -47,7 +47,8 @@
     oven: { id: 'AS-261125-005', product: '전기오븐', symptom: '온도 표시 오류', family: 'oven', days: 8 },
     dishwasher: { id: 'AS-261125-006', product: '식기세척기', symptom: '세척 중 멈춤', family: 'dishwasher', days: 10 }
   };
-  const visitListScreens = { 13: 'S02', 14: 'S01', 15: 'S02' };
+  const visitListScreens = { 13: 'S02', 14: 'S01', 15: 'S02', 34: 'visitList' };
+  const carePaymentProduct = '공기청정기';
   const deliveryOrders = {
     water: { id: 'DL-261125-001', product: '직수 정수기', days: 5 },
     air: { id: 'DL-261125-002', product: '공기청정기', days: 8, type: 'created' },
@@ -191,9 +192,9 @@
   };
 
   const phoneSuccess = { 8: 'S02', 9: 'S02', 12: 'S04', 13: 'S02', 14: 'S01', 15: 'S02', 16: 'S02', 17: 'S02', 49: 's4' };
-  const phoneFailures = { 8: 'S08', 9: 'S08', 12: 'S09', 13: 'S07', 14: 'S11', 15: 'S08', 16: 'S06', 17: 'S10', 49: 's3' };
+  const phoneFailures = { 8: 'S08', 9: 'S08', 12: 'S09', 13: 'S07', 14: 'S11', 15: 'S08', 16: 'S06', 17: 'S10', 49: 'consentAuthFailed' };
   const dateScenarios = new Set([8, 9, 12, 14, 17]);
-  const schedulingScreens = { 8: 'S05', 9: 'S05', 12: 'S05', 14: 'S04', 17: 'S05' };
+  const schedulingScreens = { 8: 'S05', 9: 'S05', 12: 'S05', 14: 'S04', 17: 'S05', 36: 's6' };
   const pairedDateKeys = { split: 'splitDate', reinstall: 'reinstallDate' };
   const addressScreens = new Set(['8:S04', '9:S04', '12:S04', '14:S03', '17:S04']);
 
@@ -261,6 +262,13 @@
   function maskNumber(phone) {
     const digits = phone.replace(/\D/g, '');
     return `${digits.slice(0, digits.startsWith('02') ? 2 : 3)}-••••-${digits.slice(-4)}`;
+  }
+
+  function paymentContractDisplay(value) {
+    return String(value ?? '').replace(/\d(?:[\d -]*\d)?/g, (number) => {
+      const digits = number.replace(/\D/g, '');
+      return digits.length > 4 ? `••••-${digits.slice(-4)}` : number;
+    });
   }
 
   function neighborhood(address) {
@@ -393,6 +401,12 @@
   }
 
   class SKIXChat {
+    static inboundReviewReply(message) {
+      const text = normalize(String(message ?? ''));
+      if (!/(?:구독|렌탈|계약).{0,25}심사|심사.{0,12}(?:구독|렌탈|계약)/u.test(text)) return '';
+      return '구독 심사나 진행 상황은 신청하신 판매처 또는 상담사가 확인해 드려요. 가입 방법이나 담당자 연락 요청을 확인하실 수 있어요.';
+    }
+
     static corporateReply(message) {
       const text = String(message ?? '').normalize('NFKC');
       const subject = normalize(text)
@@ -486,12 +500,18 @@
       const previousNo = this.scenario?.no;
       const reuseServiceDetails = previousNo === 11 && scenario.no === 12
         && previous.serviceProduct && previous.serviceSymptom;
+      const visitCallbackLink = previous.serviceVisit && ((previousNo === 13 && scenario.no === 34)
+        || (previousNo === 34 && scenario.no === 13));
       const reuseVisit = !echo && previous.phoneVerified && ((scenario.no === 13 && [12, 14, 15].includes(previousNo))
-        || ([13, 14].includes(previousNo) && [14, 15].includes(scenario.no) && previous.serviceVisit));
+        || ([13, 14].includes(previousNo) && [14, 15].includes(scenario.no) && previous.serviceVisit) || visitCallbackLink);
       const billingEntry = billingLookupTarget(scenario.no);
       const reuseBilling = !echo && previous.billingVerified && billingEntry;
+      const reuseDepositInquiry = !echo && previousNo === 1 && scenario.no === 39 && previous.billingVerified && previous.product === '직수 정수기';
       this.scenario = scenario;
       this.context = { request: customerText || '' };
+      if (!echo && previousNo === 30 && scenario.no === 4 && previous.phoneVerified && this.screen?.id === 'E7') {
+        this.context.carePaymentReturn = previous;
+      }
       const originalEntry = scenario.no === 6 && this.partnerCards().length
         ? scenario.screens.find((screen) => screen.id === 'S02') ?? scenario.screens[0]
         : scenario.screens[0];
@@ -500,6 +520,18 @@
         this.context.serviceSymptom = previous.serviceSymptom;
       }
       let entry = reuseServiceDetails ? this.serviceRegistrationEntry() : auditFlows[scenario.no]?.entry;
+      if (!echo && previousNo === 44 && this.screen?.id === 's5' && scenario.no === 9 && previous.installationProduct) {
+        this.context.priorReinstallProduct = previous.installationProduct;
+        entry = 'phoneInput';
+      }
+      if (reuseDepositInquiry) {
+        Object.assign(this.context, { billingVerified: true, product: previous.product });
+        entry = 's4';
+      }
+      if (!echo && previousNo === 44 && this.screen?.id === 'E8' && scenario.no === 34 && previous.installationAppointment) {
+        this.context.installationAppointment = previous.installationAppointment;
+        entry = 'visitCallbackNote';
+      }
       if (reuseBilling) {
         Object.assign(this.context, { billingVerified: true, product: previous.product });
         const contractScreen = billingContractScreens[scenario.no];
@@ -517,11 +549,14 @@
           serviceVisit: previous.serviceVisit, sameDayVisit: previous.sameDayVisit, subscriptionVisit: previous.subscriptionVisit,
           visitProfile: previous.visitProfile, visitEdits: previous.visitEdits, cancelledVisits: previous.cancelledVisits,
           visitAddressNeedsDate: previous.visitAddressNeedsDate });
-        if (scenario.no === 13) {
+        if (visitCallbackLink) {
+          entry = scenario.no === 34 ? 's4' : this.visitDetailScreen();
+        } else if (scenario.no === 13) {
           this.showVisitResults();
           return;
+        } else {
+          entry = this.visitRequestEntry();
         }
-        entry = this.visitRequestEntry();
       }
       const first = this.screenSource(entry) ?? originalEntry;
       if (echo && first?.kind !== 'internal-only') this.sayUser(customerText || scenario.displayTitle || scenario.title);
@@ -555,8 +590,10 @@
       if (screen.resolve && !properties.demo) {
         const key = this.scenario.no + ':' + screen.id;
         if (this.resolving.has(key)) throw new Error('Circular workflow resolution: ' + key);
-        const matched = screen.resolve.rules?.find((rule, index) =>
-          this.context.routeMatches?.[screen.id + ':' + index]?.length);
+        const matched = screen.resolve.rules?.find((rule, index) => {
+          const matches = this.context.routeMatches?.[screen.id + ':' + index] ?? [];
+          return rule.all ? rule.fields.every((field) => matches.includes(field)) : matches.length > 0;
+        });
         const target = matched?.target ?? screen.resolve.default;
         if (target && target !== screen.id) {
           this.screen = screen;
@@ -611,6 +648,10 @@
         const type = item.type ?? 'text';
         const sample = item.label === '인증번호' ? this.context.otpCode
           : item.label === '희망 배송일' ? offsetDate(estimateDateRange().today, 7)
+          : this.scenario.no === 45 && item.label === '납부 마감일' ? offsetDate(estimateDateRange().today, 1)
+          : this.scenario.no === 44 && item.label === '이사 예정일' ? offsetDate(estimateDateRange().today, 5)
+          : this.scenario.no === 44 && item.label === '희망 날짜' && this.context.installationMoveDate
+            ? nextWeekday(this.context.installationMoveDate)
           : item.label === '카드번호' && this.context.issuer?.last4
             ? '000000000000' + this.context.issuer.last4 : item.sample;
         const keyboard = type === 'password' ? 'numeric' : type === 'tel' ? 'tel' : type === 'email' ? 'email' : undefined;
@@ -643,7 +684,7 @@
       }
       const visitKey = this.context.serviceVisit;
       if (no === 13 && ['S03', 'S04'].includes(screen.id) || no === 14 && ['visitDetails', 'S02', 'S10'].includes(screen.id)
-        || no === 15 && ['visitDetails', 'S03', 'S04', 'S05'].includes(screen.id)) {
+        || no === 15 && ['visitDetails', 'S03', 'S04', 'S05'].includes(screen.id) || no === 34 && screen.id === 's4') {
         const key = visitKey ?? (screen.id === 'S04' && no === 13 ? 'bidet' : 'water');
         message.items = this.visitItems(key);
         if (no === 15 && this.context.cancellationReason && ['S04', 'S05'].includes(screen.id)) {
@@ -676,16 +717,27 @@
           { title: '접수 증상', detail: this.context.serviceSymptom }];
       }
       if (screen.kind === 'internal-only') message.status = '별도 검토';
+      if (no === 34 && screen.id === 'visitCallbackNote' && this.context.installationAppointment) {
+        const { date, phone } = this.context.installationAppointment;
+        message.items = [{ title: '대상 접수', detail: 'ES-261125-044' },
+          { title: '방문 희망일', detail: date }, { title: '방문 연락처', detail: phone }];
+      }
       if (this.scenario.phase === '별도 검토' && !message.status) message.status = '별도 검토';
       if (no === 49 && screen.id === 's5' && this.context.consent === '동의하기') {
         message.items = [{ title: '변경 결과', detail: '동의' }];
       }
       if (no === 37 && screen.id === 's8' && this.context.document) {
-        message.text = `${this.context.document} 발송 요청을 처리했어요.`;
+        const recipients = this.context.documentRecipients ?? {};
+        message.text = `${this.context.document} 발송 요청 정보를 확인했어요. 실제 발송 여부는 담당 상담사가 확인할 수 있어요.`;
         message.items = [
-          { title: '발송 방식', detail: this.context.channel || items[0].detail },
-          { title: '발송 구분', detail: this.context.recurring ? '매월 정기 발송' : '일회성 발송' }
-        ];
+          { title: '요청 서류', detail: this.context.document },
+          { title: '발송 구분', detail: this.context.recurring ? '매월 정기 발송' : '일회성 발송' },
+          { title: '발송 방식', detail: this.context.channel },
+          this.context.documentPeriod && { title: '서류 기간', detail: this.context.documentPeriod },
+          this.context.documentSchedule && { title: '정기 발송일', detail: this.context.documentSchedule },
+          recipients.email && { title: '수신 이메일', detail: recipients.email },
+          recipients.fax && { title: '수신 팩스', detail: recipients.fax }
+        ].filter(Boolean);
       }
       if (no === 3 && screen.id === 'S08' && this.context.payment) {
         const { account, bank, masked, title } = this.context.payment;
@@ -736,10 +788,42 @@
     fill(value) {
       const variables = this.scenario.demoValues ?? {};
       let text = String(value ?? '').replace(/\[([^\[\]]+)\]/g, (token, key) => {
+        const no = this.scenario.no;
+        if (no === 19 && key === '발송 문서') return this.context.document ?? '확인한 문서';
+        if (no === 19 && key === '정기 발송일') return this.context.documentSchedule ?? '미지정';
+        if ([20, 21].includes(no) && key === '출력 구분') return this.context.documentFormat ?? '개별 출력';
+        if (no === 22 && key === '서비스 종류') return this.context.serviceKind ?? '확인한 서비스';
+        if (no === 22 && key === '조회 기간') return this.context.documentPeriod ?? '확인한 기간';
+        if (no === 25 && key === '고지서 수령 방법') return this.context.giroDeliveryMethod ?? '미지정';
+        if ([26, 27].includes(no) && key === '대표 계약') return this.context.representativeContract ?? '확인한 대표 계약';
+        if (no === 26 && key === '증빙 발행') return this.context.mergeEvidence ?? '기존 정보 유지';
+        if (no === 27 && key === '분리한 계약') return this.context.splitSelectedContract ?? '확인한 계약';
+        if (no === 29 && key === '필터 배송 주소') return this.context.filterDeliveryAddress ?? demoAddress;
+        if ([19, 20, 21, 22].includes(no) && key === '마스킹된 수신처') {
+          return this.context.receiptRecipient ?? '수신처 확인 필요';
+        }
         if (key === '납부 금액' && [4, 5].includes(this.scenario.no)) {
           return (this.context.paymentAmount ?? 29900).toLocaleString('ko-KR') + '원';
         }
         if (key === '할부 기간' && [4, 5].includes(this.scenario.no)) return this.context.installmentPeriod ?? '일시불';
+        if (this.scenario.no === 45) {
+          const prepaid = this.context.prepaid ?? { months: 12, amount: 344448 };
+          if (key === '선납 기간') return `${prepaid.months}개월`;
+          if (key === '선납 금액') return prepaid.amount.toLocaleString('ko-KR') + '원';
+          if (key === '선납 가상계좌 은행') return this.context.prepaidBank || 'KB국민은행';
+          if (key === '선납 계산서') return this.context.prepaidTax ? '발행 요청' : '발행 안 함';
+        }
+        if (this.scenario.no === 49) {
+          if (key === '마케팅 활용 상태') return this.context.marketingConsent === false ? '미동의' : '동의';
+          if (key === '영리성 수신 상태') return this.context.commercialConsent === false ? '미동의' : '동의';
+        }
+        if (this.scenario.no === 44) {
+          if (key === '선택한 날짜') return this.context.date || dateLabel(offsetDate(estimateDateRange().today, 3));
+          if (key === '마스킹된 번호') return this.context.maskedPhone || maskNumber(demoPhone);
+        }
+        if ([41, 45, 48].includes(this.scenario.no) && key === '마스킹된 수신처') {
+          return this.context.receiptRecipient || '등록된 수신처';
+        }
         if (key === '방문 제품' && [8, 9].includes(this.scenario.no)) return this.context.product || '직수 정수기';
         if ([8, 9, 12].includes(this.scenario.no)) {
           const details = {
@@ -833,10 +917,10 @@
     showVisitResults() {
       const no = this.scenario.no;
       const visits = this.availableVisits();
-      if (!visits.length) this.execute({ 13: 'S06', 14: 'S09', 15: 'S06' }[no]);
+      if (!visits.length) this.execute({ 13: 'S06', 14: 'S09', 15: 'S06', 34: 'visitNotFound' }[no]);
       else if (visits.length === 1) {
         this.context.serviceVisit = visits[0];
-        this.execute(no === 13 ? this.visitDetailScreen() : 'visitDetails');
+        this.execute(no === 13 ? this.visitDetailScreen() : no === 34 ? 's4' : 'visitDetails');
       } else this.execute(visitListScreens[no]);
     }
 
@@ -925,6 +1009,10 @@
     scheduleDates(all = false, stage = this.screen?.bookingStage) {
       const no = this.scenario.no;
       const { today } = estimateDateRange();
+      if (no === 36) {
+        const firstAvailable = nextWeekday(offsetDate(today, 1));
+        return [firstAvailable, nextWeekday(firstAvailable)];
+      }
       let first = offsetDate(today, [14, 17].includes(no) ? 0 : 1);
       let last = offsetDate(today, 30);
       const move = this.context.moveDate;
@@ -975,6 +1063,7 @@
     activeSelection() {
       const no = this.scenario?.no;
       const id = this.screen?.id;
+      if (no === 9 && id === 'priorReinstallProduct') return { kind: 'service-product', title: '재설치 제품 확인' };
       if (([11, 12].includes(no) && id === 'S01') || ([8, 9].includes(no) && id === 'S02')) {
         return { kind: 'service-product', title: '보유 제품 선택' };
       }
@@ -1005,7 +1094,7 @@
       const id = this.screen.id;
       if (visitListScreens[no] === id) {
         const visits = this.availableVisits();
-        const target = no === 13 ? '$visitDetails' : 'visitDetails';
+        const target = no === 13 ? '$visitDetails' : no === 34 ? 's4' : 'visitDetails';
         const actions = visits.slice(0, 5).map((key) => {
           const { product, service } = serviceVisits[key];
           return { id: 'visit:' + key, label: [product, service, '접수 선택'].filter(Boolean).join(' '),
@@ -1077,6 +1166,12 @@
       const extras = screen.explicitActions ? [] : continuation[no]?.[screen.id] ?? [];
       const custom = this.selectionActions();
       const defaults = [...steps, ...extras];
+      if (no === 9 && screen.id === 'S02' && this.context.priorReinstallProduct && this.context.phoneVerified) {
+        defaults.unshift(['앞서 확인한 제품 선택', '$selectPriorReinstallProduct']);
+      }
+      if (no === 4 && screen.id === 'S07' && this.context.carePaymentReturn && this.context.product === carePaymentProduct) {
+        defaults.unshift(['안심OK 방문 일정 다시 확인', '$resumeCareVisit']);
+      }
       const selectedDate = this.selectedScheduleDate();
       if ((schedulingScreens[no] === screen.id || screen.bookingStage) && defaults.some(([, target]) => target === '$date')) {
         const dates = this.scheduleDates();
@@ -1101,6 +1196,9 @@
       if (selectionKind === 'service-product') {
         for (const action of actions) {
           if (/^(직수 )?정수기 선택$/.test(action.label)) action.card = registeredServiceProduct;
+          if (action.target === '$selectPriorReinstallProduct' && this.context.priorReinstallProduct) {
+            action.card = { kind: 'product', title: this.context.priorReinstallProduct, detail: '앞서 확인한 제품' };
+          }
         }
       }
       if (this.fields.length && !actions.length) actions.push({ id: 'submit', label: '확인', target: inputTargets[no]?.[screen.id] || this.graphTarget('확인') });
@@ -1116,6 +1214,7 @@
         ...(action.target === '$commitVisitCancellation' && { disabled: !this.context.cancellationReason }),
         ...(screen.bookingStage && ['다음', '분리·재설치 접수'].includes(action.label) && { disabled: !selectedDate }),
         ...(no === 17 && screen.id === 'S05' && action.target === '$commitDeliveryChange' && { disabled: !selectedDate }),
+        ...(no === 36 && screen.id === 's6' && action.label === '이 날짜로 요청' && { disabled: !selectedDate }),
         variant: (action.label === selectedDate + ' 선택'
           || action.target === '$selectCancellationReason' && action.label === this.context.cancellationReason)
           ? 'selected' : index === 0 ? 'primary' : 'secondary'
@@ -1159,7 +1258,7 @@
       if (action && !action.requiresFields) return this.choose(action.id);
       if (this.fields.length === 1) return this.submitFields({ [this.fields[0].id]: query });
       if (this.fields.length) return this.getState();
-      const scope = SKIXChat.corporateReply(query);
+      const scope = SKIXChat.corporateReply(query) || SKIXChat.inboundReviewReply(query);
       if (scope) {
         this.remember();
         this.clearWorkflow();
@@ -1180,7 +1279,7 @@
         else this.sayBot('문의 내용을 먼저 알려주시면 적합한 상담을 안내할게요.');
         return this.getState();
       }
-      const candidates = rankedScenarios(this.scenarios, query);
+      const candidates = rankedScenarios(this.scenarios.filter(({ screens }) => screens[0]?.kind !== 'internal-only'), query);
       const first = candidates[0];
       const next = candidates[1];
       if (first && first.score >= 6 && (!next || first.score >= 200 || first.score - next.score > 0.015)) return this.start(first.scenario.no, query);
@@ -1206,6 +1305,22 @@
       const action = this.actionList().find((item) => item.id === actionId);
       if (action?.target === '$address' && !field.label.endsWith('주소')) return '';
       const error = validationError(field, input);
+      if (!error && this.scenario.no === 45 && field.label === '선납 개월 수'
+        && (!/^[1-9]\d*\s*(?:개월)?$/.test(input)
+          || !Number.isSafeInteger(Number.parseInt(input, 10) * 29900))) return '1개월 이상의 개월 수를 숫자로 입력해 주세요.';
+      if (!error && this.scenario.no === 45 && field.label === '납부 마감일' && input < estimateDateRange().today) {
+        return '오늘 이후 날짜를 입력해 주세요.';
+      }
+      if (!error && this.scenario.no === 47 && field.label === '입금 금액'
+        && !/^[1-9][\d,]*(?:\s*원)?$/.test(input)) return '입금 금액을 원 단위로 입력해 주세요.';
+      if (!error && this.scenario.no === 44 && field.type === 'date' && input) {
+        const { today } = estimateDateRange();
+        const move = this.context.installationMoveDate;
+        if (field.label === '희망 날짜' && move && input < nextWeekday(move)) {
+          return '이사 예정일의 다음 영업일 이후 날짜를 입력해 주세요.';
+        }
+        if (input < today) return '오늘 이후 날짜를 입력해 주세요.';
+      }
       if (!error && input && this.scenario.no === 7 && field.type === 'date') {
         const { today, until } = estimateDateRange();
         if (input < today || input > until) return '오늘부터 한 달 이내의 날짜를 입력해 주세요.';
@@ -1293,7 +1408,7 @@
         this.context.symptomPath = [];
         this.context.serviceSymptom = undefined;
       }
-      if ([13, 14, 15].includes(no)) {
+      if (visitListScreens[no]) {
         const visitKey = actionId.startsWith('visit:') ? actionId.slice(6) : '';
         if (serviceVisits[visitKey]) this.context.serviceVisit = visitKey;
         if (label === '인증번호 받기' && values['휴대폰 번호']) {
@@ -1359,7 +1474,8 @@
         };
       }
       if ([4, 5].includes(no) && screen === 'S06') this.context.virtualBank = values.은행;
-      if (this.screen.explicitActions?.some(([, target]) => target === '$deliverNow' || target === '$slipHandoff')) {
+      if (no === 45 && screen === 'quoteDelivery'
+        || this.screen.explicitActions?.some(([, target]) => target === '$deliverNow' || target === '$slipHandoff')) {
         const email = values['이메일 주소'];
         const fax = values['팩스 번호'];
         const phone = values['휴대폰 번호'];
@@ -1369,6 +1485,12 @@
         }
         if (fax) this.context.receiptRecipient = '••-••••-' + fax.replace(/\D/g, '').slice(-4);
         if (phone) this.context.receiptRecipient = maskNumber(phone);
+        if (no === 37) {
+          this.context.documentRecipients = {
+            email: email ? email.replace(/^(.).*?@/, '$1••@') : undefined,
+            fax: fax ? '••-••••-' + fax.replace(/\D/g, '').slice(-4) : undefined
+          };
+        }
       }
       if ((screen === billingContractScreens[no] || no === 7 && screen === 'S02') && / 선택$/.test(label)) {
         this.context.product = label.replace(/ 선택$/, '');
@@ -1381,12 +1503,73 @@
       if (screen === 's1' && no === 35) this.context.serviceKind = label;
       if (screen === 's1' && no === 39) this.context.paymentKind = label;
       if (screen === 's1' && no === 44) this.context.installationKind = label;
+      if (no === 44) {
+        if (screen === 's2') this.context.installationProduct = values['제품명 또는 모델명'];
+        if (screen === 's5') this.context.installationMoveDate = undefined;
+        if (screen === 'installationMoveDate') this.context.installationMoveDate = values['이사 예정일'];
+        if (screen === 's6' && values['희망 날짜']) {
+          this.context.installationAppointment = { date: dateLabel(values['희망 날짜']),
+            phone: maskNumber(values['휴대폰 번호']) };
+        }
+      }
       if (screen === 's1' && no === 46) this.context.refundKind = label;
       if (screen === 's2' && no === 18) this.context.contactTopic = label;
-      if (screen === 's4' && no === 49) this.context.consent = label;
+      if (no === 19 && (['billDocuments', 'contractDocuments'].includes(screen) || screen === 's1' && label === '가상계좌확인서')) {
+        this.context.document = label;
+      }
+      if (no === 19 && /^매월 \d+일$/.test(label)) this.context.documentSchedule = label;
+      if (no === 22 && screen === 's3') this.context.serviceKind = label;
+      if (no === 22 && values.시작일 && values.종료일) this.context.documentPeriod = `${values.시작일} ~ ${values.종료일}`;
+      if (no === 25 && screen === 's5') this.context.giroDeliveryMethod = label;
+      if (no === 26 && screen === 'mergeContracts') {
+        this.context.representativeContract = paymentContractDisplay(values['대표 계약']);
+      }
+      if (no === 26 && screen === 's5') {
+        this.context.mergeEvidence = label === '증빙 정보도 변경' ? '대표 계약 기준으로 변경' : '기존 정보 유지';
+      }
+      if (no === 27 && screen === 'splitLookup') {
+        this.context.representativeContract = paymentContractDisplay(values['계약 또는 제품명']);
+      }
+      if (no === 27 && screen === 'splitSelection') this.context.splitSelectedContract = values['분리할 계약'];
+      if (no === 29 && ['filterLookup', 'filterChangedAddress', 'filterAddressOnly'].includes(screen) && values.주소) {
+        this.context.filterDeliveryAddress = neighborhood(values.주소);
+      }
+      if (no === 45) {
+        const years = screen === 'prepaidTerms' ? Number(/^([1-5])년/.exec(label)?.[1]) : 0;
+        const months = years ? years * 12 : Number.parseInt(values['선납 개월 수'], 10);
+        if (months) {
+          const rate = years ? 2 + years * 2 : 0;
+          const subtotal = 29900 * months;
+          this.context.prepaid = { months, amount: rate ? Math.round(subtotal * (100 - rate) / 100) : subtotal };
+        }
+        if (screen === 's5') this.context.prepaidTax = label === '세금계산서 발행';
+        if (screen === 'prepaidVirtual' && values['납부 마감일']) {
+          this.context.prepaidBank = values.은행;
+          this.context.date = dateLabel(values['납부 마감일']);
+        }
+      }
+      if (no === 49) {
+        if (screen === 's4') this.context.consent = label;
+        if (label === '동의하기' || label === '동의 철회') {
+          if (screen === 'marketingConsent') this.context.marketingConsent = label === '동의하기';
+          if (screen === 'commercialConsent') this.context.commercialConsent = label === '동의하기';
+        }
+      }
       if (screen === 's1' && no === 28) this.context.modifiedCategory = label;
-      if (screen === 's1' && no === 37) this.context.document = label;
-      if (screen === 's5' && no === 37) this.context.recurring = label === '매월 받기';
+      if (no === 37) {
+        if (screen === 's1') {
+          this.context.document = label;
+          this.context.documentPeriod = undefined;
+          this.context.documentSchedule = undefined;
+          this.context.documentRecipients = undefined;
+        }
+        if (['당월분', '전월분', '전월분 받기'].includes(label)) this.context.documentPeriod = label.slice(0, 3);
+        if (screen === 's5') {
+          this.context.recurring = label === '매월 받기';
+          this.context.documentSchedule = undefined;
+        }
+        if (screen === 's6') this.context.documentSchedule = values['정기 발송일'];
+      }
       if (no === 38 && screen === 's2') this.context.oneTimeOrder = /일시불/.test(values['계약 또는 제품명']);
       const requestedDate = no === 7 && Object.hasOwn(values, '해약접수 예정일')
         ? values['해약접수 예정일'] || estimateDateRange().today : values['희망 날짜'];
@@ -1432,7 +1615,8 @@
             ...prior.filter((field) => !observed.includes(field)),
             ...observed.filter((field) => {
               const value = String(field === '$choice' ? label : values[field]);
-              return pattern.test(/휴대폰|전화번호/.test(field) ? value.replace(/\D/g, '') : value);
+              const fieldPattern = rule.patterns?.[field] ? new RegExp(rule.patterns[field], 'iu') : pattern;
+              return fieldPattern.test(/휴대폰|전화번호/.test(field) ? value.replace(/\D/g, '') : value);
             }),
           ];
         }
@@ -1481,20 +1665,12 @@
       const screen = this.screen.id;
       switch (target) {
         case '$finish':
-          if (this.scenario.phase === '1차') {
-            this.context = {};
-            this.synthetic('상담을 마쳤어요. 이용해 주셔서 감사합니다.', { kind: 'closed', demo: false });
-          } else {
-            this.synthetic('상담을 마쳤어요. 다시 도움이 필요하시면 말씀해 주세요.', { kind: 'result', demo: false });
-          }
+          this.context = {};
+          this.synthetic('상담을 마쳤어요. 이용해 주셔서 감사합니다.', { kind: 'closed', demo: false });
           break;
         case '$handoff': {
           const items = [{ title: '상담 분류', detail: this.scenario.displayTitle || this.scenario.title }];
-          if (this.scenario.phase !== '1차') {
-            this.synthetic('요청하신 내용은 상담사가 확인해야 해요. 연결이 필요한 업무를 아래에서 확인해 주세요.', {
-              id: '$handoff', kind: 'handoff', items
-            });
-          } else if (counselorIsAvailable()) {
+          if (counselorIsAvailable()) {
             this.synthetic('상담사가 문의 내용을 확인할 수 있도록 채팅 상담 연결을 요청하시겠어요?', {
               id: '$handoff', kind: 'handoff', items,
               actions: [['채팅 상담 연결 요청', '$chatHandoffReview'], ['다른 문의', '$menu']]
@@ -1524,9 +1700,19 @@
           const { target: next, method } = this.context.auth;
           if (method === 'PASS 본인인증' && next === billingLookupTarget(no)) this.context.billingVerified = true;
           this.context.auth = undefined;
+          if (no === 4 && next === 'chargeContract' && this.context.carePaymentReturn) {
+            this.context.product = carePaymentProduct;
+            this.execute('paymentScope');
+            break;
+          }
           this.execute(next);
           break;
         }
+        case '$resumeCareVisit':
+          this.scenario = this.scenarios.find(({ no: number }) => number === 30);
+          this.context = this.context.carePaymentReturn;
+          this.execute('overduePaid');
+          break;
         case '$authFailure': {
           const { source, target: next, method, failure: configuredFailure } = this.context.auth;
           const failure = configuredFailure ?? authFailures[no]?.[source];
@@ -1672,7 +1858,8 @@
         }
         case '$date': {
           const date = this.saveScheduleDate(label);
-          const next = no === 17 ? '확인' : this.screen.bookingStage === 'reinstall' ? '분리·재설치 접수' : '다음';
+          const next = no === 17 ? '확인' : no === 36 ? '이 날짜로 요청'
+            : this.screen.bookingStage === 'reinstall' ? '분리·재설치 접수' : '다음';
           this.sayBot(`${date}을 선택했어요. ${next} 버튼을 눌러 주세요.`, { demo: true });
           break;
         }
@@ -1904,8 +2091,8 @@
           ], '$slipHandoff', '상담 요청');
           break;
         case '$slipHandoff':
-          this.synthetic('카드매출전표는 담당 상담사가 확인한 뒤 발송해 드려요. 요청하신 수신처를 확인해 주세요.', {
-            id: '$handoff', kind: 'handoff',
+          this.synthetic('담당 상담사가 이지페이에서 카드매출전표를 확인해 드려요. 수신처를 확인한 뒤 상담을 요청해 주세요.', {
+            id: '$cardSlipReview', kind: 'handoff', actions: [['상담사 연결', '$handoff'], ['다른 문의', '$menu']],
             items: [
               { title: '수신 방법', detail: this.context.channel },
               { title: '수신처', detail: this.context.receiptRecipient }
@@ -1976,7 +2163,6 @@
         case '$paymentLookup':
           this.execute({
             '사용 기간': 's7', '이중 결제·가상계좌 입금': 's8',
-            '미납요금 조회·납부': 's6', '면제·청구 금액 확인': 's5'
           }[this.context.paymentKind] || 's4');
           break;
         case '$serviceProvider': {
@@ -1987,6 +2173,29 @@
         case '$installationResult':
           this.execute(this.context.installationKind === '타공 크기·호스' ? 's3' : 's4');
           break;
+        case '$usePriorReinstallLookup':
+          this.execute(this.context.priorReinstallProduct && this.context.phoneVerified ? 'priorReinstallProduct' : 'customMoveProduct');
+          break;
+        case '$selectPriorReinstallProduct': {
+          const product = this.context.priorReinstallProduct;
+          if (!product || !this.context.phoneVerified) break;
+          this.context.product = product;
+          const { title, detail } = registeredServiceProduct;
+          const matchesRegisteredProduct = [title, detail, title + detail].some((known) => normalize(known) === normalize(product));
+          this.execute(screen === 'S02' && matchesRegisteredProduct ? 'moveStatus' : 'customMoveStatus');
+          break;
+        }
+        case '$checkCustomReinstallEquipment':
+          this.execute(/정수기|WPU/i.test(this.context.product ?? '') ? 'valveOption' : 'S05');
+          break;
+        case '$checkRefundDeposit': {
+          const number = values['입금한 가상계좌번호'].replace(/\D/g, '');
+          const amount = Number(values['입금 금액'].replace(/[^\d]/g, ''));
+          const matching = number === '000000001234' && values['입금자 이름'] === '김매직'
+            && values['입금일'] === '2026-11-25' && amount === 29900;
+          this.execute(matching ? 's8' : 'depositNotFound');
+          break;
+        }
         case '$refundResult':
           this.execute(this.context.refundKind === '설치 주문 취소' ? 's3' : 's4');
           break;
@@ -1999,6 +2208,9 @@
           this.synthetic('현금영수증 발행 설정을 적용했어요. 일반 신청은 신청월분부터 적용돼요.', {
             kind: 'result', actions: [['전월분 소급발행 확인', 's8'], ['여기서 마치기', '$finish']]
           });
+          break;
+        case '$receiptRetroactive':
+          this.execute(Number(estimateDateRange().today.slice(-2)) <= 10 ? 's8' : 'receiptNextMonth');
           break;
       }
     }
@@ -2015,8 +2227,9 @@
       const email = /이메일/.test(label);
       const fax = /팩스/.test(label);
       this.context.channel = email && fax ? '이메일과 팩스' : email ? '이메일' : fax ? '팩스' : no === 41 ? '문자' : '알림톡';
+      if (delivery?.format) this.context.documentFormat = delivery.format;
       if (!email && !fax && no !== 41 && delivery?.useRegisteredNumber !== false) {
-        if (no === 23) this.context.receiptRecipient = maskNumber(demoPhone);
+        if ([19, 23].includes(no)) this.context.receiptRecipient = this.context.maskedPhone ?? maskNumber(demoPhone);
         this.execute(target);
         return;
       }

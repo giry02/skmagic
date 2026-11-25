@@ -70,8 +70,8 @@
       screens: {
         S01: { actions: [['PASS 본인인증', 'exampleLookup']], auth: { failure: 'S08' } },
         S02: { actions: [['직수 정수기 선택', 'paymentPurpose'], ['공기청정기 선택', 'airPaymentPurpose']] },
-        S03: { items: waterDetails(), addActions: [['당월 납부 결과 확인', 'waterPaymentStatus'], ['다른 계약 확인', 'S02']] },
-        S04: { actions: [['다른 계약 확인', 'S02'], ['다른 문의', '$menu']] },
+        S03: { items: waterDetails(), addActions: [['당월 납부 결과 확인', 'waterPaymentStatus'], ['구독료 입금 내역 확인', '@39'], ['다른 계약 확인', 'S02']] },
+        S04: { actions: [['구독료 입금 내역 확인', '@39'], ['다른 계약 확인', 'S02'], ['다른 문의', '$menu']] },
         S05: { actions: [...paymentStatus, ['다른 계약 확인', 'S02']], items: paymentSchedule },
         S06: { actions: [...paymentStatus, ['다른 계약 확인', 'S02']], items: paymentSchedule },
         S07: paymentUnavailable('S01'),
@@ -324,7 +324,7 @@
         S01: { actions: [[service + ' 접수', 'phoneInput'], ['분리·재설치 접수', 'pairAuth']] },
         phoneConfirm: { auth: { success: 'moveLookup', failure: 'S08' } },
         moveLookup: { resolve: { default: 'S02', rules: [
-          { target: 'customMoveProduct', fields: ['휴대폰 번호'], match: '^010-?0000-?0000$' },
+          { target: isSplit ? 'customMoveProduct' : '$usePriorReinstallLookup', fields: ['휴대폰 번호'], match: '^010-?0000-?0000$' },
           ...moveEligibility
         ] } },
         moveMultipleCustomers: handoff('같은 연락처로 여러 고객번호가 확인됐어요. 상담사가 접수할 제품을 확인해 드려요.'),
@@ -357,14 +357,18 @@
           ['PASS 본인인증 다시 시도', 'moveAddressOwner'], ['상담사 연결', '$handoff']
         ]),
         customMoveProduct: field('접수하실 제품명이나 모델명을 입력해 주세요.', ['product'], [['다음', 'customMoveStatus']]),
+        ...(!isSplit && {
+          priorReinstallProduct: choice('앞서 설치 환경을 확인한 제품으로 재설치를 접수할까요?', [
+            ['앞서 확인한 제품 선택', '$selectPriorReinstallProduct'], ['다른 제품', 'customMoveProduct']
+          ])
+        }),
         customMoveStatus: choice('이사 또는 제품 이동은 어느 단계인가요?', [
           ['이사 예정', 'customMoveDate'], ['이사·이동 완료', 'customMoveAddress'], ['기타 · 공사 등', 'customMoveAddress']
         ]),
         customMoveDate: field('이사 예정일을 입력해 주세요.', [moveDate('이사 예정일', '2026-11-30')], [['다음', 'customMoveAddress'], ['뒤로', 'customMoveStatus']]),
         customMoveAddress: field(addressPrompt, ['address', visitPhone], [['주소 검색', '$address'], ['예약 가능일자 확인', 'customAddressCheck']]),
-        customAddressCheck: { resolve: { default: 'S05', rules: [
-          { ...unsupportedAddress, target: 'customAddressUnavailable' },
-          ...(!isSplit ? [{ fields: ['제품명 또는 모델명'], match: '정수기|WPU', target: 'valveOption' }] : [])
+        customAddressCheck: { resolve: { default: isSplit ? 'S05' : '$checkCustomReinstallEquipment', rules: [
+          { ...unsupportedAddress, target: 'customAddressUnavailable' }
         ] } },
         customAddressUnavailable: visitUnavailable('customMoveAddress'),
         S05: {
@@ -684,8 +688,8 @@
           { target: 'S07', fields: ['휴대폰 번호'], match: '^010-?0000-?0002$' },
           { target: 'S06', fields: ['휴대폰 번호'], match: '^010-?0000-?0003$' }
         ] } },
-        S03: { message: '선택하신 AS 접수 내역이에요.' },
-        S04: { message: '선택하신 분리·재설치 접수 내역이에요.' },
+        S03: { message: '선택하신 AS 접수 내역이에요.', addActions: [['방문 전 연락 요청', '@34']] },
+        S04: { message: '선택하신 분리·재설치 접수 내역이에요.', addActions: [['방문 전 연락 요청', '@34']] },
         S06: { addActions: [['AS 방문 접수', '@12'], ['다른 문의', '$menu']] },
       }
     },

@@ -4801,6 +4801,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 18,
+    "consultationCode": "104",
     "title": "고객정보 단순문의",
     "displayTitle": "고객정보 단순문의",
     "phase": "2차",
@@ -5016,6 +5017,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 19,
+    "consultationCode": "45",
     "title": "문서발송 요청_수납·미납내역서/청구서/계약서/구독계약서조회/가상계좌확인서",
     "displayTitle": "청구서·계약서 발송",
     "phase": "3차",
@@ -5242,6 +5244,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 20,
+    "consultationCode": "47",
     "title": "문서발송 요청_해약위약금문의내역서/해약위약금산정내역서",
     "displayTitle": "해약 위약금 내역서 발송",
     "phase": "3차",
@@ -5422,6 +5425,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 21,
+    "consultationCode": "43",
     "title": "문서발송 요청_해약확인서",
     "displayTitle": "해약확인서 발송",
     "phase": "3차",
@@ -5594,6 +5598,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 22,
+    "consultationCode": "43",
     "title": "문서발송 요청_서비스처리내역확인서",
     "displayTitle": "서비스처리내역확인서 발송",
     "phase": "3차",
@@ -5774,6 +5779,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 23,
+    "consultationCode": "52",
     "title": "문서발송 요청_카드매출전표/카드영수증",
     "displayTitle": "카드 영수증·매출전표 발송",
     "phase": "3차",
@@ -5964,6 +5970,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 24,
+    "consultationCode": "51 / 미부여",
     "title": "수납정보관련_지로/가상계좌 재발송 · 지로 발송 확인 (통합)",
     "displayTitle": "지로·가상계좌 재발송",
     "phase": "3차",
@@ -6180,6 +6187,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 25,
+    "consultationCode": "51",
     "title": "수납정보관련_통합/분리 결제(지로)",
     "displayTitle": "지로 통합·분리",
     "phase": "3차",
@@ -6364,6 +6372,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 26,
+    "consultationCode": "51",
     "title": "수납정보관련_통합 결제(CMS/카드/가상계좌)",
     "displayTitle": "결제 통합",
     "phase": "3차",
@@ -6603,6 +6612,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 27,
+    "consultationCode": "51",
     "title": "수납정보관련_분리 결제(CMS/카드/가상계좌)",
     "displayTitle": "결제 분리",
     "phase": "3차",
@@ -6821,6 +6831,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 28,
+    "consultationCode": "105",
     "title": "고객정보관련_고객정보수정",
     "displayTitle": "고객정보 수정",
     "phase": "2차",
@@ -7070,6 +7081,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 29,
+    "consultationCode": "95",
     "title": "안심OK 단순문의_셀프형 필터배송확인",
     "displayTitle": "안심OK 필터 배송 확인",
     "phase": "3차",
@@ -7299,6 +7311,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 30,
+    "consultationCode": "96",
     "title": "안심OK 단순문의_접수/일정/방문 확인",
     "displayTitle": "안심OK 방문 일정 확인",
     "phase": "2차",
@@ -7544,6 +7557,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 31,
+    "consultationCode": "110",
     "title": "주문/가입상담_구독(렌탈)가입신청문의",
     "displayTitle": "구독 가입 상담",
     "phase": "별도 검토",
@@ -7730,6 +7744,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 32,
+    "consultationCode": "111",
     "title": "만기상담_멤버십 가입신청/비용문의",
     "displayTitle": "만기 후 멤버십 가입·비용",
     "phase": "별도 검토",
@@ -7950,6 +7965,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 33,
+    "consultationCode": "117",
     "title": "주문/가입상담_구독(렌탈)컨택재요청",
     "displayTitle": "구독 신청 후 연락 재요청",
     "phase": "별도 검토",
@@ -8110,6 +8126,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 34,
+    "consultationCode": "3",
     "title": "AS서비스 상담/접수_방문전 사전 연락요청",
     "displayTitle": "방문 전 사전 연락 요청",
     "phase": "2차",
@@ -8275,6 +8292,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 35,
+    "consultationCode": "5",
     "title": "서비스비용문의",
     "displayTitle": "서비스 비용 문의",
     "phase": "2차",
@@ -8472,6 +8490,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 36,
+    "consultationCode": "72",
     "title": "설치 단순문의_설치/회수_접수/일정/방문 확인요청",
     "displayTitle": "설치·회수 일정 확인",
     "phase": "2차",
@@ -8698,6 +8717,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 37,
+    "consultationCode": "47",
     "title": "당사관련 서류 요청",
     "displayTitle": "SK매직 관련 서류 요청",
     "phase": "3차",
@@ -8928,6 +8948,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 38,
+    "consultationCode": "(미부여)",
     "title": "배송/설치_주문취소",
     "displayTitle": "설치 전 주문 취소",
     "phase": "3차",
@@ -9111,6 +9132,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 39,
+    "consultationCode": "77",
     "title": "수납 단순문의_구독료/멤버십료 입금확인",
     "displayTitle": "구독료·멤버십료 입금 확인",
     "phase": "2차",
@@ -9363,6 +9385,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 40,
+    "consultationCode": "129",
     "title": "해약취소(철회)문의",
     "displayTitle": "해약 취소·철회 문의",
     "phase": "3차",
@@ -9601,6 +9624,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 41,
+    "consultationCode": "4",
     "title": "서비스대행업체 안내",
     "displayTitle": "서비스 대행업체 안내",
     "phase": "2차",
@@ -9785,6 +9809,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 42,
+    "consultationCode": "(미부여)",
     "title": "멤버십 자동연장 거부 요청",
     "displayTitle": "멤버십 자동연장 거부",
     "phase": "2차",
@@ -10003,6 +10028,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 43,
+    "consultationCode": "66",
     "title": "배송단순문의_사은품 확인/일정문의",
     "displayTitle": "사은품 확인·배송 일정",
     "phase": "3차",
@@ -10214,6 +10240,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 44,
+    "consultationCode": "68",
     "title": "배송단순문의_설치환경문의",
     "displayTitle": "설치환경 문의",
     "phase": "2차",
@@ -10431,6 +10458,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 45,
+    "consultationCode": "93",
     "title": "요금 납부_선납관련",
     "displayTitle": "선납 금액·할인 문의",
     "phase": "3차",
@@ -10712,6 +10740,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 46,
+    "consultationCode": "93",
     "title": "요금 납부_선납관련_설치 취소 환불",
     "displayTitle": "설치 취소 후 선납 환불",
     "phase": "3차",
@@ -10893,6 +10922,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 47,
+    "consultationCode": "94",
     "title": "수납정보관련_환불등록/이력 문의",
     "displayTitle": "환불 등록·이력 문의",
     "phase": "3차",
@@ -11145,6 +11175,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 48,
+    "consultationCode": "73",
     "title": "현금영수증 발행/발급 확인",
     "displayTitle": "현금영수증 발행·확인",
     "phase": "3차",
@@ -11382,6 +11413,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 49,
+    "consultationCode": "(미부여)",
     "title": "마케팅 활용 동의/철회",
     "displayTitle": "마케팅 활용 동의·철회",
     "phase": "2차",
@@ -11556,6 +11588,7 @@ window.SKIX_SCENARIOS = [
   },
   {
     "no": 50,
+    "consultationCode": "57",
     "title": "구독체결관련 심사_개인/개인사업자 기준",
     "displayTitle": "구독 체결 심사",
     "phase": "별도 검토",

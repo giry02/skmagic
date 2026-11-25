@@ -139,7 +139,7 @@ async function getCatalog() {
   vm.createContext(context);
   vm.runInContext(data, context, { timeout: 500 });
   vm.runInContext(engine, context, { timeout: 500 });
-  const scenarios = Array.from(context.window.SKIX_SCENARIOS);
+  const scenarios = Array.from(context.window.SKIX_SCENARIOS).filter(({ screens }) => screens[0]?.kind !== "internal-only");
   const list = scenarios.map((item) => `${item.no}. ${item.displayTitle}`).join("\n");
   chatCatalog = {
     mtime: info.mtimeMs,
@@ -147,6 +147,7 @@ async function getCatalog() {
     list,
     finder: new context.window.SKIXChat(scenarios),
     corporateReply: context.window.SKIXChat.corporateReply,
+    inboundReviewReply: context.window.SKIXChat.inboundReviewReply,
   };
   return chatCatalog;
 }
@@ -227,7 +228,7 @@ async function startInstalledRuntime() {
 
 async function answer(input, signal) {
   const catalog = await getCatalog();
-  const scopeReply = catalog.corporateReply(input.message);
+  const scopeReply = catalog.corporateReply(input.message) || catalog.inboundReviewReply(input.message);
   if (scopeReply) return { reply: scopeReply };
   await ollamaStartup;
   if (!await modelAvailable()) throw new ClientError(503, "로컬 AI에 연결할 수 없어요. 잠시 후 다시 시도해 주세요.");
@@ -260,7 +261,6 @@ async function answer(input, signal) {
   let reply = truncate(parsed?.reply, 1400);
   if (!reply) throw new ClientError(502, "AI 답변을 완성하지 못했어요. 같은 질문을 다시 보내 주세요.");
   const selected = Number.isInteger(parsed.scenarioId)
-    && parsed.scenarioId !== 50
     && catalog.scenarios.some((item) => item.no === parsed.scenarioId)
     ? parsed.scenarioId
     : undefined;

@@ -44,13 +44,13 @@
   ];
   const recordPickers = new Map([
     [["1:S02", "2:S02", "3:changeContract", "4:chargeContract", "5:arrearsContract", "7:S02", "7:S04", "10:S03"], ["contract", "계약 선택"]],
-    [["13:S02", "14:S01", "15:S02"], ["appointment", "방문 접수 선택"]],
+    [["13:S02", "14:S01", "15:S02", "34:visitList"], ["appointment", "방문 접수 선택"]],
     [["16:S02", "17:S02", "38:orderSelect", "46:virtualRefundOrder", "46:cardRefundOrder"], ["order", "배송·설치 주문 선택"]],
   ].flatMap(([keys, picker]) => keys.map((key) => [key, picker])));
   const documentPickers = new Set([
     "19:s1", "19:billDocuments", "19:contractDocuments", "23:s2", "24:s1", "37:s1", "45:prepaidDocuments",
   ]);
-  const schedulePickers = new Set(["8:S05", "9:S05", "12:S05", "14:S04", "17:S05"]);
+  const schedulePickers = new Set(["8:S05", "9:S05", "12:S05", "14:S04", "17:S05", "36:s6"]);
   const dateChoice = /^(\d{1,2}월\s+\d{1,2}일)\s*\(([월화수목금토일])\)(?:\s+선택)?$/u;
   const monthlyChoice = /^매월 \d{1,2}일$/u;
   const deliveryChoice = /^(?:알림톡|이메일|팩스|이메일과 팩스|우편|문자로 받기|등록된 번호로 받기|이메일로 받기)$/u;
@@ -102,11 +102,12 @@
   }
 
   function catalogItem(scenario) {
-    const item = button(scenario.displayTitle, "catalog-item");
+    const reviewOnly = scenario.screens[0]?.kind === "internal-only";
+    const item = button(reviewOnly ? `${scenario.displayTitle} (운영 검토)` : scenario.displayTitle, "catalog-item");
     item.dataset.scenario = String(scenario.no);
-    if (scenario.firstPhaseScenario) {
-      item.title = `No.${String(scenario.no).padStart(2, "0")} · 상담코드 ${scenario.consultationCode}\n${scenario.firstPhaseScenario}`;
-    }
+    const number = String(scenario.no).padStart(2, "0");
+    const details = `No.${number} · ${scenario.phase} · 상담코드 ${scenario.consultationCode}`;
+    item.title = [details, scenario.firstPhaseScenario].filter(Boolean).join("\n");
     return item;
   }
 
@@ -609,6 +610,9 @@
     if (documentPickers.has(screenKey)) return picker("document", "문서 선택", actions, ({ label }) => ({
       kind: "document", title: label,
     }));
+    if (screenKey === "22:s3") return picker("appointment", "서비스 종류 선택", actions, ({ label }) => ({
+      kind: "appointment", title: label,
+    }));
     if (screenKey === "45:prepaidPaymentMethods") {
       const kinds = { 카드: "credit", "실시간 계좌이체": "transfer", 가상계좌: "virtual" };
       return picker("payment", "선납 결제수단 선택", actions, ({ label }) => ({ kind: kinds[label], title: label }));
@@ -642,12 +646,13 @@
       });
     }
     if (screenKey === "49:consentItems") {
-      const status = items.find(({ title }) => title === "현재 상태");
-      if (status) used.add(status);
-      return picker("consent", "동의 항목 선택", actions.filter(({ label }) => label !== "현재 상태 유지"), ({ label }) => ({
-        kind: "consent", title: label, detail: status?.detail?.split(" · ")
-          .find((entry) => entry.startsWith(label))?.slice(label.length).trim(),
-      }));
+      const company = items.find(({ title }) => title === "회사");
+      if (company) used.add(company);
+      return picker("consent", "동의 항목 선택", actions.filter(({ label }) => label !== "현재 상태 유지"), ({ label }) => {
+        const status = items.find(({ title }) => title === label);
+        if (status) used.add(status);
+        return { kind: "consent", title: label, detail: status?.detail };
+      }, company?.detail);
     }
     return null;
   }
@@ -741,7 +746,7 @@
     if (flow.screen?.kind === "internal-only" || workflow && flow.screen?.kind !== "closed") {
       const extras = element("div", "workflow-tools");
       if (flow.screen?.kind === "internal-only" && flow.detail) extras.append(element("p", "", flow.detail));
-      if (workflow) {
+      if (workflow && flow.screen?.kind !== "internal-only") {
         const resume = button("AI에 이어서 질문하기");
         resume.addEventListener("click", () => {
           archiveWorkflow();
@@ -972,7 +977,7 @@
     if (!retry) liveRows.push({ role: "user", text: message });
     offer = null;
     failedRequest = null;
-    const scopeReply = window.SKIXChat.corporateReply(message);
+    const scopeReply = window.SKIXChat.corporateReply(message) || window.SKIXChat.inboundReviewReply(message);
     if (scopeReply) {
       liveRows.push({ role: "bot", text: scopeReply });
       apiHistory = [];
@@ -1001,7 +1006,8 @@
         liveRows.push({ role: "bot", text: reply, source: "api" });
         apiHistory.push({ role: "user", content: message }, { role: "assistant", content: reply });
         apiHistory = apiHistory.slice(-12);
-        offer = scenarios.get(Number(data.scenarioId)) ?? null;
+        const suggested = scenarios.get(Number(data.scenarioId));
+        offer = suggested?.screens[0]?.kind === "internal-only" ? null : suggested ?? null;
         lastScenario = offer?.no ?? lastScenario;
         connection = { ...connection, state: "live", provider: data.provider || connection.provider };
       }
