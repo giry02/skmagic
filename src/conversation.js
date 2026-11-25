@@ -41,6 +41,22 @@
     ["문서발송", "증빙서류", "file"],
     ["가입·심사", "구독·멤버십", "bag"],
   ];
+  const recordPickers = new Map([
+    [["1:S02", "2:S02", "3:changeContract", "4:chargeContract", "5:arrearsContract", "7:S02", "7:S04", "10:S03"], ["contract", "계약 선택"]],
+    [["13:S02", "14:S01", "15:S02"], ["appointment", "방문 접수 선택"]],
+    [["16:S02", "17:S02", "38:orderSelect"], ["order", "배송·설치 주문 선택"]],
+  ].flatMap(([keys, picker]) => keys.map((key) => [key, picker])));
+  const documentPickers = new Set([
+    "19:s1", "19:billDocuments", "19:contractDocuments", "23:s2", "24:s1", "37:s1", "45:prepaidDocuments",
+  ]);
+  const schedulePickers = new Set(["8:S05", "9:S05", "12:S05", "14:S04", "17:S05"]);
+  const dateChoice = /^(\d{1,2}월\s+\d{1,2}일)\s*\(([월화수목금토일])\)(?:\s+선택)?$/u;
+  const monthlyChoice = /^매월 \d{1,2}일$/u;
+  const deliveryChoice = /^(?:알림톡|이메일|팩스|이메일과 팩스|우편|문자로 받기|등록된 번호로 받기|이메일로 받기)$/u;
+  const pickerIcons = {
+    "service-symptom": "tool", product: "bag", contract: "folder", appointment: "tool", order: "truck",
+    address: "truck", date: "calendar", channel: "chat", document: "file", term: "file", consent: "lock",
+  };
   const openCategories = new Set();
   let allCatalogItems = false;
   let drawerOpen = false;
@@ -202,7 +218,8 @@
       content.append(bubble);
     }
     if (message.items?.length) {
-      const group = element("div", "result-cards");
+      const hasArtwork = message.items.some(({ mediaKey }) => Boolean(mediaKey));
+      const group = element("div", hasArtwork ? "result-cards" : "result-cards result-records");
       for (const item of message.items) {
         const card = element("article", "result-card");
         const art = cardImage(item.mediaKey);
@@ -405,12 +422,16 @@
       tools.append(skip);
     }
     if (field?.options?.length) {
+      const options = element("div", "input-choice-grid");
+      options.setAttribute("role", "group");
+      options.setAttribute("aria-label", field.label);
       for (const choice of field.options) {
         const label = typeof choice === "string" ? choice : choice.label;
         const option = button(label, "action");
         option.addEventListener("click", () => captureInput(typeof choice === "string" ? choice : choice.value));
-        tools.append(option);
+        options.append(option);
       }
+      section.append(options);
     }
     if (inputProgress && Object.keys(inputProgress.values).length) {
       const restart = button("다시 입력");
@@ -435,20 +456,30 @@
     option.classList.add("choice-card");
     option.dataset.cardKind = card.kind;
     option.setAttribute("aria-label", action.label);
-    const image = cardImage(card.mediaKey);
-    const mark = image || element("span", "choice-card-icon");
-    if (!image) {
-      const symbol = card.kind === "transfer" ? "transfer" : card.kind === "virtual" ? "wallet"
-        : card.kind === "payment-record" ? "file" : "card";
-      mark.append(icon(symbol));
+    if (card.kind !== "date" && (card.kind !== "symptom" || card.icon)) {
+      const image = cardImage(card.mediaKey);
+      const mark = image || element("span", "choice-card-icon");
+      if (!image) {
+        const symbols = { transfer: "transfer", virtual: "wallet", "payment-record": "file" };
+        const symbol = card.icon === "tools" ? "tool" : card.icon;
+        mark.append(icon(symbol || pickerIcons[card.kind] || symbols[card.kind] || "card"));
+      }
+      mark.setAttribute("aria-hidden", "true");
+      option.append(mark);
     }
-    mark.setAttribute("aria-hidden", "true");
     const caption = element("span", "choice-card-copy");
     caption.append(element("strong", "", card.title || action.label));
-    if (card.detail) caption.append(element("span", "choice-card-detail", card.detail));
+    if (card.detail) {
+      const detail = element("span", "choice-card-detail", card.detail);
+      if (card.kind !== "partner") {
+        detail.id = "choice-detail-" + action.id.replace(/[^a-z0-9-]/gi, "-");
+        option.setAttribute("aria-describedby", detail.id);
+      }
+      caption.append(detail);
+    }
     if (card.phone) caption.append(element("span", "choice-card-phone", `${card.phoneLabel || "카드사 문의"} ${card.phone}`));
-    option.append(mark, caption);
-    if (card.kind !== "partner") {
+    option.append(caption);
+    if (card.kind !== "partner" && card.kind !== "date") {
       const arrow = icon("chevron");
       arrow.classList.add("choice-card-arrow");
       option.append(arrow);
@@ -492,25 +523,160 @@
     return section;
   }
 
-  function renderWorkflow(flow) {
+  function recordCard(action, kind, items, used) {
+    const [name, ...details] = action.label.replace(/\s+(?:(?:접수|주문|계약|제품)\s+)?선택$/u, "").split(" · ");
+    const key = name.replace(/[^가-힣\p{L}\d]/gu, "");
+    const item = items.find(({ title, detail }) => {
+      if (!title || !key) return false;
+      const label = title === "조회 대상" ? detail : title;
+      const candidate = (label ?? "").replace(/[^가-힣\p{L}\d]/gu, "");
+      return candidate && (candidate.startsWith(key) || key.startsWith(candidate));
+    });
+    if (item) used.add(item);
+    return {
+      kind, title: item?.title && item.title !== "조회 대상" ? item.title : name,
+      detail: item?.detail || details.join(" · "),
+    };
+  }
+
+  function describeWorkflowPicker(flow) {
+    if (!flow?.screen) return null;
+    const { actions, selection, screen, messages } = flow;
+    if (["service-product", "service-symptom"].includes(selection?.kind)) {
+      return { selection, actions: actions.filter((action) => action.card), used: new Set() };
+    }
+    if (actions.some((action) => action.card)) return null;
+
+    const screenKey = `${flow.scenario.no}:${screen.id}`;
+    const items = messages.at(-1)?.items ?? [];
+    const used = new Set();
+    const picker = (kind, title, options, cardFor, detail = "") => ({
+      selection: { kind, title, detail },
+      actions: options.map((action) => ({ ...action, card: cardFor(action) })),
+      used,
+    });
+    const record = recordPickers.get(screenKey);
+    if (record) {
+      const [kind, title] = record;
+      const options = actions.filter(({ label }) => /선택$/u.test(label) || (kind === "order" && label.includes(" · ")));
+      if (options.length) return picker(kind, title, options, (action) => recordCard(action, kind, items, used));
+    }
+
+    const dates = actions.filter(({ label }) => dateChoice.test(label) || monthlyChoice.test(label));
+    const currentDate = schedulePickers.has(screenKey) ? flow.selectedDate : "";
+    if (dates.length || currentDate) {
+      const availability = items.find(({ title }) => title === "선택 가능일");
+      if (availability) used.add(availability);
+      const monthly = dates.some(({ label }) => monthlyChoice.test(label));
+      const title = monthly ? "정기 발송일 선택" : flow.scenario.no === 17 ? "배송일 선택"
+        : flow.scenario.no === 36 ? "회수일 선택" : "방문일 선택";
+      return picker("date", title, dates, ({ label }) => {
+        const parsed = dateChoice.exec(label);
+        return { kind: "date", title: parsed?.[1] || label, detail: parsed ? parsed[2] + "요일" : "" };
+      }, currentDate ? `선택한 날짜 · ${currentDate}` : "");
+    }
+
+    const channels = actions.filter(({ label }) => deliveryChoice.test(label));
+    if (channels.length) return picker("channel", "받는 방법", channels, ({ label }) => ({
+      kind: "channel", title: label, icon: /이메일|팩스|우편/u.test(label) ? "file" : "chat",
+    }));
+    if (documentPickers.has(screenKey)) return picker("document", "문서 선택", actions, ({ label }) => ({
+      kind: "document", title: label,
+    }));
+    if (screenKey === "8:addressOptions" || screenKey === "12:serviceCases") {
+      const address = items.find(({ title }) => title === "등록 주소");
+      if (address) used.add(address);
+      return picker("address", "방문 주소 선택", actions, ({ label }) => ({
+        kind: "address", title: label, detail: label.startsWith("등록") ? address?.detail : "",
+      }));
+    }
+    if (screenKey === "45:prepaidTerms") {
+      const terms = actions.filter(({ label }) => /^\d년 금액 확인$/u.test(label));
+      return picker("term", "선납 기간 선택", terms, ({ label }) => {
+        const title = label.split(" ")[0];
+        const item = items.find((entry) => entry.title.startsWith(title));
+        if (item) used.add(item);
+        return { kind: "term", title, detail: item?.detail ? item.detail + " 할인" : "" };
+      });
+    }
+    if (screenKey === "49:consentItems") {
+      const status = items.find(({ title }) => title === "현재 상태");
+      if (status) used.add(status);
+      return picker("consent", "동의 항목 선택", actions.filter(({ label }) => label !== "현재 상태 유지"), ({ label }) => ({
+        kind: "consent", title: label, detail: status?.detail?.split(" · ")
+          .find((entry) => entry.startsWith(label))?.slice(label.length).trim(),
+      }));
+    }
+    return null;
+  }
+
+  function renderWorkflowPicker(actions, selection) {
+    const symptom = selection.kind === "service-symptom";
+    const product = selection.kind === "service-product";
+    const section = element("section", "workflow-picker card-picker");
+    section.dataset.workflowPicker = selection.kind;
+    if (symptom || product) section.dataset.servicePicker = symptom ? "symptom" : "product";
+    const header = element("div", "workflow-picker-header");
+    const symbol = pickerIcons[selection.kind];
+    if (symbol) {
+      const mark = element("span", "choice-card-icon");
+      mark.append(icon(symbol));
+      header.append(mark);
+    }
+    const heading = element("h3", "", selection.title);
+    heading.id = "workflow-picker-title";
+    heading.tabIndex = -1;
+    section.setAttribute("aria-labelledby", heading.id);
+    const copy = element("div", "workflow-picker-copy");
+    copy.append(heading);
+    if (selection.detail) copy.append(element("p", "", selection.detail));
+    header.append(copy);
+    section.append(header);
+
+    if (symptom) {
+      const progress = element("ol", "symptom-progress");
+      progress.setAttribute("aria-label", "증상 분류 단계");
+      for (const [index, label] of ["대분류", "중분류", "소분류"].entries()) {
+        const current = index === selection.step;
+        const value = selection.path?.[index];
+        const step = element("li", current ? "is-current" : value ? "is-complete" : "");
+        step.append(element("span", "", label));
+        if (current) step.setAttribute("aria-current", "step");
+        if (value) step.append(element("strong", "", value));
+        progress.append(step);
+      }
+      section.append(progress);
+    }
+
+    if (actions.length) {
+      const cards = element("div", "choice-cards workflow-picker-options");
+      for (const action of actions) cards.append(actionButton(action));
+      section.append(cards);
+    }
+    return section;
+  }
+
+  function renderWorkflow(flow, picker) {
     const actions = flow.actions ?? [];
     const choices = element("div", "controls");
-    const visual = actions.filter((action) => action.card);
-    const plain = actions.filter((action) => !action.card);
+    const visual = picker?.actions ?? actions.filter((action) => action.card);
+    const visualIds = new Set(visual.map(({ id }) => id));
+    const plain = actions.filter(({ id }) => !visualIds.has(id));
     if (flow.screen?.id === "$auth") {
       const request = element("div", "pass-request");
       const sign = actions.some((action) => action.label === "전자서명 확인");
       request.append(element("span", "pass-mark", "PASS"), element("strong", "", sign ? "전자서명" : "본인인증"));
       choices.append(request);
     }
-    if (!visual.length && flow.selection?.detail) {
+    if (!picker && !visual.length && flow.selection?.detail) {
       const summary = element("div", "selection-summary");
       summary.append(element("strong", "", flow.selection.title), element("span", "", flow.selection.detail));
       choices.append(summary);
     }
     const inputTools = renderInputTools(flow);
     if (inputTools.childElementCount) choices.append(inputTools);
-    if (visual.length) choices.append(renderCardOptions(visual, flow.selection));
+    if (picker) choices.append(renderWorkflowPicker(visual, picker.selection));
+    else if (visual.length) choices.append(renderCardOptions(visual, flow.selection));
     if (plain.length) {
       const list = element("div", "action-list");
       for (const action of plain) list.append(actionButton(action));
@@ -538,10 +704,10 @@
     }
   }
 
-  function renderControls(flow) {
+  function renderControls(flow, picker) {
     controls.replaceChildren();
     if (flow) {
-      renderWorkflow(flow);
+      renderWorkflow(flow, picker);
       return;
     }
     if (!offer || activeRequest || failedRequest) return;
@@ -621,12 +787,17 @@
     if (flow?.verification?.code !== revealedCode) revealedCode = null;
     syncInputProgress(flow);
     const messages = getRows();
+    const picker = describeWorkflowPicker(flow);
+    if (picker?.used.size && messages.at(-1)?.items) {
+      const last = messages.at(-1);
+      messages[messages.length - 1] = { ...last, items: last.items.filter((item) => !picker.used.has(item)) };
+    }
     const empty = !messages.length;
     app.classList.toggle("is-empty", empty);
     byId("welcome").hidden = !empty;
     byId("starters").hidden = !empty;
     renderLog(messages);
-    renderControls(flow);
+    renderControls(flow, picker);
     renderStatus();
     markMode();
     syncCatalogSelection(flow);
@@ -658,9 +829,10 @@
         : empty ? "궁금한 내용을 입력해 주세요." : (flow?.screen?.placeholder || "이어서 질문해 보세요");
     resizeInput();
     if (focus) {
-      const target = blocked || ready
+      const pickerHeading = controls.querySelector("#workflow-picker-title");
+      const target = pickerHeading || (blocked || ready
         ? controls.querySelector(".action:not(:disabled), button:not(:disabled)") || byId("new-chat")
-        : editor;
+        : editor);
       target?.focus({ preventScroll: true });
     }
     if (scroll) requestAnimationFrame(() => {

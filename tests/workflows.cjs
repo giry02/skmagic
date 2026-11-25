@@ -17,14 +17,14 @@ function begin(scenario) {
   return chat;
 }
 
-function requestOrderCode(chat, phone) {
+function requestPhoneCode(chat, phone) {
   chat.choose("동의하고 계속");
   return chat.choose("인증번호 받기", { 이름: "김매직", "휴대폰 번호": phone });
 }
 
 test("SMS codes rotate on resend and do not appear in the conversation", () => {
   const chat = begin(16);
-  const first = requestOrderCode(chat, "010-0000-1234").verification.code;
+  const first = requestPhoneCode(chat, "010-0000-1234").verification.code;
   assert.match(first, /^\d{6}$/);
   const second = chat.choose("인증번호 재전송").verification.code;
   assert.notEqual(second, first);
@@ -44,7 +44,7 @@ test("the masked phone field does not replace the order lookup result", () => {
     ["010-0000-0005", "pending5"],
   ]) {
     const chat = begin(16);
-    const code = requestOrderCode(chat, phone).verification.code;
+    const code = requestPhoneCode(chat, phone).verification.code;
     const result = chat.choose("확인", { 인증번호: code });
     assert.equal(result.screen.id, expected);
     assert.ok(result.actions.every(({ label }) => !label.includes("주문 선택")));
@@ -57,6 +57,81 @@ test("PASS uses a confirmation step and keeps the selected contract flow", () =>
   assert.equal(auth.screen.id, "$auth");
   assert.deepEqual(Array.from(auth.actions, ({ label }) => label), ["본인인증 확인", "취소"]);
   assert.equal(chat.choose("본인인증 확인").screen.id, "S02");
+});
+
+test("fault diagnosis opens symptom choices after product selection and continues to visit intake", () => {
+  const chat = begin(11);
+  const products = chat.getState();
+  assert.equal(products.selection?.kind, "service-product");
+  const product = products.actions.find(({ label }) => label === "정수기 선택");
+  assert.match(product?.card?.title, /정수기/);
+
+  const categories = chat.choose(product.id);
+  assert.equal(categories.screen.id, "S02");
+  assert.equal(categories.selection?.kind, "service-symptom");
+  assert.equal(categories.selection.step, 0);
+  assert.equal(categories.fields.length, 0);
+  assert.ok(categories.actions.some(({ label }) => label === "물·급수"));
+  assert.ok(categories.actions.every(({ label }) => label !== "증상 선택" && label !== "물이 나오지 않아요"));
+
+  const subcategories = chat.choose("물·급수");
+  assert.equal(subcategories.screen.id, "$symptomGroup");
+  assert.equal(subcategories.selection.step, 1);
+  assert.deepEqual(Array.from(subcategories.selection.path), ["물·급수"]);
+  assert.ok(subcategories.actions.some(({ label }) => label === "출수"));
+  assert.ok(subcategories.actions.every(({ label }) => label !== "물이 나오지 않아요"));
+
+  const issues = chat.choose("출수");
+  assert.equal(issues.screen.id, "$symptomIssue");
+  assert.equal(issues.selection.step, 2);
+  assert.deepEqual(Array.from(issues.selection.path), ["물·급수", "출수"]);
+  assert.ok(issues.actions.some(({ label }) => label === "물이 나오지 않아요"));
+  assert.equal(chat.goBack().screen.id, "$symptomGroup");
+
+  chat.choose("출수");
+  assert.equal(chat.choose("물이 나오지 않아요").screen.id, "S05");
+  chat.choose("자가조치 보기");
+  assert.equal(chat.choose("문제가 계속돼요").screen.id, "S06");
+  const intake = chat.choose("AS 서비스 접수");
+  assert.equal(intake.scenario.no, 12);
+  assert.ok(intake.actions.some(({ label }) => label === "동의하고 계속"));
+
+  const code = requestPhoneCode(chat, "010-0000-1234").verification.code;
+  chat.choose("확인", { 인증번호: code });
+  chat.choose("등록된 방문 주소");
+  chat.choose("가능한 날짜 확인", { "휴대폰 번호": "010-0000-1234" });
+  chat.choose("11월 27일(금) 선택");
+  const booking = chat.choose("접수 요청");
+  assert.equal(booking.screen.id, "S06");
+  const details = booking.messages.at(-1).items;
+  assert.match(details.find(({ title }) => title === "접수 제품")?.detail, /직수 정수기/);
+  assert.equal(details.find(({ title }) => title === "접수 증상")?.detail, "물이 나오지 않아요");
+});
+
+test("visit intake routes a staged leak symptom to assistance before asking for contact details", () => {
+  const chat = begin(12);
+  assert.equal(chat.getState().fields.length, 0);
+  const categories = chat.choose("정수기 선택");
+  assert.equal(categories.screen.id, "serviceSymptom");
+  assert.ok(categories.actions.some(({ label }) => label === "누수·안전"));
+  chat.choose("누수·안전");
+  chat.choose("물샘(누수)");
+  const urgent = chat.choose("물이 새요");
+  assert.equal(urgent.fields.length, 0);
+  assert.equal(urgent.verification, null);
+  assert.ok(urgent.actions.some(({ label }) => label === "상담사 연결"));
+});
+
+test("an unlisted bidet uses the documented nozzle symptom stages", () => {
+  const chat = begin(11);
+  const product = chat.choose("목록에 없는 제품");
+  assert.ok(product.fields.some(({ label }) => label === "제품명 또는 모델명"));
+  const categories = chat.choose("제품 확인", { "제품명 또는 모델명": "비데" });
+  assert.ok(categories.actions.some(({ label }) => label === "교체/파손"));
+  assert.ok(categories.actions.every(({ label }) => label !== "물·급수"));
+  chat.choose("교체/파손");
+  chat.choose("노즐");
+  assert.equal(chat.choose("노즐팁 빠짐").screen.id, "S06");
 });
 
 test("explicit corporate requests are answered as out of scope before selecting a workflow", () => {
@@ -108,7 +183,7 @@ test("giro documents use contract-holder phone verification without corporate in
   assert.deepEqual(entryOptions, ["휴대폰 확인"]);
 
   chat.choose("휴대폰 확인");
-  const code = requestOrderCode(chat, "010-0000-1234").verification.code;
+  const code = requestPhoneCode(chat, "010-0000-1234").verification.code;
   const verified = chat.choose("확인", { 인증번호: code });
   assert.equal(verified.screen.id, "s1");
   assert.ok(verified.actions.some(({ label }) => label === "지로 고지서 다시 받기"));

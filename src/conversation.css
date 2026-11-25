@@ -476,6 +476,16 @@ p, h1, h2, h3 { margin: 0; }
 .result-card p { color: var(--quiet); font-size: 13px; line-height: 1.55; white-space: pre-wrap; }
 .result-card .card-art { display: block; width: 100%; max-height: 100px; margin-bottom: 7px; object-fit: contain; }
 .result-card.has-card-art { width: min(100%, 390px); background: var(--white); }
+.result-records {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--white);
+}
+.result-records .result-card { border: 0; border-radius: 0; background: transparent; }
+.result-records .result-card + .result-card { border-top: 1px solid var(--line); }
+.result-records .result-card h3, .result-records .result-card p { font-variant-numeric: tabular-nums; }
 .card-detail-links { display: flex; flex-wrap: wrap; gap: 7px; }
 .card-detail-link {
   display: inline-flex;
@@ -553,6 +563,70 @@ p, h1, h2, h3 { margin: 0; }
 .choice-card-detail { color: var(--quiet); font-size: 12px; font-weight: 500; line-height: 1.4; white-space: pre-line; overflow-wrap: anywhere; }
 .choice-card-phone { color: var(--quiet); font-size: 11px; line-height: 1.4; }
 .choice-card .choice-card-arrow { width: 15px; height: 15px; color: var(--muted); flex: none; }
+.workflow-picker {
+  display: grid;
+  gap: 11px;
+  padding: clamp(10px, 2.3vw, 15px);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: var(--white);
+  box-shadow: 0 3px 10px #47332c07;
+}
+.workflow-picker-header { display: flex; align-items: center; gap: 9px; }
+.workflow-picker-copy { min-width: 0; }
+.workflow-picker-header h3 { font-size: 15px; line-height: 1.35; }
+.workflow-picker-header h3:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.workflow-picker-header p { margin-top: 3px; color: var(--quiet); font-size: 12px; line-height: 1.4; }
+.symptom-progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.symptom-progress li {
+  padding: 6px 7px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #f5f2ef;
+  color: var(--quiet);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.symptom-progress li.is-current {
+  border-color: #e8b5bf;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: 750;
+}
+.symptom-progress li.is-complete { border-color: #eee0e3; background: #fcf6f7; }
+.symptom-progress strong { display: block; margin-top: 3px; color: var(--ink); font-size: 12px; }
+.workflow-picker .choice-cards { gap: 6px; }
+.workflow-picker .choice-card { border-color: var(--line); background: #fcfaf9; }
+.workflow-picker .choice-card:hover { border-color: #dba5b0; background: #fff5f7; }
+.workflow-picker .choice-card:hover .choice-card-arrow { color: var(--accent-ink); }
+[data-card-kind="product"].choice-card { min-height: 61px; gap: 11px; }
+[data-card-kind="product"] .choice-card-copy strong { font-size: 14px; }
+[data-service-picker="symptom"] .choice-card { min-height: 44px; padding-block: 7px; }
+[data-service-picker="symptom"] .choice-card-icon { width: 29px; height: 29px; }
+[data-service-picker="symptom"] .choice-card-icon .icon { width: 16px; height: 16px; }
+[data-workflow-picker="date"] .workflow-picker-options {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 100px), 1fr));
+}
+[data-workflow-picker="date"] .choice-card { min-height: 54px; text-align: center; }
+[data-workflow-picker="date"] .choice-card-copy strong { font-variant-numeric: tabular-nums; }
+[data-workflow-picker="channel"] .workflow-picker-options,
+[data-workflow-picker="term"] .workflow-picker-options {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 153px), 1fr));
+}
+[data-workflow-picker="channel"] .choice-card,
+[data-workflow-picker="document"] .choice-card { min-height: 46px; padding-block: 6px; }
+[data-workflow-picker="channel"] .choice-card-icon,
+[data-workflow-picker="document"] .choice-card-icon { width: 28px; height: 28px; }
+[data-workflow-picker="term"] .choice-card-detail,
+[data-workflow-picker="consent"] .choice-card-detail { color: var(--accent-ink); font-weight: 700; }
 .partner-toolbar, .partner-arrows { display: flex; align-items: center; gap: 6px; }
 .partner-toolbar { justify-content: space-between; margin-bottom: 5px; color: var(--quiet); font-size: 12px; font-weight: 700; }
 .partner-arrows .carousel-arrow {
@@ -605,6 +679,16 @@ p, h1, h2, h3 { margin: 0; }
 .selection-summary strong { color: var(--accent-ink); }
 .input-tools { display: grid; gap: 6px; margin: 0 0 8px; }
 .input-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 12px; }
+.input-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 82px), 1fr));
+  gap: 6px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--white);
+}
+.input-choice-grid .action { min-height: 42px; padding-inline: 6px; text-align: center; }
 .verification-message, .pass-request {
   display: flex;
   align-items: center;

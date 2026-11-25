@@ -484,6 +484,16 @@ p, h1, h2, h3 { margin: 0; }
 .result-card p { color: var(--quiet); font-size: 13px; line-height: 1.55; white-space: pre-wrap; }
 .result-card .card-art { display: block; width: 100%; max-height: 100px; margin-bottom: 7px; object-fit: contain; }
 .result-card.has-card-art { width: min(100%, 390px); background: var(--white); }
+.result-records {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--white);
+}
+.result-records .result-card { border: 0; border-radius: 0; background: transparent; }
+.result-records .result-card + .result-card { border-top: 1px solid var(--line); }
+.result-records .result-card h3, .result-records .result-card p { font-variant-numeric: tabular-nums; }
 .card-detail-links { display: flex; flex-wrap: wrap; gap: 7px; }
 .card-detail-link {
   display: inline-flex;
@@ -561,6 +571,70 @@ p, h1, h2, h3 { margin: 0; }
 .choice-card-detail { color: var(--quiet); font-size: 12px; font-weight: 500; line-height: 1.4; white-space: pre-line; overflow-wrap: anywhere; }
 .choice-card-phone { color: var(--quiet); font-size: 11px; line-height: 1.4; }
 .choice-card .choice-card-arrow { width: 15px; height: 15px; color: var(--muted); flex: none; }
+.workflow-picker {
+  display: grid;
+  gap: 11px;
+  padding: clamp(10px, 2.3vw, 15px);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: var(--white);
+  box-shadow: 0 3px 10px #47332c07;
+}
+.workflow-picker-header { display: flex; align-items: center; gap: 9px; }
+.workflow-picker-copy { min-width: 0; }
+.workflow-picker-header h3 { font-size: 15px; line-height: 1.35; }
+.workflow-picker-header h3:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.workflow-picker-header p { margin-top: 3px; color: var(--quiet); font-size: 12px; line-height: 1.4; }
+.symptom-progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.symptom-progress li {
+  padding: 6px 7px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #f5f2ef;
+  color: var(--quiet);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.symptom-progress li.is-current {
+  border-color: #e8b5bf;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: 750;
+}
+.symptom-progress li.is-complete { border-color: #eee0e3; background: #fcf6f7; }
+.symptom-progress strong { display: block; margin-top: 3px; color: var(--ink); font-size: 12px; }
+.workflow-picker .choice-cards { gap: 6px; }
+.workflow-picker .choice-card { border-color: var(--line); background: #fcfaf9; }
+.workflow-picker .choice-card:hover { border-color: #dba5b0; background: #fff5f7; }
+.workflow-picker .choice-card:hover .choice-card-arrow { color: var(--accent-ink); }
+[data-card-kind="product"].choice-card { min-height: 61px; gap: 11px; }
+[data-card-kind="product"] .choice-card-copy strong { font-size: 14px; }
+[data-service-picker="symptom"] .choice-card { min-height: 44px; padding-block: 7px; }
+[data-service-picker="symptom"] .choice-card-icon { width: 29px; height: 29px; }
+[data-service-picker="symptom"] .choice-card-icon .icon { width: 16px; height: 16px; }
+[data-workflow-picker="date"] .workflow-picker-options {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 100px), 1fr));
+}
+[data-workflow-picker="date"] .choice-card { min-height: 54px; text-align: center; }
+[data-workflow-picker="date"] .choice-card-copy strong { font-variant-numeric: tabular-nums; }
+[data-workflow-picker="channel"] .workflow-picker-options,
+[data-workflow-picker="term"] .workflow-picker-options {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 153px), 1fr));
+}
+[data-workflow-picker="channel"] .choice-card,
+[data-workflow-picker="document"] .choice-card { min-height: 46px; padding-block: 6px; }
+[data-workflow-picker="channel"] .choice-card-icon,
+[data-workflow-picker="document"] .choice-card-icon { width: 28px; height: 28px; }
+[data-workflow-picker="term"] .choice-card-detail,
+[data-workflow-picker="consent"] .choice-card-detail { color: var(--accent-ink); font-weight: 700; }
 .partner-toolbar, .partner-arrows { display: flex; align-items: center; gap: 6px; }
 .partner-toolbar { justify-content: space-between; margin-bottom: 5px; color: var(--quiet); font-size: 12px; font-weight: 700; }
 .partner-arrows .carousel-arrow {
@@ -613,6 +687,16 @@ p, h1, h2, h3 { margin: 0; }
 .selection-summary strong { color: var(--accent-ink); }
 .input-tools { display: grid; gap: 6px; margin: 0 0 8px; }
 .input-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 12px; }
+.input-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 82px), 1fr));
+  gap: 6px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--white);
+}
+.input-choice-grid .action { min-height: 42px; padding-inline: 6px; text-align: center; }
 .verification-message, .pass-request {
   display: flex;
   align-items: center;
@@ -781,6 +865,10 @@ noscript { position: fixed; inset: 73px 0 auto; padding: 10px; background: var(-
     <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M7 11h10m-9 4h8"/></symbol>
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-1.5a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6V21"/></symbol>
     <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6m-12 4h8m-8 4h6"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 10h18m-13 5h2m4 0h2"/></symbol>
+    <symbol id="i-water" viewBox="0 0 24 24"><path d="M12 3c3 4.6 6 7.4 6 11a6 6 0 1 1-12 0c0-3.6 3-6.4 6-11Z"/><path d="M9 15a3 3 0 0 0 3 3"/></symbol>
+    <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v9M7 6a8 8 0 1 0 10 0"/></symbol>
+    <symbol id="i-warning" viewBox="0 0 24 24"><path d="M10.2 4.6a2 2 0 0 1 3.6 0l7 12.4a2 2 0 0 1-1.8 3H5a2 2 0 0 1-1.8-3Z"/><path d="M12 9v4m0 3.5h.01"/></symbol>
     <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l2 12H3zM9 9V6a3 3 0 0 1 6 0v3"/></symbol>
     <symbol id="i-transfer" viewBox="0 0 24 24"><path d="M4 8h15m-4-4 4 4-4 4M20 16H5m4-4-4 4 4 4"/></symbol>
     <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M20 9V7a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h14a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7m18 5h-4a2 2 0 0 0 0 4h4"/></symbol>
@@ -9418,7 +9506,7 @@ window.SKIX_SCENARIOS = [
         "items": [
           {
             "title": "선택 가능일",
-            "detail": "11월 30일(월), 12월 2일(수)"
+            "detail": "12월 2일(수), 12월 3일(목)"
           }
         ],
         "placeholder": "가능 날짜 선택",
@@ -12873,16 +12961,16 @@ window.SKIX_PARTNER_CARDS = [
         S01: { addActions: [
           ['서비스 대행업체 확인', '@41'], ['목록에 없는 제품', 'unlistedProduct']
         ] },
-        S02: { addActions: [['증상 직접 입력', 'customSymptom']] },
+        S02: { items: [] },
         S04: { actions: [['상담사 연결', '$handoff'], ['운영시간 외 전화 상담', 'S07']] },
         S07: {
           message: '상담 운영시간 외에는 전화 상담을 예약하실 수 있어요.',
           actions: [['상담사 전화 예약', 'callback'], ['다른 문의', '$menu']]
         },
         unlistedProduct: field('제품군과 모델명을 입력해 주세요. 확인이 어려우면 제품을 다시 찾거나 상담에서 확인할 수 있어요.', ['product'], [
-          ['제품 확인', 'S02'], ['뒤로', 'S01']
+          ['제품 확인', '$identifyServiceProduct'], ['뒤로', 'S01']
         ]),
-        customSymptom: field('어떤 증상인지 알려 주세요.', ['symptom'], [['증상 확인', '$symptom'], ['뒤로', 'S01']]),
+        customSymptom: field('어떤 증상인지 알려 주세요.', ['symptom'], [['증상 확인', '$symptom'], ['뒤로', '$symptom']]),
         callback: field('전화 상담을 받을 연락처를 입력해 주세요.', ['phone'], [
           ['예약 요청', 'callbackResult'], ['뒤로', 'S07']
         ]),
@@ -12891,6 +12979,17 @@ window.SKIX_PARTNER_CARDS = [
     },
     12: {
       screens: {
+        S01: { kind: 'choice', fields: [], items: [], message: '방문 서비스를 신청할 제품을 선택해 주세요.', actions: [
+          ['정수기 선택', 'serviceSymptom'], ['목록에 없는 제품', 'unlistedProduct']
+        ] },
+        serviceSymptom: choice('제품에서 어떤 증상이 나타나는지 선택해 주세요.', []),
+        unlistedProduct: field('서비스를 받을 제품명이나 모델명을 입력해 주세요.', ['product'], [
+          ['제품 확인', '$identifyServiceProduct'], ['뒤로', 'S01']
+        ]),
+        customSymptom: field('접수할 증상을 알려 주세요.', ['symptom'], [['증상 확인', '$symptom'], ['뒤로', '$symptom']]),
+        serviceSafety: handoff('안전을 확인할 수 있도록 먼저 상담사에게 연결해 드릴까요?', [
+          ['상담사 연결', '$handoff'], ['증상 다시 선택', '$symptom']
+        ]),
         phoneConfirm: { auth: { success: 'serviceCases', failure: 'S09' } },
         S04: { actions: [['주소 검색', '$address'], ['다음', 'S05']] },
         S05: { actions: [...changedDates, ['접수 요청', 'S06']] },
@@ -13098,7 +13197,7 @@ window.SKIX_PARTNER_CARDS = [
     }
     screens.pairSplitAddress.validate = { dateOrder: [['분리 방문 희망일', '이사 예정일']] };
   }
-  overlays[12].screens.S01 = { addActions: [['긴급 증상 안내', 'urgentCase']] };
+  overlays[12].screens.S01.addActions = [['긴급 증상 안내', 'urgentCase']];
   overlays[12].screens.urgentCase = {
     kind: 'handoff', message: '빠른 확인이 필요한 증상은 상담사 안내를 이용해 주세요. 상담 운영시간 외에는 연결이 어려울 수 있어요.',
     actions: [['상담사 연결', '$handoff'], ['전화 상담 예약 안내', '@11'], ['뒤로', 'S01']]
@@ -13892,6 +13991,32 @@ window.SKIX_PARTNER_CARDS = [
     title: '2026년 11월 카드 결제', detail: '신한카드 · 끝자리 1234 · 29,900원', kind: 'payment-record'
   };
 
+  const registeredServiceProduct = { title: '직수 정수기', detail: 'WPU-1000', family: 'water', icon: 'water', kind: 'product' };
+  const commonSymptoms = [
+    { title: '작동·전원', detail: '전원, 소음, 오류 표시', icon: 'power', groups: [
+      { title: '전원·조작', issues: [{ title: '전원이 켜지지 않아요' }, { title: '버튼이 작동하지 않아요' }] },
+      { title: '소음·진동', issues: [{ title: '소리가 커졌어요' }, { title: '제품이 심하게 떨려요' }] },
+      { title: '표시등·오류', issues: [{ title: '오류 코드가 표시돼요' }, { title: '표시등이 계속 깜빡여요' }] }
+    ] },
+    { title: '누수·안전', detail: '물샘, 연기, 타는 냄새', icon: 'warning', groups: [
+      { title: '물샘(누수)', issues: [{ title: '물이 새요', outcome: 'urgent' }] },
+      { title: '과열·연기', issues: [{ title: '연기나 타는 냄새가 나요', outcome: 'urgent' }, { title: '제품이 지나치게 뜨거워요', outcome: 'urgent' }] }
+    ] },
+    { title: '기타', detail: '다른 제품 증상', icon: 'tools', groups: [
+      { title: '기타 증상', issues: [{ title: '위 항목에 없는 증상이에요' }] }
+    ] }
+  ];
+  const productSymptoms = {
+    water: [{ title: '물·급수', detail: '출수, 물맛, 물 온도', icon: 'water', groups: [
+      { title: '출수', issues: [{ title: '물이 나오지 않아요', outcome: 'noWater' }, { title: '출수량이 줄었어요' }] },
+      { title: '물맛·냄새', issues: [{ title: '물맛이나 냄새가 이상해요' }, { title: '물에 이물질이 보여요' }] },
+      { title: '냉온수', issues: [{ title: '물 온도가 맞지 않아요' }] }
+    ] }],
+    bidet: [{ title: '교체/파손', detail: '노즐과 제품 부품', icon: 'tools', groups: [
+      { title: '노즐', issues: [{ title: '노즐팁 빠짐' }] }
+    ] }]
+  };
+
   // Destinations follow the order of the option labels on each Figma screen.
   // @ starts a related scenario. $ invokes an on-screen interaction.
   const optionTargets = {
@@ -14190,6 +14315,7 @@ window.SKIX_PARTNER_CARDS = [
         scenario: this.scenario,
         screen: this.screen,
         selection: this.activeSelection(),
+        selectedDate: this.context.date || '',
         messages: [...this.messages],
         actions: this.actionList().map(({ target, ...action }) => action),
         fields: this.fields.map((field) => ({ ...field })),
@@ -14241,13 +14367,20 @@ window.SKIX_PARTNER_CARDS = [
       const scenario = this.scenarios.find((item) => item.no === Number(no));
       if (!scenario) return;
       const previous = this.context;
+      const reuseServiceDetails = this.scenario?.no === 11 && scenario.no === 12
+        && previous.serviceProduct && previous.serviceSymptom;
       this.scenario = scenario;
       this.context = { request: customerText || '' };
       if ([1, 2, 3, 7].includes(scenario.no)) this.context.product = previous.product;
       const originalEntry = scenario.no === 6 && this.partnerCards().length
         ? scenario.screens.find((screen) => screen.id === 'S02') ?? scenario.screens[0]
         : scenario.screens[0];
-      const first = this.screenSource(auditFlows[scenario.no]?.entry) ?? originalEntry;
+      if (reuseServiceDetails) {
+        this.context.serviceProduct = previous.serviceProduct;
+        this.context.serviceSymptom = previous.serviceSymptom;
+      }
+      const entry = reuseServiceDetails ? 'S02' : auditFlows[scenario.no]?.entry;
+      const first = this.screenSource(entry) ?? originalEntry;
       if (echo && first?.kind !== 'internal-only') this.sayUser(customerText || scenario.displayTitle || scenario.title);
       this.show(first);
     }
@@ -14340,6 +14473,11 @@ window.SKIX_PARTNER_CARDS = [
         role: 'bot', text: this.fill(screen.message), items,
         demo: Boolean(screen.demo || properties.demo), status: properties.status, links: screen.links
       };
+      if (this.activeSelection()?.kind === 'service-product') message.items = [];
+      if (no === 12 && screen.id === 'S06' && this.context.serviceProduct && this.context.serviceSymptom) {
+        message.items = [...items, { title: '접수 제품', detail: this.serviceProductLabel() },
+          { title: '접수 증상', detail: this.context.serviceSymptom }];
+      }
       if (screen.kind === 'internal-only') message.status = '별도 검토';
       if (this.scenario.phase === '별도 검토' && !message.status) message.status = '별도 검토';
       if (no === 1 && screen.id === 'S03' && this.context.product === '공기청정기') {
@@ -14439,9 +14577,59 @@ window.SKIX_PARTNER_CARDS = [
       return window.SKIX_PARTNER_CARDS ?? [];
     }
 
+    serviceProductLabel() {
+      const item = this.context.serviceProduct;
+      return item ? [item.title, item.detail].filter(Boolean).join(' · ') : '';
+    }
+
+    symptomStep() {
+      const id = this.screen?.id;
+      if ((this.scenario?.no === 11 && id === 'S02') || (this.scenario?.no === 12 && id === 'serviceSymptom')) return 0;
+      if (id === '$symptomGroup') return 1;
+      if (id === '$symptomIssue') return 2;
+      return null;
+    }
+
+    symptomOptions(step) {
+      const path = this.context.symptomPath ?? [];
+      const family = this.context.serviceProduct?.family ?? 'water';
+      const categories = [...(productSymptoms[family] ?? []), ...commonSymptoms];
+      if (step === 0) return categories;
+      const category = categories.find((item) => item.title === path[0]);
+      if (step === 1) return category?.groups ?? [];
+      return category?.groups.find((item) => item.title === path[1])?.issues ?? [];
+    }
+
+    showSymptomStep(step) {
+      if (step === 0) {
+        this.execute(this.scenario.no === 11 ? 'S02' : 'serviceSymptom');
+        return;
+      }
+      this.synthetic(step === 1 ? '어느 항목에 문제가 있나요?' : '가장 가까운 증상을 선택해 주세요.', {
+        id: step === 1 ? '$symptomGroup' : '$symptomIssue', demo: false
+      });
+    }
+
+    finishSymptom(text, outcome) {
+      this.context.serviceSymptom = text;
+      if (this.scenario.no === 11) {
+        this.execute(outcome === 'urgent' ? 'S04' : outcome === 'noWater' ? 'S05' : 'S06');
+      } else {
+        this.execute(outcome === 'urgent' ? 'serviceSafety' : 'S02');
+      }
+    }
+
     activeSelection() {
       const no = this.scenario?.no;
       const id = this.screen?.id;
+      if (([11, 12].includes(no) && id === 'S01') || ([8, 9].includes(no) && id === 'S02')) {
+        return { kind: 'service-product', title: '보유 제품 선택' };
+      }
+      const step = this.symptomStep();
+      if (step !== null) {
+        return { kind: 'service-symptom', title: '증상 선택', step,
+          detail: this.serviceProductLabel(), path: [...(this.context.symptomPath ?? [])] };
+      }
       if (no === 6 && id === 'S02') {
         return { kind: 'partner-card', title: '제휴카드 선택', detail: '카드별 혜택과 신청 안내를 확인해 주세요.' };
       }
@@ -14461,6 +14649,15 @@ window.SKIX_PARTNER_CARDS = [
     selectionActions() {
       const no = this.scenario.no;
       const id = this.screen.id;
+      const step = this.symptomStep();
+      if (step !== null) {
+        const choices = this.symptomOptions(step).map((item, index) => ({
+          id: `symptom:${step}:${index}`, label: item.title, target: '$selectSymptom',
+          card: { kind: 'symptom', title: item.title, detail: item.detail, icon: item.icon }
+        }));
+        return [...choices, { id: 'symptom:manual', label: '증상 직접 입력', target: 'customSymptom' },
+          { id: 'symptom:back', label: step === 0 ? '제품 다시 선택' : '이전 단계', target: '$symptomBack' }];
+      }
       const list = this.partnerCards();
       if (no === 6 && id === 'S02') {
         const cards = list.length ? list : [samplePartner];
@@ -14513,9 +14710,14 @@ window.SKIX_PARTNER_CARDS = [
         .filter(({ target, label }) => (target !== '$date' || label !== `${this.context.date} 선택`)
           && (target !== '$address' || this.context.checkedAddress !== screen.id));
       const actions = custom ?? defaultActions;
-      const paymentMethods = this.activeSelection()?.kind === 'payment-method';
-      if (paymentMethods) {
+      const selectionKind = this.activeSelection()?.kind;
+      if (selectionKind === 'payment-method') {
         for (const action of actions) action.card = methodCards[action.label];
+      }
+      if (selectionKind === 'service-product') {
+        for (const action of actions) {
+          if (/^(직수 )?정수기 선택$/.test(action.label)) action.card = registeredServiceProduct;
+        }
       }
       if (this.fields.length && !actions.length) actions.push({ id: 'submit', label: '확인', target: inputTargets[no]?.[screen.id] || this.graphTarget('확인') });
       if (!actions.length && screen.kind !== 'input') {
@@ -14679,6 +14881,11 @@ window.SKIX_PARTNER_CARDS = [
     capture(label, values, card) {
       const screen = this.screen.id;
       const no = this.scenario.no;
+      if (card?.kind === 'product' && [11, 12].includes(no)) {
+        this.context.serviceProduct = card;
+        this.context.symptomPath = [];
+        this.context.serviceSymptom = undefined;
+      }
       this.captureRouteMatches(label, values);
       if (card?.kind === 'partner') this.context.partnerCard = card;
       if (card?.kind === 'issuer') this.context.issuer = card;
@@ -14947,11 +15154,55 @@ window.SKIX_PARTNER_CARDS = [
         case '$transferBusiness':
           this.form('새 계약자의 정보를 입력해 주세요.', ['name', 'phone'], target === '$transferPerson' ? 'S08' : 'S07', '다음');
           break;
-        case '$symptom':
-          this.synthetic('제품에서 나타나는 증상을 선택해 주세요.', {
-            actions: [['물이 나오지 않아요', 'S05'], ['누수·연기·탄 냄새가 나요', 'S04'], ['그 외 증상', 'S06']]
-          });
+        case '$identifyServiceProduct': {
+          const name = values['제품명 또는 모델명'];
+          const family = /비데|bidet/i.test(name) ? 'bidet' : /정수기|wpu/i.test(name) ? 'water' : 'other';
+          this.context.serviceProduct = { title: name, family };
+          this.context.symptomPath = [];
+          this.context.serviceSymptom = undefined;
+          this.showSymptomStep(0);
           break;
+        }
+        case '$selectSymptom': {
+          const step = this.symptomStep();
+          const choice = this.symptomOptions(step).find((item) => item.title === label);
+          if (!choice) break;
+          if (step === 2) {
+            this.finishSymptom(label, choice.outcome);
+          } else {
+            const path = this.context.symptomPath ?? [];
+            this.context.symptomPath = [...path.slice(0, step), label];
+            this.showSymptomStep(step + 1);
+          }
+          break;
+        }
+        case '$symptomBack': {
+          const step = this.symptomStep();
+          if (step === 0) {
+            this.context.serviceProduct = undefined;
+            this.context.symptomPath = [];
+            this.context.serviceSymptom = undefined;
+            this.execute('S01');
+          } else {
+            this.context.symptomPath = this.context.symptomPath.slice(0, step - 1);
+            this.showSymptomStep(step - 1);
+          }
+          break;
+        }
+        case '$symptom': {
+          const issue = values['접수 증상'];
+          if (!issue) {
+            this.context.symptomPath = [];
+            this.showSymptomStep(0);
+            break;
+          }
+          const query = normalize(issue).replace(/(?:누수|물샘|연기|타는냄새|탄냄새)(?:는|가|은|이)?(?:없|안나)/g, '');
+          const needsSafety = /누수|물샘|물이새|물이샌|연기|타는냄새|탄냄새|과열/.test(query);
+          const noWater = this.context.serviceProduct?.family === 'water'
+            && /(?:물|온수|냉수|출수).{0,10}(?:안나|못나|나오지않|안됩|안돼|안되)/.test(query);
+          this.finishSymptom(issue, needsSafety ? 'urgent' : noWater ? 'noWater' : 'general');
+          break;
+        }
         case '$selfHelp':
           this.synthetic('출수가 되지 않으면 단수 여부와 제품 표시창의 오류 메시지를 확인해 주세요. 증상이 계속되면 AS 방문을 접수할 수 있어요.', {
             kind: 'result', actions: [['문제가 계속돼요', 'S06'], ['해결했어요', '$finish']]
@@ -15163,6 +15414,22 @@ window.SKIX_PARTNER_CARDS = [
     ["문서발송", "증빙서류", "file"],
     ["가입·심사", "구독·멤버십", "bag"],
   ];
+  const recordPickers = new Map([
+    [["1:S02", "2:S02", "3:changeContract", "4:chargeContract", "5:arrearsContract", "7:S02", "7:S04", "10:S03"], ["contract", "계약 선택"]],
+    [["13:S02", "14:S01", "15:S02"], ["appointment", "방문 접수 선택"]],
+    [["16:S02", "17:S02", "38:orderSelect"], ["order", "배송·설치 주문 선택"]],
+  ].flatMap(([keys, picker]) => keys.map((key) => [key, picker])));
+  const documentPickers = new Set([
+    "19:s1", "19:billDocuments", "19:contractDocuments", "23:s2", "24:s1", "37:s1", "45:prepaidDocuments",
+  ]);
+  const schedulePickers = new Set(["8:S05", "9:S05", "12:S05", "14:S04", "17:S05"]);
+  const dateChoice = /^(\d{1,2}월\s+\d{1,2}일)\s*\(([월화수목금토일])\)(?:\s+선택)?$/u;
+  const monthlyChoice = /^매월 \d{1,2}일$/u;
+  const deliveryChoice = /^(?:알림톡|이메일|팩스|이메일과 팩스|우편|문자로 받기|등록된 번호로 받기|이메일로 받기)$/u;
+  const pickerIcons = {
+    "service-symptom": "tool", product: "bag", contract: "folder", appointment: "tool", order: "truck",
+    address: "truck", date: "calendar", channel: "chat", document: "file", term: "file", consent: "lock",
+  };
   const openCategories = new Set();
   let allCatalogItems = false;
   let drawerOpen = false;
@@ -15324,7 +15591,8 @@ window.SKIX_PARTNER_CARDS = [
       content.append(bubble);
     }
     if (message.items?.length) {
-      const group = element("div", "result-cards");
+      const hasArtwork = message.items.some(({ mediaKey }) => Boolean(mediaKey));
+      const group = element("div", hasArtwork ? "result-cards" : "result-cards result-records");
       for (const item of message.items) {
         const card = element("article", "result-card");
         const art = cardImage(item.mediaKey);
@@ -15527,12 +15795,16 @@ window.SKIX_PARTNER_CARDS = [
       tools.append(skip);
     }
     if (field?.options?.length) {
+      const options = element("div", "input-choice-grid");
+      options.setAttribute("role", "group");
+      options.setAttribute("aria-label", field.label);
       for (const choice of field.options) {
         const label = typeof choice === "string" ? choice : choice.label;
         const option = button(label, "action");
         option.addEventListener("click", () => captureInput(typeof choice === "string" ? choice : choice.value));
-        tools.append(option);
+        options.append(option);
       }
+      section.append(options);
     }
     if (inputProgress && Object.keys(inputProgress.values).length) {
       const restart = button("다시 입력");
@@ -15557,20 +15829,30 @@ window.SKIX_PARTNER_CARDS = [
     option.classList.add("choice-card");
     option.dataset.cardKind = card.kind;
     option.setAttribute("aria-label", action.label);
-    const image = cardImage(card.mediaKey);
-    const mark = image || element("span", "choice-card-icon");
-    if (!image) {
-      const symbol = card.kind === "transfer" ? "transfer" : card.kind === "virtual" ? "wallet"
-        : card.kind === "payment-record" ? "file" : "card";
-      mark.append(icon(symbol));
+    if (card.kind !== "date" && (card.kind !== "symptom" || card.icon)) {
+      const image = cardImage(card.mediaKey);
+      const mark = image || element("span", "choice-card-icon");
+      if (!image) {
+        const symbols = { transfer: "transfer", virtual: "wallet", "payment-record": "file" };
+        const symbol = card.icon === "tools" ? "tool" : card.icon;
+        mark.append(icon(symbol || pickerIcons[card.kind] || symbols[card.kind] || "card"));
+      }
+      mark.setAttribute("aria-hidden", "true");
+      option.append(mark);
     }
-    mark.setAttribute("aria-hidden", "true");
     const caption = element("span", "choice-card-copy");
     caption.append(element("strong", "", card.title || action.label));
-    if (card.detail) caption.append(element("span", "choice-card-detail", card.detail));
+    if (card.detail) {
+      const detail = element("span", "choice-card-detail", card.detail);
+      if (card.kind !== "partner") {
+        detail.id = "choice-detail-" + action.id.replace(/[^a-z0-9-]/gi, "-");
+        option.setAttribute("aria-describedby", detail.id);
+      }
+      caption.append(detail);
+    }
     if (card.phone) caption.append(element("span", "choice-card-phone", `${card.phoneLabel || "카드사 문의"} ${card.phone}`));
-    option.append(mark, caption);
-    if (card.kind !== "partner") {
+    option.append(caption);
+    if (card.kind !== "partner" && card.kind !== "date") {
       const arrow = icon("chevron");
       arrow.classList.add("choice-card-arrow");
       option.append(arrow);
@@ -15614,25 +15896,160 @@ window.SKIX_PARTNER_CARDS = [
     return section;
   }
 
-  function renderWorkflow(flow) {
+  function recordCard(action, kind, items, used) {
+    const [name, ...details] = action.label.replace(/\s+(?:(?:접수|주문|계약|제품)\s+)?선택$/u, "").split(" · ");
+    const key = name.replace(/[^가-힣\p{L}\d]/gu, "");
+    const item = items.find(({ title, detail }) => {
+      if (!title || !key) return false;
+      const label = title === "조회 대상" ? detail : title;
+      const candidate = (label ?? "").replace(/[^가-힣\p{L}\d]/gu, "");
+      return candidate && (candidate.startsWith(key) || key.startsWith(candidate));
+    });
+    if (item) used.add(item);
+    return {
+      kind, title: item?.title && item.title !== "조회 대상" ? item.title : name,
+      detail: item?.detail || details.join(" · "),
+    };
+  }
+
+  function describeWorkflowPicker(flow) {
+    if (!flow?.screen) return null;
+    const { actions, selection, screen, messages } = flow;
+    if (["service-product", "service-symptom"].includes(selection?.kind)) {
+      return { selection, actions: actions.filter((action) => action.card), used: new Set() };
+    }
+    if (actions.some((action) => action.card)) return null;
+
+    const screenKey = `${flow.scenario.no}:${screen.id}`;
+    const items = messages.at(-1)?.items ?? [];
+    const used = new Set();
+    const picker = (kind, title, options, cardFor, detail = "") => ({
+      selection: { kind, title, detail },
+      actions: options.map((action) => ({ ...action, card: cardFor(action) })),
+      used,
+    });
+    const record = recordPickers.get(screenKey);
+    if (record) {
+      const [kind, title] = record;
+      const options = actions.filter(({ label }) => /선택$/u.test(label) || (kind === "order" && label.includes(" · ")));
+      if (options.length) return picker(kind, title, options, (action) => recordCard(action, kind, items, used));
+    }
+
+    const dates = actions.filter(({ label }) => dateChoice.test(label) || monthlyChoice.test(label));
+    const currentDate = schedulePickers.has(screenKey) ? flow.selectedDate : "";
+    if (dates.length || currentDate) {
+      const availability = items.find(({ title }) => title === "선택 가능일");
+      if (availability) used.add(availability);
+      const monthly = dates.some(({ label }) => monthlyChoice.test(label));
+      const title = monthly ? "정기 발송일 선택" : flow.scenario.no === 17 ? "배송일 선택"
+        : flow.scenario.no === 36 ? "회수일 선택" : "방문일 선택";
+      return picker("date", title, dates, ({ label }) => {
+        const parsed = dateChoice.exec(label);
+        return { kind: "date", title: parsed?.[1] || label, detail: parsed ? parsed[2] + "요일" : "" };
+      }, currentDate ? `선택한 날짜 · ${currentDate}` : "");
+    }
+
+    const channels = actions.filter(({ label }) => deliveryChoice.test(label));
+    if (channels.length) return picker("channel", "받는 방법", channels, ({ label }) => ({
+      kind: "channel", title: label, icon: /이메일|팩스|우편/u.test(label) ? "file" : "chat",
+    }));
+    if (documentPickers.has(screenKey)) return picker("document", "문서 선택", actions, ({ label }) => ({
+      kind: "document", title: label,
+    }));
+    if (screenKey === "8:addressOptions" || screenKey === "12:serviceCases") {
+      const address = items.find(({ title }) => title === "등록 주소");
+      if (address) used.add(address);
+      return picker("address", "방문 주소 선택", actions, ({ label }) => ({
+        kind: "address", title: label, detail: label.startsWith("등록") ? address?.detail : "",
+      }));
+    }
+    if (screenKey === "45:prepaidTerms") {
+      const terms = actions.filter(({ label }) => /^\d년 금액 확인$/u.test(label));
+      return picker("term", "선납 기간 선택", terms, ({ label }) => {
+        const title = label.split(" ")[0];
+        const item = items.find((entry) => entry.title.startsWith(title));
+        if (item) used.add(item);
+        return { kind: "term", title, detail: item?.detail ? item.detail + " 할인" : "" };
+      });
+    }
+    if (screenKey === "49:consentItems") {
+      const status = items.find(({ title }) => title === "현재 상태");
+      if (status) used.add(status);
+      return picker("consent", "동의 항목 선택", actions.filter(({ label }) => label !== "현재 상태 유지"), ({ label }) => ({
+        kind: "consent", title: label, detail: status?.detail?.split(" · ")
+          .find((entry) => entry.startsWith(label))?.slice(label.length).trim(),
+      }));
+    }
+    return null;
+  }
+
+  function renderWorkflowPicker(actions, selection) {
+    const symptom = selection.kind === "service-symptom";
+    const product = selection.kind === "service-product";
+    const section = element("section", "workflow-picker card-picker");
+    section.dataset.workflowPicker = selection.kind;
+    if (symptom || product) section.dataset.servicePicker = symptom ? "symptom" : "product";
+    const header = element("div", "workflow-picker-header");
+    const symbol = pickerIcons[selection.kind];
+    if (symbol) {
+      const mark = element("span", "choice-card-icon");
+      mark.append(icon(symbol));
+      header.append(mark);
+    }
+    const heading = element("h3", "", selection.title);
+    heading.id = "workflow-picker-title";
+    heading.tabIndex = -1;
+    section.setAttribute("aria-labelledby", heading.id);
+    const copy = element("div", "workflow-picker-copy");
+    copy.append(heading);
+    if (selection.detail) copy.append(element("p", "", selection.detail));
+    header.append(copy);
+    section.append(header);
+
+    if (symptom) {
+      const progress = element("ol", "symptom-progress");
+      progress.setAttribute("aria-label", "증상 분류 단계");
+      for (const [index, label] of ["대분류", "중분류", "소분류"].entries()) {
+        const current = index === selection.step;
+        const value = selection.path?.[index];
+        const step = element("li", current ? "is-current" : value ? "is-complete" : "");
+        step.append(element("span", "", label));
+        if (current) step.setAttribute("aria-current", "step");
+        if (value) step.append(element("strong", "", value));
+        progress.append(step);
+      }
+      section.append(progress);
+    }
+
+    if (actions.length) {
+      const cards = element("div", "choice-cards workflow-picker-options");
+      for (const action of actions) cards.append(actionButton(action));
+      section.append(cards);
+    }
+    return section;
+  }
+
+  function renderWorkflow(flow, picker) {
     const actions = flow.actions ?? [];
     const choices = element("div", "controls");
-    const visual = actions.filter((action) => action.card);
-    const plain = actions.filter((action) => !action.card);
+    const visual = picker?.actions ?? actions.filter((action) => action.card);
+    const visualIds = new Set(visual.map(({ id }) => id));
+    const plain = actions.filter(({ id }) => !visualIds.has(id));
     if (flow.screen?.id === "$auth") {
       const request = element("div", "pass-request");
       const sign = actions.some((action) => action.label === "전자서명 확인");
       request.append(element("span", "pass-mark", "PASS"), element("strong", "", sign ? "전자서명" : "본인인증"));
       choices.append(request);
     }
-    if (!visual.length && flow.selection?.detail) {
+    if (!picker && !visual.length && flow.selection?.detail) {
       const summary = element("div", "selection-summary");
       summary.append(element("strong", "", flow.selection.title), element("span", "", flow.selection.detail));
       choices.append(summary);
     }
     const inputTools = renderInputTools(flow);
     if (inputTools.childElementCount) choices.append(inputTools);
-    if (visual.length) choices.append(renderCardOptions(visual, flow.selection));
+    if (picker) choices.append(renderWorkflowPicker(visual, picker.selection));
+    else if (visual.length) choices.append(renderCardOptions(visual, flow.selection));
     if (plain.length) {
       const list = element("div", "action-list");
       for (const action of plain) list.append(actionButton(action));
@@ -15660,10 +16077,10 @@ window.SKIX_PARTNER_CARDS = [
     }
   }
 
-  function renderControls(flow) {
+  function renderControls(flow, picker) {
     controls.replaceChildren();
     if (flow) {
-      renderWorkflow(flow);
+      renderWorkflow(flow, picker);
       return;
     }
     if (!offer || activeRequest || failedRequest) return;
@@ -15743,12 +16160,17 @@ window.SKIX_PARTNER_CARDS = [
     if (flow?.verification?.code !== revealedCode) revealedCode = null;
     syncInputProgress(flow);
     const messages = getRows();
+    const picker = describeWorkflowPicker(flow);
+    if (picker?.used.size && messages.at(-1)?.items) {
+      const last = messages.at(-1);
+      messages[messages.length - 1] = { ...last, items: last.items.filter((item) => !picker.used.has(item)) };
+    }
     const empty = !messages.length;
     app.classList.toggle("is-empty", empty);
     byId("welcome").hidden = !empty;
     byId("starters").hidden = !empty;
     renderLog(messages);
-    renderControls(flow);
+    renderControls(flow, picker);
     renderStatus();
     markMode();
     syncCatalogSelection(flow);
@@ -15780,9 +16202,10 @@ window.SKIX_PARTNER_CARDS = [
         : empty ? "궁금한 내용을 입력해 주세요." : (flow?.screen?.placeholder || "이어서 질문해 보세요");
     resizeInput();
     if (focus) {
-      const target = blocked || ready
+      const pickerHeading = controls.querySelector("#workflow-picker-title");
+      const target = pickerHeading || (blocked || ready
         ? controls.querySelector(".action:not(:disabled), button:not(:disabled)") || byId("new-chat")
-        : editor;
+        : editor);
       target?.focus({ preventScroll: true });
     }
     if (scroll) requestAnimationFrame(() => {

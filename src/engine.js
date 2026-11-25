@@ -32,6 +32,32 @@
     title: '2026년 11월 카드 결제', detail: '신한카드 · 끝자리 1234 · 29,900원', kind: 'payment-record'
   };
 
+  const registeredServiceProduct = { title: '직수 정수기', detail: 'WPU-1000', family: 'water', icon: 'water', kind: 'product' };
+  const commonSymptoms = [
+    { title: '작동·전원', detail: '전원, 소음, 오류 표시', icon: 'power', groups: [
+      { title: '전원·조작', issues: [{ title: '전원이 켜지지 않아요' }, { title: '버튼이 작동하지 않아요' }] },
+      { title: '소음·진동', issues: [{ title: '소리가 커졌어요' }, { title: '제품이 심하게 떨려요' }] },
+      { title: '표시등·오류', issues: [{ title: '오류 코드가 표시돼요' }, { title: '표시등이 계속 깜빡여요' }] }
+    ] },
+    { title: '누수·안전', detail: '물샘, 연기, 타는 냄새', icon: 'warning', groups: [
+      { title: '물샘(누수)', issues: [{ title: '물이 새요', outcome: 'urgent' }] },
+      { title: '과열·연기', issues: [{ title: '연기나 타는 냄새가 나요', outcome: 'urgent' }, { title: '제품이 지나치게 뜨거워요', outcome: 'urgent' }] }
+    ] },
+    { title: '기타', detail: '다른 제품 증상', icon: 'tools', groups: [
+      { title: '기타 증상', issues: [{ title: '위 항목에 없는 증상이에요' }] }
+    ] }
+  ];
+  const productSymptoms = {
+    water: [{ title: '물·급수', detail: '출수, 물맛, 물 온도', icon: 'water', groups: [
+      { title: '출수', issues: [{ title: '물이 나오지 않아요', outcome: 'noWater' }, { title: '출수량이 줄었어요' }] },
+      { title: '물맛·냄새', issues: [{ title: '물맛이나 냄새가 이상해요' }, { title: '물에 이물질이 보여요' }] },
+      { title: '냉온수', issues: [{ title: '물 온도가 맞지 않아요' }] }
+    ] }],
+    bidet: [{ title: '교체/파손', detail: '노즐과 제품 부품', icon: 'tools', groups: [
+      { title: '노즐', issues: [{ title: '노즐팁 빠짐' }] }
+    ] }]
+  };
+
   // Destinations follow the order of the option labels on each Figma screen.
   // @ starts a related scenario. $ invokes an on-screen interaction.
   const optionTargets = {
@@ -330,6 +356,7 @@
         scenario: this.scenario,
         screen: this.screen,
         selection: this.activeSelection(),
+        selectedDate: this.context.date || '',
         messages: [...this.messages],
         actions: this.actionList().map(({ target, ...action }) => action),
         fields: this.fields.map((field) => ({ ...field })),
@@ -381,13 +408,20 @@
       const scenario = this.scenarios.find((item) => item.no === Number(no));
       if (!scenario) return;
       const previous = this.context;
+      const reuseServiceDetails = this.scenario?.no === 11 && scenario.no === 12
+        && previous.serviceProduct && previous.serviceSymptom;
       this.scenario = scenario;
       this.context = { request: customerText || '' };
       if ([1, 2, 3, 7].includes(scenario.no)) this.context.product = previous.product;
       const originalEntry = scenario.no === 6 && this.partnerCards().length
         ? scenario.screens.find((screen) => screen.id === 'S02') ?? scenario.screens[0]
         : scenario.screens[0];
-      const first = this.screenSource(auditFlows[scenario.no]?.entry) ?? originalEntry;
+      if (reuseServiceDetails) {
+        this.context.serviceProduct = previous.serviceProduct;
+        this.context.serviceSymptom = previous.serviceSymptom;
+      }
+      const entry = reuseServiceDetails ? 'S02' : auditFlows[scenario.no]?.entry;
+      const first = this.screenSource(entry) ?? originalEntry;
       if (echo && first?.kind !== 'internal-only') this.sayUser(customerText || scenario.displayTitle || scenario.title);
       this.show(first);
     }
@@ -480,6 +514,11 @@
         role: 'bot', text: this.fill(screen.message), items,
         demo: Boolean(screen.demo || properties.demo), status: properties.status, links: screen.links
       };
+      if (this.activeSelection()?.kind === 'service-product') message.items = [];
+      if (no === 12 && screen.id === 'S06' && this.context.serviceProduct && this.context.serviceSymptom) {
+        message.items = [...items, { title: '접수 제품', detail: this.serviceProductLabel() },
+          { title: '접수 증상', detail: this.context.serviceSymptom }];
+      }
       if (screen.kind === 'internal-only') message.status = '별도 검토';
       if (this.scenario.phase === '별도 검토' && !message.status) message.status = '별도 검토';
       if (no === 1 && screen.id === 'S03' && this.context.product === '공기청정기') {
@@ -579,9 +618,59 @@
       return window.SKIX_PARTNER_CARDS ?? [];
     }
 
+    serviceProductLabel() {
+      const item = this.context.serviceProduct;
+      return item ? [item.title, item.detail].filter(Boolean).join(' · ') : '';
+    }
+
+    symptomStep() {
+      const id = this.screen?.id;
+      if ((this.scenario?.no === 11 && id === 'S02') || (this.scenario?.no === 12 && id === 'serviceSymptom')) return 0;
+      if (id === '$symptomGroup') return 1;
+      if (id === '$symptomIssue') return 2;
+      return null;
+    }
+
+    symptomOptions(step) {
+      const path = this.context.symptomPath ?? [];
+      const family = this.context.serviceProduct?.family ?? 'water';
+      const categories = [...(productSymptoms[family] ?? []), ...commonSymptoms];
+      if (step === 0) return categories;
+      const category = categories.find((item) => item.title === path[0]);
+      if (step === 1) return category?.groups ?? [];
+      return category?.groups.find((item) => item.title === path[1])?.issues ?? [];
+    }
+
+    showSymptomStep(step) {
+      if (step === 0) {
+        this.execute(this.scenario.no === 11 ? 'S02' : 'serviceSymptom');
+        return;
+      }
+      this.synthetic(step === 1 ? '어느 항목에 문제가 있나요?' : '가장 가까운 증상을 선택해 주세요.', {
+        id: step === 1 ? '$symptomGroup' : '$symptomIssue', demo: false
+      });
+    }
+
+    finishSymptom(text, outcome) {
+      this.context.serviceSymptom = text;
+      if (this.scenario.no === 11) {
+        this.execute(outcome === 'urgent' ? 'S04' : outcome === 'noWater' ? 'S05' : 'S06');
+      } else {
+        this.execute(outcome === 'urgent' ? 'serviceSafety' : 'S02');
+      }
+    }
+
     activeSelection() {
       const no = this.scenario?.no;
       const id = this.screen?.id;
+      if (([11, 12].includes(no) && id === 'S01') || ([8, 9].includes(no) && id === 'S02')) {
+        return { kind: 'service-product', title: '보유 제품 선택' };
+      }
+      const step = this.symptomStep();
+      if (step !== null) {
+        return { kind: 'service-symptom', title: '증상 선택', step,
+          detail: this.serviceProductLabel(), path: [...(this.context.symptomPath ?? [])] };
+      }
       if (no === 6 && id === 'S02') {
         return { kind: 'partner-card', title: '제휴카드 선택', detail: '카드별 혜택과 신청 안내를 확인해 주세요.' };
       }
@@ -601,6 +690,15 @@
     selectionActions() {
       const no = this.scenario.no;
       const id = this.screen.id;
+      const step = this.symptomStep();
+      if (step !== null) {
+        const choices = this.symptomOptions(step).map((item, index) => ({
+          id: `symptom:${step}:${index}`, label: item.title, target: '$selectSymptom',
+          card: { kind: 'symptom', title: item.title, detail: item.detail, icon: item.icon }
+        }));
+        return [...choices, { id: 'symptom:manual', label: '증상 직접 입력', target: 'customSymptom' },
+          { id: 'symptom:back', label: step === 0 ? '제품 다시 선택' : '이전 단계', target: '$symptomBack' }];
+      }
       const list = this.partnerCards();
       if (no === 6 && id === 'S02') {
         const cards = list.length ? list : [samplePartner];
@@ -653,9 +751,14 @@
         .filter(({ target, label }) => (target !== '$date' || label !== `${this.context.date} 선택`)
           && (target !== '$address' || this.context.checkedAddress !== screen.id));
       const actions = custom ?? defaultActions;
-      const paymentMethods = this.activeSelection()?.kind === 'payment-method';
-      if (paymentMethods) {
+      const selectionKind = this.activeSelection()?.kind;
+      if (selectionKind === 'payment-method') {
         for (const action of actions) action.card = methodCards[action.label];
+      }
+      if (selectionKind === 'service-product') {
+        for (const action of actions) {
+          if (/^(직수 )?정수기 선택$/.test(action.label)) action.card = registeredServiceProduct;
+        }
       }
       if (this.fields.length && !actions.length) actions.push({ id: 'submit', label: '확인', target: inputTargets[no]?.[screen.id] || this.graphTarget('확인') });
       if (!actions.length && screen.kind !== 'input') {
@@ -819,6 +922,11 @@
     capture(label, values, card) {
       const screen = this.screen.id;
       const no = this.scenario.no;
+      if (card?.kind === 'product' && [11, 12].includes(no)) {
+        this.context.serviceProduct = card;
+        this.context.symptomPath = [];
+        this.context.serviceSymptom = undefined;
+      }
       this.captureRouteMatches(label, values);
       if (card?.kind === 'partner') this.context.partnerCard = card;
       if (card?.kind === 'issuer') this.context.issuer = card;
@@ -1087,11 +1195,55 @@
         case '$transferBusiness':
           this.form('새 계약자의 정보를 입력해 주세요.', ['name', 'phone'], target === '$transferPerson' ? 'S08' : 'S07', '다음');
           break;
-        case '$symptom':
-          this.synthetic('제품에서 나타나는 증상을 선택해 주세요.', {
-            actions: [['물이 나오지 않아요', 'S05'], ['누수·연기·탄 냄새가 나요', 'S04'], ['그 외 증상', 'S06']]
-          });
+        case '$identifyServiceProduct': {
+          const name = values['제품명 또는 모델명'];
+          const family = /비데|bidet/i.test(name) ? 'bidet' : /정수기|wpu/i.test(name) ? 'water' : 'other';
+          this.context.serviceProduct = { title: name, family };
+          this.context.symptomPath = [];
+          this.context.serviceSymptom = undefined;
+          this.showSymptomStep(0);
           break;
+        }
+        case '$selectSymptom': {
+          const step = this.symptomStep();
+          const choice = this.symptomOptions(step).find((item) => item.title === label);
+          if (!choice) break;
+          if (step === 2) {
+            this.finishSymptom(label, choice.outcome);
+          } else {
+            const path = this.context.symptomPath ?? [];
+            this.context.symptomPath = [...path.slice(0, step), label];
+            this.showSymptomStep(step + 1);
+          }
+          break;
+        }
+        case '$symptomBack': {
+          const step = this.symptomStep();
+          if (step === 0) {
+            this.context.serviceProduct = undefined;
+            this.context.symptomPath = [];
+            this.context.serviceSymptom = undefined;
+            this.execute('S01');
+          } else {
+            this.context.symptomPath = this.context.symptomPath.slice(0, step - 1);
+            this.showSymptomStep(step - 1);
+          }
+          break;
+        }
+        case '$symptom': {
+          const issue = values['접수 증상'];
+          if (!issue) {
+            this.context.symptomPath = [];
+            this.showSymptomStep(0);
+            break;
+          }
+          const query = normalize(issue).replace(/(?:누수|물샘|연기|타는냄새|탄냄새)(?:는|가|은|이)?(?:없|안나)/g, '');
+          const needsSafety = /누수|물샘|물이새|물이샌|연기|타는냄새|탄냄새|과열/.test(query);
+          const noWater = this.context.serviceProduct?.family === 'water'
+            && /(?:물|온수|냉수|출수).{0,10}(?:안나|못나|나오지않|안됩|안돼|안되)/.test(query);
+          this.finishSymptom(issue, needsSafety ? 'urgent' : noWater ? 'noWater' : 'general');
+          break;
+        }
         case '$selfHelp':
           this.synthetic('출수가 되지 않으면 단수 여부와 제품 표시창의 오류 메시지를 확인해 주세요. 증상이 계속되면 AS 방문을 접수할 수 있어요.', {
             kind: 'result', actions: [['문제가 계속돼요', 'S06'], ['해결했어요', '$finish']]

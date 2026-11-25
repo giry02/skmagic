@@ -259,16 +259,16 @@
         S01: { addActions: [
           ['서비스 대행업체 확인', '@41'], ['목록에 없는 제품', 'unlistedProduct']
         ] },
-        S02: { addActions: [['증상 직접 입력', 'customSymptom']] },
+        S02: { items: [] },
         S04: { actions: [['상담사 연결', '$handoff'], ['운영시간 외 전화 상담', 'S07']] },
         S07: {
           message: '상담 운영시간 외에는 전화 상담을 예약하실 수 있어요.',
           actions: [['상담사 전화 예약', 'callback'], ['다른 문의', '$menu']]
         },
         unlistedProduct: field('제품군과 모델명을 입력해 주세요. 확인이 어려우면 제품을 다시 찾거나 상담에서 확인할 수 있어요.', ['product'], [
-          ['제품 확인', 'S02'], ['뒤로', 'S01']
+          ['제품 확인', '$identifyServiceProduct'], ['뒤로', 'S01']
         ]),
-        customSymptom: field('어떤 증상인지 알려 주세요.', ['symptom'], [['증상 확인', '$symptom'], ['뒤로', 'S01']]),
+        customSymptom: field('어떤 증상인지 알려 주세요.', ['symptom'], [['증상 확인', '$symptom'], ['뒤로', '$symptom']]),
         callback: field('전화 상담을 받을 연락처를 입력해 주세요.', ['phone'], [
           ['예약 요청', 'callbackResult'], ['뒤로', 'S07']
         ]),
@@ -277,6 +277,17 @@
     },
     12: {
       screens: {
+        S01: { kind: 'choice', fields: [], items: [], message: '방문 서비스를 신청할 제품을 선택해 주세요.', actions: [
+          ['정수기 선택', 'serviceSymptom'], ['목록에 없는 제품', 'unlistedProduct']
+        ] },
+        serviceSymptom: choice('제품에서 어떤 증상이 나타나는지 선택해 주세요.', []),
+        unlistedProduct: field('서비스를 받을 제품명이나 모델명을 입력해 주세요.', ['product'], [
+          ['제품 확인', '$identifyServiceProduct'], ['뒤로', 'S01']
+        ]),
+        customSymptom: field('접수할 증상을 알려 주세요.', ['symptom'], [['증상 확인', '$symptom'], ['뒤로', '$symptom']]),
+        serviceSafety: handoff('안전을 확인할 수 있도록 먼저 상담사에게 연결해 드릴까요?', [
+          ['상담사 연결', '$handoff'], ['증상 다시 선택', '$symptom']
+        ]),
         phoneConfirm: { auth: { success: 'serviceCases', failure: 'S09' } },
         S04: { actions: [['주소 검색', '$address'], ['다음', 'S05']] },
         S05: { actions: [...changedDates, ['접수 요청', 'S06']] },
@@ -484,7 +495,7 @@
     }
     screens.pairSplitAddress.validate = { dateOrder: [['분리 방문 희망일', '이사 예정일']] };
   }
-  overlays[12].screens.S01 = { addActions: [['긴급 증상 안내', 'urgentCase']] };
+  overlays[12].screens.S01.addActions = [['긴급 증상 안내', 'urgentCase']];
   overlays[12].screens.urgentCase = {
     kind: 'handoff', message: '빠른 확인이 필요한 증상은 상담사 안내를 이용해 주세요. 상담 운영시간 외에는 연결이 어려울 수 있어요.',
     actions: [['상담사 연결', '$handoff'], ['전화 상담 예약 안내', '@11'], ['뒤로', 'S01']]

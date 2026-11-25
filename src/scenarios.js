@@ -8557,7 +8557,7 @@ window.SKIX_SCENARIOS = [
         "items": [
           {
             "title": "선택 가능일",
-            "detail": "11월 30일(월), 12월 2일(수)"
+            "detail": "12월 2일(수), 12월 3일(목)"
           }
         ],
         "placeholder": "가능 날짜 선택",
