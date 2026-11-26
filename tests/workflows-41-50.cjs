@@ -155,7 +155,50 @@ test("45 regular contracts can issue an unpaid virtual account without a receipt
   go(chat, "가상계좌");
   const issued = go(chat, "가상계좌 발급");
   assert.equal(value(issued, "입금 금액"), "344,448원");
+  assert.equal(value(issued, "선납 상태"), "입금 대기");
+  assert.equal(value(issued, "선납 적용 기간"), "12개월");
   assert.ok(!issued.actions.some((action) => action.label.includes("영수증")));
+});
+
+test("45 retains the settled tender, selected term, and known payment date on its result and receipt", () => {
+  for (const method of ["카드", "실시간 계좌이체"]) {
+    const chat = begin(45, "2026-11-26T09:00:00+09:00");
+    for (const label of ["선납 금액·할인 확인", "대상 계약 확인"]) go(chat, label);
+    approve(chat);
+    for (const label of ["2년 금액 확인", "계속하기", "선납 진행", "발행하지 않기", "선납 결제수단 확인"]) go(chat, label);
+    go(chat, method);
+    let settled;
+    if (method === "카드") {
+      go(chat, "다른 카드로 납부");
+      go(chat, "카드 정보 확인", { 카드번호: "0000000000007788", 할부기간: "2개월" });
+      settled = approve(chat);
+      assert.equal(value(settled, "결제수단"), "카드 · 끝자리 7788");
+      assert.equal(value(settled, "할부 기간"), "2개월");
+    } else {
+      go(chat, "다른 계좌로 이체");
+      go(chat, "계좌 확인", { 은행: "신한은행", 계좌번호: "000000007788" });
+      go(chat, "PASS 전자서명");
+      settled = go(chat, "전자서명 확인");
+      assert.equal(value(settled, "결제수단"), "실시간 계좌이체 · 신한은행 · 끝자리 7788");
+    }
+    assert.equal(value(settled, "대상 계약"), "직수 정수기 · WPU-1000");
+    assert.equal(value(settled, "선납 적용 기간"), "24개월");
+    assert.equal(value(settled, "결제일"), "2026년 11월 26일(목)");
+    assert.equal(value(settled, "결제 금액"), "674,544원");
+    go(chat, "선납 영수증 받기");
+    go(chat, "이메일");
+    assert.equal(value(go(chat, "발송 요청"), "결제 금액"), "674,544원");
+  }
+  const priorReceipt = begin(45);
+  go(priorReceipt, "선납 견적서·영수증");
+  go(priorReceipt, "선납 상태 확인");
+  approve(priorReceipt);
+  go(priorReceipt, "선납 영수증");
+  go(priorReceipt, "이메일");
+  const sent = go(priorReceipt, "발송 요청");
+  assert.equal(value(sent, "대상 계약"), "직수 정수기 · WPU-1000");
+  assert.equal(value(sent, "결제 금액"), undefined);
+  assert.equal(value(sent, "결제일"), undefined);
 });
 
 test("46 confirms the selected order before displaying the masked refund account", () => {
@@ -166,8 +209,19 @@ test("46 confirms the selected order before displaying the masked refund account
   go(chat, "다른 주문 선택");
   go(chat, "직수 정수기 주문 선택");
   const result = go(chat, "이 주문이 맞아요");
+  assert.equal(value(result, "주문번호"), "DL-261125-001");
+  assert.equal(value(result, "납부 방법"), "가상계좌 선납");
   assert.equal(value(result, "환불 사유"), "계약접수취소");
   assert.equal(value(result, "환불 계좌"), "KB국민은행 · ••••-••••-1234");
+  const card = begin(46);
+  go(card, "선납 환불 확인");
+  go(card, "대상 주문 조회", { "휴대폰 번호": "010-0000-0004" });
+  go(card, "공기청정기 주문 선택");
+  const cancelled = go(card, "이 주문이 맞아요");
+  assert.equal(value(cancelled, "주문번호"), "DL-261125-002");
+  assert.equal(value(cancelled, "납부 방법"), "카드 선납");
+  assert.equal(value(cancelled, "처리 상태"), "카드 결제 취소");
+  assert.equal(value(cancelled, "환불 예정일"), undefined);
 });
 
 test("47 separates same-day re-payment and matches all virtual deposit fields before evidence review", () => {
@@ -181,7 +235,29 @@ test("47 separates same-day re-payment and matches all virtual deposit fields be
   approve(deposit);
   assert.equal(go(deposit, "입금 정보 확인", { "입금 금액": "30,000원" }).screen.id, "depositNotFound");
   go(deposit, "입금 정보 다시 확인");
-  assert.equal(go(deposit, "입금 정보 확인").screen.id, "s8");
+  const verified = go(deposit, "입금 정보 확인");
+  assert.equal(verified.screen.id, "s8");
+  assert.equal(value(verified, "대상 계약"), "직수 정수기 · WPU-1000");
+  assert.equal(value(verified, "확인된 입금 계좌"), "••••-••••-1234");
+  assert.equal(value(verified, "입금 금액"), "29,900원");
+});
+
+test("47 keeps unknown contracts away from refunds or card re-payment details", () => {
+  for (const action of ["환불 일정·계좌 확인", "제휴카드로 다시 결제"]) {
+    const unknown = begin(47);
+    go(unknown, action);
+    go(unknown, "계약 확인", { "계약 또는 제품명": "조회되지 않는 계약" });
+    const denied = approve(unknown);
+    assert.equal(denied.screen.id, "s2");
+    assert.equal(value(denied, "환불 금액"), undefined);
+    assert.equal(value(denied, "현재 결제수단"), undefined);
+  }
+  const complete = begin(47);
+  go(complete, "환불 일정·계좌 확인");
+  go(complete, "계약 확인", { "계약 또는 제품명": "SK-261125-048" });
+  const refund = approve(complete);
+  assert.equal(value(refund, "대상 계약"), "SK-••••-5048");
+  assert.equal(value(refund, "입금 완료일"), "2026년 11월 24일");
 });
 
 test("48 approved transaction delivery masks the recipient and applies the 10th inclusive deadline", () => {

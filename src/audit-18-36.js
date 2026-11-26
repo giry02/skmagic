@@ -23,6 +23,7 @@
   const resolved = (fallback, rules = []) => ({ resolve: { default: fallback, rules } });
   const contractCase = (target, code, fields = [contractField.label]) => ({ target, fields, match: '^SK-' + code + '$' });
   const waterDocumentContract = '(?:직수\\s*정수기(?:\\s*계약)?|정수기|WPU-1000|CT-250601-001)';
+  const cardReceiptContract = '^(?:직수\\s*정수기(?:\\s*계약)?|WPU-1000|CT-250601-001)$';
   const airDocumentContract = '(?:공기청정기(?:\\s*계약)?|ACL-1000|CT-250901-001)';
   const inquiryDocumentContracts = `(?:${waterDocumentContract}|${airDocumentContract})`;
   const calculatedDocumentContracts = '(?:SK-261125-020|SK-261125-021)';
@@ -204,17 +205,31 @@
     23: {
       screens: {
         s1: { actions: [['카드 결제 이력 확인', 'receiptContractLookup']] },
-        s4: { message: '카드매출전표는 담당 상담사가 이지페이에서 확인한 뒤 발송해 드려요. 요청과 함께 전달할 수신 방법을 선택해 주세요.' },
+        s2: { demo: true },
+        s4: { message: '카드매출전표는 담당 상담사가 이지페이에서 확인해요. 상담 요청에 사용할 수신 방법을 선택해 주세요.' },
         s5: { actions: [['조회 조건 변경', 'receiptPeriod'], ['계약 다시 선택', 'receiptContractLookup']] },
+        s6: { actions: [['계약 다시 선택', 'receiptContractLookup'], ['상담 요청', '$handoff'], ['다른 문의', '$menu']] },
+        s7: { demo: true, message: '카드영수증 발송 요청 내용을 확인했어요. 실제 발송은 운영 환경에서 진행돼요.', items: [],
+          actions: [['서류 종류 다시 선택', 's2'], ['다른 계약 확인', 'receiptContractLookup'], ['다른 문의', '$menu']] },
         receiptContractLookup: lookupContract('영수증을 받을 계약번호나 제품명을 입력해 주세요.', 'receiptAuth'),
+        receiptContractGate: resolved('receiptContractUnavailable', [
+          { target: 'receiptPeriod', fields: [contractField.label], match: cardReceiptContract }
+        ]),
+        receiptContractUnavailable: exception('입력하신 계약의 카드 결제 내역을 확인하기 어려워요. 결제한 계약번호나 제품명을 다시 확인해 주세요.', [
+          ['계약 다시 선택', 'receiptContractLookup'], ['상담 요청', '$handoff'], ['다른 문의', '$menu']
+        ]),
         receiptAuth: auth('카드 결제 이력 조회를 위해 휴대폰으로 본인을 확인해 주세요.', 'receiptOwner', 's6'),
-        receiptOwner: resolved('receiptPeriod', [phoneCase('s6', '0000'), contractCase('s6', '261125-000')]),
+        receiptOwner: resolved('s6', [matchIdentity('receiptContractGate', { 이름: userMatch, '휴대폰 번호': ownerPhoneMatch })]),
         receiptPeriod: form('카드로 결제하신 달을 입력해 주세요.', [
           field('결제 월', 'YYYY-MM', '2026-11')
         ], 'receiptLookupStatus'),
         receiptLookupStatus: resolved('s5', [
-          contractCase('s5', '261125-024'),
-          { target: '$receiptPicker', fields: ['결제 월'], match: '^(?:2026\\s*[-./년]\\s*)?11\\s*월?$' }
+          matchIdentity('$receiptPicker', {
+            [contractField.label]: cardReceiptContract,
+            '결제 월': '^(?:2026\\s*[-./년]\\s*)?11\\s*월?$',
+            이름: userMatch,
+            '휴대폰 번호': ownerPhoneMatch
+          })
         ])
       }
     },
@@ -343,7 +358,7 @@
         splitSelection: form('묶음에서 분리할 계약을 입력해 주세요.', [
           { ...field('분리할 계약', '묶음에 속한 계약 선택', '공기청정기'), options: ['공기청정기', '비데'] }
         ], 's6', '분리 요청'),
-        s5: { items: [], message: '대표 계약에 묶여 있던 계약을 모두 분리했어요.' },
+        s5: { items: [], message: '대표 계약에 묶여 있는 계약 전체의 분리 요청을 확인했어요.' },
         s6: { items: [{ title: '분리한 계약', detail: '[분리한 계약]' }], message: '요청하신 계약의 분리 내용을 확인했어요.' }
       }
     },
@@ -356,7 +371,7 @@
           ['계산서 수신 이메일', 's4'], ['개명·대표자·상호', 'customerEvidence'], ['계약 명의변경', '@10'], ['납부정보 변경', '@3']] },
         s3: { actions: [['다시 확인하기', 'customerIdentity'], ['상담사 연결', '$handoff']] },
         s4: { actions: [['수신 이메일 변경', 'emailSaved']], fields: ['email'] },
-        s7: { message: '요청하신 [변경 항목]의 정보를 변경했어요.', items: [], addActions: [['다른 항목 변경', 's1']] },
+        s7: { message: '계약자 연락처 변경 내용을 확인했어요.', items: [], addActions: [['다른 항목 변경', 's1']] },
         s8: { message: '이미 발행된 세금계산서의 재발송은 상담사가 확인해 드려요. 새 수신 주소를 등록한 경우에도 기존 발행 건은 별도로 확인해야 해요.', actions: [['세금계산서 기존 발행 건 상담', '$handoff'], ['여기서 마치기', '$finish']] },
         customerAddressUser: choice('어떤 정보를 변경하실까요?', [
           ['계약자 주소', 'customerContractAddress'], ['제품 사용 주소', 'customerAddress'], ['사용자 이름·연락처', 'customerUser']

@@ -5,8 +5,9 @@ const test = require("node:test");
 const vm = require("node:vm");
 
 const source = path.join(__dirname, "..", "src");
+const workflowFiles = ["scenarios.js", "audit-01-17.js", "audit-18-36.js", "audit-37-50.js", "engine.js"];
 const sandbox = vm.createContext({ window: {} });
-for (const file of ["scenarios.js", "audit-01-17.js", "audit-18-36.js", "audit-37-50.js", "engine.js"]) {
+for (const file of workflowFiles) {
   vm.runInContext(fs.readFileSync(path.join(source, file), "utf8"), sandbox, { filename: file });
 }
 const { SKIXChat, SKIX_SCENARIOS } = sandbox.window;
@@ -287,6 +288,74 @@ test("air purifier billing reuses the selected contract and prioritizes older ar
   assert.ok(previous.actions.some(({ label }) => label === "미납금 납부"));
 });
 
+test("billing result cards distinguish settled amounts from charges that are still due", () => {
+  const items = (state) => Object.fromEntries(state.messages.at(-1).items.map(({ title, detail }) => [title, detail]));
+  for (const day of [24, 26]) {
+    const clock = class extends Date {
+      constructor(...args) { super(...(args.length ? args : [`2026-11-${day}T02:00:00.000Z`])); }
+    };
+    const context = vm.createContext({ window: {}, Date: clock });
+    for (const file of workflowFiles) {
+      vm.runInContext(fs.readFileSync(path.join(source, file), "utf8"), context, { filename: file });
+    }
+    const chat = new context.window.SKIXChat(context.window.SKIX_SCENARIOS);
+    chat.start(1);
+    approvePass(chat);
+    chooseAvailable(chat, "직수 정수기 선택");
+    const status = chooseAvailable(chat, "당월 납부 결과");
+    if (day < 25) {
+      assert.equal(status.screen.id, "paymentBefore");
+      assert.equal(items(status)["납부 금액"], undefined);
+      assert.equal(items(status)["납부 방법"], undefined);
+    } else {
+      assert.deepEqual(items(status), {
+        "당월 납부 상태": "납부 완료", "납부 대상": "직수 정수기 · WPU-1000", "납부 금액": "29,900원",
+        "납부 방법": "신용카드 자동납부 · 신한카드 · 끝자리 1234",
+      });
+      const deposit = chooseAvailable(chat, "구독료 입금 내역 확인");
+      assert.equal(items(deposit)["납부 금액"], "29,900원");
+      assert.match(items(deposit)["납부 방법"], /신한카드.*1234/);
+    }
+    const fees = new context.window.SKIXChat(context.window.SKIX_SCENARIOS);
+    fees.start(2);
+    approvePass(fees);
+    const feeDetails = chooseAvailable(fees, "직수 정수기 선택");
+    assert.equal(items(feeDetails)["납부 금액"], day >= 25 ? "29,900원" : undefined);
+  }
+
+  const charges = begin(4);
+  approvePass(charges);
+  const bidet = items(chooseAvailable(charges, "비데 선택"));
+  assert.equal(bidet["납부 금액"], "16,900원");
+  assert.match(bidet["납부 방법"], /네이버페이/);
+
+  const arrears = begin(5);
+  approvePass(arrears);
+  const zero = items(chooseAvailable(arrears, "비데 선택"));
+  assert.equal(zero["미납금(당월 미포함)"], "0원");
+  assert.equal(zero["납부 방법"], undefined);
+});
+
+test("an installment receipt shows the amount and the selected masked card", () => {
+  const chat = begin(4);
+  approvePass(chat);
+  chooseAvailable(chat, "공기청정기 선택");
+  chooseAvailable(chat, "미납요금과 당월 요금 납부");
+  chooseAvailable(chat, "일회성 납부수단");
+  chooseAvailable(chat, "카드");
+  chooseAvailable(chat, "2개월 할부");
+  chooseAvailable(chat, "KB국민카드");
+  chooseAvailable(chat, "PASS 본인인증", { 카드번호: "0000000000006789", 유효기간: "12/30", 생년월일: "900101" });
+  const receipt = chooseAvailable(chat, "본인인증 확인");
+  assert.equal(receipt.screen.id, "installmentResult");
+  const value = (label) => receipt.messages.at(-1).items.find(({ title }) => title === label)?.detail;
+  assert.equal(value("납부 대상"), "공기청정기");
+  assert.equal(value("납부 금액"), "79,600원");
+  assert.equal(value("할부 기간"), "2개월 할부");
+  assert.match(value("납부 방법"), /KB국민카드 · ••••-••••-••••-6789$/);
+  assert.doesNotMatch(JSON.stringify(receipt.messages), /0000000000006789/);
+});
+
 test("deposit inquiry reuses the verified matching contract from billing details", () => {
   const chat = begin(1);
   approvePass(chat);
@@ -524,6 +593,14 @@ test("advance AS contact links keep the verified AS or move appointment", () => 
   assert.equal(back.scenario.no, 13);
   assert.equal(back.screen.id, "S04");
   assert.equal(back.messages.at(-1).items.find(({ title }) => title === "접수번호")?.detail, number);
+  chooseAvailable(chat, "방문 전 연락 요청");
+  chooseAvailable(chat, "계속하기");
+  chooseAvailable(chat, "사전 연락 요청");
+  const callback = chooseAvailable(chat, "요청 내용 확인", { "요청 사항": "오전 9시에 연락 부탁드려요" });
+  const callbackItems = callback.messages.at(-1).items;
+  assert.equal(callbackItems.find(({ title }) => title === "접수번호")?.detail, number);
+  assert.ok(callbackItems.some(({ title }) => title === "방문 예정일"));
+  assert.equal(callbackItems.find(({ title }) => title === "연락 상태")?.detail, "담당 사업장 확인 필요");
 
   const open = (phone) => {
     const direct = begin(34);
@@ -803,7 +880,13 @@ test("a sole proprietor can group giro notices by contract", () => {
     "대표 계약": "직수 정수기",
   });
   assert.deepEqual(Array.from(selection.actions, ({ label }) => label), ["우편", "이메일"]);
-  assert.equal(chat.choose("이메일").screen.id, "s6");
+  const result = chat.choose("이메일");
+  assert.equal(result.screen.id, "s6");
+  const value = (title) => result.messages.at(-1).items.find((entry) => entry.title === title)?.detail;
+  assert.equal(value("대표 계약"), "직수 정수기");
+  assert.equal(value("통합 대상 계약"), "직수 정수기 · 공기청정기");
+  assert.equal(value("요청한 고지서 수령 방법"), "이메일");
+  assert.equal(value("처리 상태"), "담당자 확인 필요");
 });
 
 test("termination documents require a verified contract owner and every selected contract to match", () => {
@@ -891,6 +974,15 @@ test("giro and payment grouping require known contracts and verified authority",
   assert.equal(chooseAvailable(merge, "확인", {
     "첫 번째 계약": "직수 정수기", "두 번째 계약": "공기청정기", "대표 계약": "직수 정수기",
   }).screen.id, "s5");
+  const grouped = chooseAvailable(merge, "증빙 정보도 변경");
+  assert.equal(grouped.messages.at(-1).items.find(({ title }) => title === "통합 대상 계약")?.detail, "직수 정수기 · 공기청정기");
+
+  const split = authorize(27);
+  chooseAvailable(split, "계약 확인", { "계약 또는 제품명": "직수 정수기" });
+  chooseAvailable(split, "모든 계약을 나누기");
+  const separated = chooseAvailable(split, "전체 분리 신청");
+  assert.equal(separated.messages.at(-1).items.find(({ title }) => title === "대표 계약")?.detail, "직수 정수기");
+  assert.equal(separated.messages.at(-1).items.find(({ title }) => title === "분리 범위")?.detail, "묶음 전체");
   assert.equal(authorize(26, "010-0000-5678").getState().screen.id, "mergeAuthorityReview");
   const misnamed = begin(26);
   chooseAvailable(misnamed, "휴대폰 확인");

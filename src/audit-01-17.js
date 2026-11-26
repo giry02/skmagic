@@ -29,6 +29,15 @@
     ['결제정보 변경', '@3'], ['미납요금 조회', '@5'], ['상담사 연결', '$handoff'], ['다른 문의', '$menu']
   ];
   const paymentSchedule = [item('이체·결제 예정일', '매월 25일')];
+  const waterPayment = {
+    target: '직수 정수기 · WPU-1000', amount: '29,900원', method: '신용카드 자동납부 · 신한카드 · 끝자리 1234'
+  };
+  const bidetPayment = {
+    target: '비데 · BID-1000', amount: '16,900원', method: '네이버페이 정기결제'
+  };
+  const paidResultItems = ({ target, amount, method }) => [
+    item('당월 납부 상태', '납부 완료'), item('납부 대상', target), item('납부 금액', amount), item('납부 방법', method)
+  ];
   const currentMonthApplication = '이번 달부터 변경한 결제정보로 결제돼요. 오늘 결제내역은 반영까지 시간이 걸릴 수 있어요. 정확한 납부 결과는 다음 날 확인할 수 있고, 변경 시점에 따라 제휴카드 혜택이 적용되지 않을 수 있어요.';
   const contractedProduct = (name, code, method, masked, start, end, months, monthly, overdue, paid) => [
     item(name, `제품코드 ${code}\n사용자 주소 서울 영등포구 문래동`),
@@ -37,7 +46,7 @@
     item('청구·납부', `구독료 월 ${monthly}\n미납금(당월 미포함) ${overdue}\n당월 요금 납부 여부 ${paid ? '납부 완료' : '납부 미완료'}`)
   ];
   const waterDetails = (overdue = '0원', paid = true) => contractedProduct('직수 정수기', 'WPU-1000', '신용카드 자동납부',
-    '신한카드 · ••••-••••-••••-1234', '2025.06.01', '2030.05.31', 17, '29,900원', overdue, paid);
+    '신한카드 · ••••-••••-••••-1234', '2025.06.01', '2030.05.31', 17, waterPayment.amount, overdue, paid);
   const airDetails = () => contractedProduct('공기청정기', 'ACL-1000', '계좌 자동이체',
     'KB국민은행 · ••••-••••-4321', '2025.09.01', '2030.08.31', 14, '19,900원', '59,700원', false);
   const dishwasherDetails = () => contractedProduct('식기세척기', 'DWA-1000', '계좌 자동이체',
@@ -70,8 +79,11 @@
       screens: {
         S01: { actions: [['PASS 본인인증', 'exampleLookup']], auth: { failure: 'S08' } },
         S02: { actions: [['직수 정수기 선택', 'paymentPurpose'], ['공기청정기 선택', 'airPaymentPurpose']] },
-        S03: { items: waterDetails(), addActions: [['당월 납부 결과 확인', 'waterPaymentStatus'], ['구독료 입금 내역 확인', '@39'], ['다른 계약 확인', 'S02']] },
-        S04: { actions: [['구독료 입금 내역 확인', '@39'], ['다른 계약 확인', 'S02'], ['다른 문의', '$menu']] },
+        S03: { items: waterDetails('0원', paymentDay >= 25), addActions: [['당월 납부 결과 확인', 'waterPaymentStatus'], ['구독료 입금 내역 확인', '@39'], ['다른 계약 확인', 'S02']] },
+        S04: {
+          actions: [['구독료 입금 내역 확인', '@39'], ['다른 계약 확인', 'S02'], ['다른 문의', '$menu']],
+          items: paidResultItems(waterPayment)
+        },
         S05: { actions: [...paymentStatus, ['다른 계약 확인', 'S02']], items: paymentSchedule },
         S06: { actions: [...paymentStatus, ['다른 계약 확인', 'S02']], items: paymentSchedule },
         S07: paymentUnavailable('S01'),
@@ -98,7 +110,10 @@
           actions: [['직수 정수기 선택', 'S03'], ['공기청정기 선택', 'S04']],
           items: [item('직수 정수기', 'WPU-1000 · 문래동 · 월 29,900원'), item('공기청정기', 'ACL-1000 · 문래동 · 월 19,900원')]
         },
-        S03: { addActions: [['다른 계약 확인', 'S02']], items: waterDetails() },
+        S03: {
+          addActions: [['다른 계약 확인', 'S02']],
+          items: [...waterDetails('0원', paymentDay >= 25), ...(paymentDay >= 25 ? paidResultItems(waterPayment) : [])]
+        },
         S04: { message: '선택하신 공기청정기의 구독료와 지난달까지의 미납금이에요.', addActions: [['다른 계약 확인', 'S02']], items: airDetails() },
         S05: paymentUnavailable('S01'),
         S06: { actions: [['PASS 본인인증', 'exampleLookup']], auth: { failure: 'S07' } },
@@ -131,8 +146,8 @@
           item('식기세척기', 'DWA-1000 · 개별 결제 · KB국민은행')
         ]),
         ordinaryPaymentDetails: result('직수 정수기에 등록된 결제정보를 확인해 주세요.', [
-          ['결제정보 변경', 'applyNextMonth'], ['위약금 조회', '@7'], ['다른 계약 확인', 'changeContract']
-        ], waterDetails()),
+          ['결제정보 변경', paymentDay >= 25 ? 'applyNextMonth' : 'applyThisMonthSingle'], ['위약금 조회', '@7'], ['다른 계약 확인', 'changeContract']
+        ], waterDetails('0원', paymentDay >= 25)),
         airPaymentDetails: result('선택하신 공기청정기에 등록된 결제정보를 확인해 주세요.', [
           ['결제정보 변경', 'applyThisMonthSingle'], ['위약금 조회', '@7'], ['다른 계약 확인', 'changeContract']
         ], airDetails()),
@@ -183,7 +198,9 @@
         ], [item('미납요금만 납부', '59,700원'), item('미납요금과 당월 요금 납부', '79,600원')]),
         chargePast: { ...choice('계약의 지난 미납요금 전체를 납부해요. ' + invoiceWarning, choosePayment('$savedPicker', 'receiptPaymentMethods'), [item('납부 금액', '[납부 금액]')]), paymentAmount: 59700, registeredPayment: 'account' },
         chargeCombined: { ...choice('지난 미납요금과 이번 달 요금을 함께 납부해요. ' + invoiceWarning, choosePayment('$savedPicker', 'receiptPaymentMethods'), [item('납부 금액', '[납부 금액]')]), paymentAmount: 79600, registeredPayment: 'account' },
-        chargePaid: result('비데의 이번 달 요금은 이미 납부됐어요.', [['결제정보 변경', '@3'], ['위약금 조회', '@7'], ['다른 계약 확인', 'chargeContract']], [item('당월 납부 상태', '납부 완료')]),
+        chargePaid: result('비데의 이번 달 요금은 이미 납부됐어요.', [
+          ['결제정보 변경', '@3'], ['위약금 조회', '@7'], ['다른 계약 확인', 'chargeContract']
+        ], paidResultItems(bidetPayment)),
         naverPayment: platformPayment('chargeContract', 2),
         chargeNotFound: paymentUnavailable('S01'),
         oneTimeMethods: paymentMethods('personalTransferReceipt', 'personalVirtualReceipt'),
@@ -195,7 +212,10 @@
       screens: {
         S01: { actions: [['PASS 본인인증', 'arrearsContract']], auth: { failure: 'S09' } },
         S02: { addActions: [['결제정보 변경', '@3'], ['다른 계약 확인', 'arrearsContract']], items: waterDetails('29,900원', false) },
-        S03: { addActions: [['결제정보 변경', '@3'], ['다른 계약 확인', 'arrearsContract']] },
+        S03: {
+          addActions: [['결제정보 변경', '@3'], ['다른 계약 확인', 'arrearsContract']],
+          items: [item('조회 대상', '비데 · BID-1000'), item('미납금(당월 미포함)', '0원')]
+        },
         S04: {
           message: '계약 건별 미납요금 전체를 납부할 수 있어요. ' + invoiceWarning,
           paymentAmount: 29900,
@@ -277,6 +297,7 @@
 (() => {
   'use strict';
   const item = (title, detail) => ({ title, detail });
+  const cancellableTransferReceipt = [item('접수번호', 'NC-261125-001'), item('대상 제품', '직수 정수기 · WPU-1000')];
   const choice = (message, actions, items) => ({ kind: 'choice', message, actions, ...(items && { items }) });
   const result = (message, actions, items) => ({ ...choice(message, actions, items), kind: 'result' });
   const notice = (message, actions) => ({ ...choice(message, actions), kind: 'exception' });
@@ -567,8 +588,10 @@
         },
         transferCancelConfirm: choice('선택한 명의변경 신청을 취소할까요?', [
           ['취소 요청', 'transferCancelled'], ['나가기', 'transferTracking']
-        ], [item('접수번호', 'NC-261125-001'), item('대상 제품', '직수 정수기 · WPU-1000')]),
-        transferCancelled: result('선택한 명의변경 신청이 취소됐어요.', close),
+        ], cancellableTransferReceipt),
+        transferCancelled: result('선택한 명의변경 신청이 취소됐어요.', close, [
+          ...cancellableTransferReceipt, item('진행 상태', '취소 완료')
+        ]),
         transferNoRequest: notice('입력하신 접수번호의 진행 중인 신청을 찾지 못했어요. 완료된 신청이나 홈페이지에서 신청한 내역은 서비스센터에서 확인해 주세요.', [
           ['접수번호 다시 입력', 'transferCancelNumber'], ['상담사 연결', '$handoff'], ['다른 문의', '$menu']
         ]),
