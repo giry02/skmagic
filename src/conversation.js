@@ -57,7 +57,8 @@
     address: "truck", date: "calendar", channel: "chat", document: "file", term: "file", consent: "lock",
     payment: "wallet", reason: "file",
   };
-  const openPhases = new Set();
+  const defaultCatalogPhase = catalogPhases[0].id;
+  const openPhases = new Set([defaultCatalogPhase]);
   let drawerOpen = false;
 
   let demoMode = localFile;
@@ -1052,6 +1053,7 @@
   byId("new-chat").addEventListener("click", () => {
     clearConversation();
     openPhases.clear();
+    openPhases.add(defaultCatalogPhase);
     catalogSearch.value = "";
     catalogList.scrollTop = 0;
     renderCatalog();
