@@ -422,7 +422,7 @@
           actions: [["설치 환경 확인", "$installationResult"]], lookupOnSubmit: true
         },
         s5: {
-          message: "서비스매니저가 방문해 설치 가능 여부를 확인해요. 현장에서 설치가 어렵다고 판단되어 접수를 취소하셔도 출장료가 발생할 수 있어요.",
+          message: "서비스매니저가 방문해 설치 가능 여부를 확인해요. 현장에서 설치가 어려워 접수를 취소해도 출장료가 발생할 수 있어요. 계약 주소도 바꾸시려면 ‘보유 제품으로 재설치 접수’를 선택해 주세요.",
           actions: [["재설치 방문 접수", "s6"], ["이사 후 설치 환경 확인", "installationMoveDate"],
             ["보유 제품으로 재설치 접수", "@9"], ["안내만 받기", "$finish"]]
         },
@@ -435,9 +435,8 @@
         },
         s6: {
           message: "성함과 재설치 주소, 방문 희망일, 당일 연락받을 번호를 차례로 입력해 주세요. 계약에 따라 방문 비용이 달라질 수 있어요.",
-          items: [detail("계약 주소 변경", "계약에 등록된 주소도 바꾸시려면 보유 제품 재설치로 접수해 주세요.")],
-          fields: ["name", "address", "date", "phone"], actions: [["재설치 방문 정보 확인", "installationCustomerCheck"],
-            ["계약 주소도 변경", "@9"]]
+          items: [],
+          fields: ["name", "address", "date", "phone"], actions: [["재설치 방문 요청", "installationCustomerCheck"], ["뒤로", "s5"]]
         },
         installationCustomerCheck: resolved("installationEquipmentCheck", [{ target: "installationMultipleCustomers",
           fields: ["휴대폰 번호"], match: "^01000000009$" }]),

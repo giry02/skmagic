@@ -466,7 +466,8 @@
           ['접수내역 보기', '@13'], ['새로 접수하기', 'pairSplitSchedule'], ['상담사 연결', '$handoff']
         ], [item('접수번호', 'ES-261125-002'), item('방문 예정일', '11월 30일(월)')]),
         pairSplitSchedule: {
-          ...choice('분리 방문 가능일 중 원하시는 날짜를 선택해 주세요. 제품 운반은 별도로 준비해 주세요.', [...changedDates, ['다음', 'pairInstallAddress'], ['뒤로', 'pairSplitAddress']]),
+          ...choice('분리 방문 가능일 중 원하시는 날짜를 선택해 주세요. 제품 운반은 별도로 준비해 주세요.', [...changedDates, ['뒤로', 'pairSplitAddress']]),
+          afterDateSelection: 'pairInstallAddress',
           bookingStage: 'split'
         },
         pairInstallAddress: field('이사 후 재설치할 주소와 방문 정보를 입력해 주세요. 분리 접수 주소와 별도로 확인해요.', [
@@ -793,8 +794,11 @@
         S02: { message: '변경할 항목을 선택해 주세요.', actions: [
           ['방문주소', '$changeVisitAddress'], ['방문예정일', 'moveDateForChange'], ['접수 증상', '$editSymptom'], ['방문 연락처', '$editPhone']
         ] },
-        S03: { actions: [['주소 검색', '$address'], ['방문주소 변경 요청', 'visitAddressCheck'], ['나가기', 'S02']] },
+        S03: { lookupOnSubmit: true, actions: [['주소 확인', 'visitAddressCheck'], ['나가기', 'S02']] },
         visitAddressCheck: { resolve: { default: '$visitAddressSchedule', rules: [{ ...unsupportedAddress, target: 'S08' }] } },
+        visitAddressConfirm: choice('입력한 주소로 방문지를 변경할까요?', [
+          ['방문주소 변경 요청', '$commitVisitChange'], ['주소 다시 입력', 'S03'], ['나가기', 'S02']
+        ], [item('새 방문주소', '[확인할 새 주소]')]),
         S04: { actions: [...changedDates, ['변경 요청', '$commitVisitChange']] },
         S05: field('서비스 당일에 연락받으실 전화번호를 입력해 주세요.', [
           { label: '연락요청번호', placeholder: '휴대폰 번호 또는 지역번호 포함', type: 'tel', sample: '010-0000-1234' }
@@ -879,13 +883,13 @@
         ]),
         S04: field('새 배송 주소를 입력해 주세요.', [
           { label: '배송 주소', placeholder: '도로명 또는 지번과 상세주소', sample: '서울 영등포구 문래동' }
-        ], [['주소 검색', '$address'], ['배송주소 변경 요청', '$checkDeliveryAddress'], ['나가기', 'S03']]),
+        ], [['주소 확인', '$checkDeliveryAddress'], ['나가기', 'S03']], { lookupOnSubmit: true }),
         deliveryAddressCheck: { resolve: { default: '$deliveryAddressSchedule', rules: [
           { ...unsupportedAddress, fields: ['배송 주소'], target: 'S09' }
         ] } },
-        deliveryAddressSchedule: choice('변경하신 배송지에는 기존 날짜로 배송하기 어려워요. 새 배송일을 선택해 주세요.', [
-          ['배송일 선택', 'requestedDeliveryDate'], ['주소 다시 입력', 'S04']
-        ]),
+        deliveryAddressConfirm: choice('입력한 주소로 배송지를 변경할까요?', [
+          ['배송주소 변경 요청', '$commitDeliveryChange'], ['주소 다시 입력', 'S04'], ['나가기', 'S03']
+        ], [item('새 배송주소', '[확인할 새 주소]')]),
         requestedDeliveryDate: field('희망 배송일을 입력해 주세요. 가까운 배송 가능일을 확인할게요.', [
           { label: '희망 배송일', placeholder: 'YYYY-MM-DD', type: 'date', sample: '2026-12-02' },
           { label: '일정 변경 사유', placeholder: '날짜를 바꾸려는 이유', required: false },

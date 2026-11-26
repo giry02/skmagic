@@ -36,11 +36,15 @@ test("chat skips approved intermediate buttons and waits for sending, payments a
   const deliveryDay = begin(37).showDemoScreen("s6");
   assert.equal(deliveryDay.inputSubmitActionId, deliveryDay.actions.find(({ label }) => label === "이 날짜로 계속").id);
 
+  for (const [no, screen, label] of [
+    [3, "S05", "PASS 전자서명"], [14, "S03", "주소 확인"], [17, "S04", "주소 확인"], [28, "s2", "PASS 본인인증"]
+  ]) {
+    const state = begin(no).showDemoScreen(screen);
+    assert.equal(state.inputSubmitActionId, state.actions.find((action) => action.label === label).id);
+  }
+
   for (const state of [
-    begin(3).showDemoScreen("S05"),
-    begin(14).showDemoScreen("S03"),
     begin(17).showDemoScreen("S06"),
-    begin(17).showDemoScreen("S04"),
     begin(28).showDemoScreen("s4"),
     begin(44).showDemoScreen("s6"),
     begin(45).showDemoScreen("prepaidVirtual")
@@ -490,7 +494,8 @@ test("paired move services keep independent contact data, dates, and receipt car
     const state = chat.getState();
     const date = state.actions.find(({ label }) => /^\d+월\s*\d+일\s*\([월화수목금토일]\) 선택$/u.test(label));
     assert.ok(date, `No date choices at ${state.screen.id}`);
-    return chat.choose(date.id).selectedDate;
+    chat.choose(date.id);
+    return date.label.replace(/ 선택$/, "");
   }
   const contact = "서비스 당일 연락받으실 휴대폰 번호";
   for (const no of [8, 9]) {
@@ -503,9 +508,9 @@ test("paired move services keep independent contact data, dates, and receipt car
       "제품명 또는 모델명": "직수 정수기", 주소: "서울 영등포구 문래동 102호", [contact]: "010-0000-9876",
     });
     assert.equal(split.screen.id, "pairSplitSchedule");
-    assert.equal(split.actions.find(({ label }) => label === "다음")?.disabled, true);
+    assert.ok(!split.actions.some(({ label }) => label === "다음"));
     const splitDate = pickDate(chat);
-    chooseAvailable(chat, "다음");
+    assert.equal(chat.getState().screen.id, "pairInstallAddress");
 
     chooseAvailable(chat, "예약 가능일자 확인", { 주소: "서울 강서구 마곡동 909호", [contact]: "010-0000-6543" });
     if (chat.getState().actions.some(({ label }) => label === "PASS 본인인증")) approvePass(chat);
@@ -529,6 +534,19 @@ test("paired move services keep independent contact data, dates, and receipt car
     assert.equal(field(0, "방문 예정일"), splitDate);
     assert.equal(field(1, "방문 예정일"), installDate);
     assert.doesNotMatch(JSON.stringify(receipt.messages), /102호|909호|010-0000-9876|010-0000-6543/);
+  }
+});
+
+test("standalone service date selection points to the visible booking request", () => {
+  for (const no of [8, 9, 12]) {
+    const chat = begin(no);
+    const schedule = chat.showDemoScreen("S05");
+    const date = schedule.actions.find(({ label }) => /일\s*\([월화수목금토일]\) 선택$/u.test(label));
+    assert.ok(date);
+    const selected = chat.choose(date.id);
+    assert.equal(selected.screen.id, "S05");
+    assert.match(selected.messages.at(-1).text, /‘접수 요청’을 눌러/);
+    assert.ok(selected.actions.some(({ label, disabled }) => label === "접수 요청" && !disabled));
   }
 });
 
@@ -745,7 +763,10 @@ test("delivery changes follow the original address, order update, and installer 
   verifyPhone(created, "010-0000-0006");
   chooseAvailable(created, "직수 정수기 주문 선택");
   chooseAvailable(created, "배송주소 수정");
-  const updated = chooseAvailable(created, "배송주소 변경 요청", { "배송 주소": " 서울  종로구   청계천로 85 " });
+  const review = chooseAvailable(created, "주소 확인", { "배송 주소": " 서울  종로구   청계천로 85 " });
+  assert.equal(review.screen.id, "deliveryAddressConfirm");
+  assert.deepEqual(Array.from(created.context.deliveryEvents), ["IF_AICC_R040", "IF_AICC_R037"]);
+  const updated = chooseAvailable(created, "배송주소 변경 요청");
   assert.equal(updated.screen.id, "S07");
   assert.deepEqual(Array.from(created.context.deliveryEvents), [
     "IF_AICC_R040", "IF_AICC_R037", "IF_AICC_P004", "IF_AICC_P021", "S07", "IF_AICC_P014",
@@ -761,7 +782,7 @@ test("delivery changes follow the original address, order update, and installer 
   const date = dates.actions.find(({ label }) => /일\s*\([월화수목금토일]\) 선택$/u.test(label));
   assert.ok(date);
   const selected = chooseAvailable(dateChange, date.label);
-  assert.match(selected.messages.at(-1).text, /확인 버튼/);
+  assert.match(selected.messages.at(-1).text, /‘확인’을 눌러/);
   assert.equal(chooseAvailable(dateChange, "확인").screen.id, "S07");
 
   const installer = begin(17);
@@ -1191,7 +1212,7 @@ test("a typed appliance determines whether a cooking-water valve is offered", ()
     chat.choose("설치 환경 확인", { "제품명 또는 모델명": product, "설치 장소": "싱크대 옆" });
     chat.choose("계속하기");
     chat.choose("재설치 방문 접수");
-    const state = chat.choose("재설치 방문 정보 확인", {
+    const state = chat.choose("재설치 방문 요청", {
       이름: "김매직", 주소: "서울 영등포구 문래동", "희망 날짜": "2026-12-03", "휴대폰 번호": "010-0000-1234",
     });
     assert.equal(state.screen.id, expected, product);

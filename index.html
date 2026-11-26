@@ -13281,7 +13281,8 @@ window.SKIX_PARTNER_CARDS = [
           ['접수내역 보기', '@13'], ['새로 접수하기', 'pairSplitSchedule'], ['상담사 연결', '$handoff']
         ], [item('접수번호', 'ES-261125-002'), item('방문 예정일', '11월 30일(월)')]),
         pairSplitSchedule: {
-          ...choice('분리 방문 가능일 중 원하시는 날짜를 선택해 주세요. 제품 운반은 별도로 준비해 주세요.', [...changedDates, ['다음', 'pairInstallAddress'], ['뒤로', 'pairSplitAddress']]),
+          ...choice('분리 방문 가능일 중 원하시는 날짜를 선택해 주세요. 제품 운반은 별도로 준비해 주세요.', [...changedDates, ['뒤로', 'pairSplitAddress']]),
+          afterDateSelection: 'pairInstallAddress',
           bookingStage: 'split'
         },
         pairInstallAddress: field('이사 후 재설치할 주소와 방문 정보를 입력해 주세요. 분리 접수 주소와 별도로 확인해요.', [
@@ -13608,8 +13609,11 @@ window.SKIX_PARTNER_CARDS = [
         S02: { message: '변경할 항목을 선택해 주세요.', actions: [
           ['방문주소', '$changeVisitAddress'], ['방문예정일', 'moveDateForChange'], ['접수 증상', '$editSymptom'], ['방문 연락처', '$editPhone']
         ] },
-        S03: { actions: [['주소 검색', '$address'], ['방문주소 변경 요청', 'visitAddressCheck'], ['나가기', 'S02']] },
+        S03: { lookupOnSubmit: true, actions: [['주소 확인', 'visitAddressCheck'], ['나가기', 'S02']] },
         visitAddressCheck: { resolve: { default: '$visitAddressSchedule', rules: [{ ...unsupportedAddress, target: 'S08' }] } },
+        visitAddressConfirm: choice('입력한 주소로 방문지를 변경할까요?', [
+          ['방문주소 변경 요청', '$commitVisitChange'], ['주소 다시 입력', 'S03'], ['나가기', 'S02']
+        ], [item('새 방문주소', '[확인할 새 주소]')]),
         S04: { actions: [...changedDates, ['변경 요청', '$commitVisitChange']] },
         S05: field('서비스 당일에 연락받으실 전화번호를 입력해 주세요.', [
           { label: '연락요청번호', placeholder: '휴대폰 번호 또는 지역번호 포함', type: 'tel', sample: '010-0000-1234' }
@@ -13694,13 +13698,13 @@ window.SKIX_PARTNER_CARDS = [
         ]),
         S04: field('새 배송 주소를 입력해 주세요.', [
           { label: '배송 주소', placeholder: '도로명 또는 지번과 상세주소', sample: '서울 영등포구 문래동' }
-        ], [['주소 검색', '$address'], ['배송주소 변경 요청', '$checkDeliveryAddress'], ['나가기', 'S03']]),
+        ], [['주소 확인', '$checkDeliveryAddress'], ['나가기', 'S03']], { lookupOnSubmit: true }),
         deliveryAddressCheck: { resolve: { default: '$deliveryAddressSchedule', rules: [
           { ...unsupportedAddress, fields: ['배송 주소'], target: 'S09' }
         ] } },
-        deliveryAddressSchedule: choice('변경하신 배송지에는 기존 날짜로 배송하기 어려워요. 새 배송일을 선택해 주세요.', [
-          ['배송일 선택', 'requestedDeliveryDate'], ['주소 다시 입력', 'S04']
-        ]),
+        deliveryAddressConfirm: choice('입력한 주소로 배송지를 변경할까요?', [
+          ['배송주소 변경 요청', '$commitDeliveryChange'], ['주소 다시 입력', 'S04'], ['나가기', 'S03']
+        ], [item('새 배송주소', '[확인할 새 주소]')]),
         requestedDeliveryDate: field('희망 배송일을 입력해 주세요. 가까운 배송 가능일을 확인할게요.', [
           { label: '희망 배송일', placeholder: 'YYYY-MM-DD', type: 'date', sample: '2026-12-02' },
           { label: '일정 변경 사유', placeholder: '날짜를 바꾸려는 이유', required: false },
@@ -15079,7 +15083,7 @@ window.SKIX_PARTNER_CARDS = [
           actions: [["설치 환경 확인", "$installationResult"]], lookupOnSubmit: true
         },
         s5: {
-          message: "서비스매니저가 방문해 설치 가능 여부를 확인해요. 현장에서 설치가 어렵다고 판단되어 접수를 취소하셔도 출장료가 발생할 수 있어요.",
+          message: "서비스매니저가 방문해 설치 가능 여부를 확인해요. 현장에서 설치가 어려워 접수를 취소해도 출장료가 발생할 수 있어요. 계약 주소도 바꾸시려면 ‘보유 제품으로 재설치 접수’를 선택해 주세요.",
           actions: [["재설치 방문 접수", "s6"], ["이사 후 설치 환경 확인", "installationMoveDate"],
             ["보유 제품으로 재설치 접수", "@9"], ["안내만 받기", "$finish"]]
         },
@@ -15092,9 +15096,8 @@ window.SKIX_PARTNER_CARDS = [
         },
         s6: {
           message: "성함과 재설치 주소, 방문 희망일, 당일 연락받을 번호를 차례로 입력해 주세요. 계약에 따라 방문 비용이 달라질 수 있어요.",
-          items: [detail("계약 주소 변경", "계약에 등록된 주소도 바꾸시려면 보유 제품 재설치로 접수해 주세요.")],
-          fields: ["name", "address", "date", "phone"], actions: [["재설치 방문 정보 확인", "installationCustomerCheck"],
-            ["계약 주소도 변경", "@9"]]
+          items: [],
+          fields: ["name", "address", "date", "phone"], actions: [["재설치 방문 요청", "installationCustomerCheck"], ["뒤로", "s5"]]
         },
         installationCustomerCheck: resolved("installationEquipmentCheck", [{ target: "installationMultipleCustomers",
           fields: ["휴대폰 번호"], match: "^01000000009$" }]),
@@ -16110,7 +16113,10 @@ window.SKIX_PARTNER_CARDS = [
       const submissions = this.fields.some((field) => !field.readonly)
         ? actions.filter((action) => action.requiresFields && action.target !== '$address') : [];
       const [submission] = submissions;
-      const advancesOnInput = this.screen?.lookupOnSubmit || this.screen?.advanceOnSubmit
+      const method = this.passMethod(submission?.label ?? '');
+      const opensApproval = method === 'PASS 전자서명'
+        || method === 'PASS 본인인증' && !this.isReusablePass(this.screen.id);
+      const advancesOnInput = opensApproval || this.screen?.lookupOnSubmit || this.screen?.advanceOnSubmit
         || ['$verifyOtp', '$auditVerifyOtp'].includes(submission?.target);
       const inputSubmitActionId = submissions.length === 1 && !submission.disabled && advancesOnInput ? submission.id : null;
       return {
@@ -16671,6 +16677,7 @@ window.SKIX_PARTNER_CARDS = [
       const variables = this.scenario.demoValues ?? {};
       let text = String(value ?? '').replace(/\[([^\[\]]+)\]/g, (token, key) => {
         const no = this.scenario.no;
+        if ([14, 17].includes(no) && key === '확인할 새 주소') return neighborhood(this.context.modifiedAddress ?? '');
         if (no === 19 && key === '발송 문서') return this.context.document ?? '확인한 문서';
         if (no === 19 && key === '정기 발송일') return this.context.documentSchedule ?? '미지정';
         if ([20, 21].includes(no) && key === '출력 구분') return this.context.documentFormat ?? '개별 출력';
@@ -16904,6 +16911,18 @@ window.SKIX_PARTNER_CARDS = [
         }
       }
       return date;
+    }
+
+    continueFromSchedule(date) {
+      const nextScreen = this.screen.afterDateSelection;
+      if (nextScreen) {
+        this.sayBot(`${date}을 분리 방문일로 선택했어요.`, { demo: true });
+        this.execute(nextScreen);
+        return;
+      }
+      const commits = ['S06', 'pairResult', '$commitVisitChange', '$commitDeliveryChange', 's7'];
+      const request = this.actionList().find(({ target, disabled }) => !disabled && commits.includes(target));
+      this.sayBot(request ? `${date}을 선택했어요. ‘${request.label}’을 눌러 주세요.` : `${date}을 선택했어요.`, { demo: true });
     }
 
     scheduleDates(all = false, stage = this.screen?.bookingStage) {
@@ -18038,10 +18057,7 @@ window.SKIX_PARTNER_CARDS = [
           break;
         }
         case '$date': {
-          const date = this.saveScheduleDate(label);
-          const next = no === 17 ? '확인' : no === 36 ? '이 날짜로 요청'
-            : this.screen.bookingStage === 'reinstall' ? '분리·재설치 접수' : '다음';
-          this.sayBot(`${date}을 선택했어요. ${next} 버튼을 눌러 주세요.`, { demo: true });
+          this.continueFromSchedule(this.saveScheduleDate(label));
           break;
         }
         case '$moreDates':
@@ -18056,8 +18072,7 @@ window.SKIX_PARTNER_CARDS = [
           const { id, stage } = this.context.dateScreen;
           const date = this.saveScheduleDate(label, stage);
           this.execute(id);
-          const next = stage === 'reinstall' ? '분리·재설치 접수' : stage === 'split' ? '다음' : no === 17 ? '확인' : '변경 요청';
-          this.sayBot(`${date}을 선택했어요. ${next} 버튼을 눌러 주세요.`, { demo: true });
+          this.continueFromSchedule(date);
           break;
         }
         case '$address':
@@ -18186,7 +18201,7 @@ window.SKIX_PARTNER_CARDS = [
           this.execute(this.visitRequestEntry());
           break;
         case '$visitAddressSchedule':
-          this.execute(this.context.visitAddressNeedsDate ? 'moveDateForChange' : '$commitVisitChange');
+          this.execute(this.context.visitAddressNeedsDate ? 'moveDateForChange' : 'visitAddressConfirm');
           break;
         case '$commitVisitChange': {
           const key = this.context.serviceVisit;
@@ -18232,7 +18247,12 @@ window.SKIX_PARTNER_CARDS = [
           this.execute('deliveryAddressCheck');
           break;
         case '$deliveryAddressSchedule':
-          this.execute(['reschedule', 'unavailable'].includes(this.deliveryOrderType()) ? 'deliveryAddressSchedule' : '$commitDeliveryChange');
+          if (['reschedule', 'unavailable'].includes(this.deliveryOrderType())) {
+            this.sayBot('새 배송지에는 기존 날짜로 배송하기 어려워요.');
+            this.execute('requestedDeliveryDate');
+          } else {
+            this.execute('deliveryAddressConfirm');
+          }
           break;
         case '$deliveryDateLookup':
           this.recordDeliveryEvent('IF_AICC_R040');

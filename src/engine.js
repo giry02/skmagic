@@ -518,7 +518,10 @@
       const submissions = this.fields.some((field) => !field.readonly)
         ? actions.filter((action) => action.requiresFields && action.target !== '$address') : [];
       const [submission] = submissions;
-      const advancesOnInput = this.screen?.lookupOnSubmit || this.screen?.advanceOnSubmit
+      const method = this.passMethod(submission?.label ?? '');
+      const opensApproval = method === 'PASS 전자서명'
+        || method === 'PASS 본인인증' && !this.isReusablePass(this.screen.id);
+      const advancesOnInput = opensApproval || this.screen?.lookupOnSubmit || this.screen?.advanceOnSubmit
         || ['$verifyOtp', '$auditVerifyOtp'].includes(submission?.target);
       const inputSubmitActionId = submissions.length === 1 && !submission.disabled && advancesOnInput ? submission.id : null;
       return {
@@ -1079,6 +1082,7 @@
       const variables = this.scenario.demoValues ?? {};
       let text = String(value ?? '').replace(/\[([^\[\]]+)\]/g, (token, key) => {
         const no = this.scenario.no;
+        if ([14, 17].includes(no) && key === '확인할 새 주소') return neighborhood(this.context.modifiedAddress ?? '');
         if (no === 19 && key === '발송 문서') return this.context.document ?? '확인한 문서';
         if (no === 19 && key === '정기 발송일') return this.context.documentSchedule ?? '미지정';
         if ([20, 21].includes(no) && key === '출력 구분') return this.context.documentFormat ?? '개별 출력';
@@ -1312,6 +1316,18 @@
         }
       }
       return date;
+    }
+
+    continueFromSchedule(date) {
+      const nextScreen = this.screen.afterDateSelection;
+      if (nextScreen) {
+        this.sayBot(`${date}을 분리 방문일로 선택했어요.`, { demo: true });
+        this.execute(nextScreen);
+        return;
+      }
+      const commits = ['S06', 'pairResult', '$commitVisitChange', '$commitDeliveryChange', 's7'];
+      const request = this.actionList().find(({ target, disabled }) => !disabled && commits.includes(target));
+      this.sayBot(request ? `${date}을 선택했어요. ‘${request.label}’을 눌러 주세요.` : `${date}을 선택했어요.`, { demo: true });
     }
 
     scheduleDates(all = false, stage = this.screen?.bookingStage) {
@@ -2446,10 +2462,7 @@
           break;
         }
         case '$date': {
-          const date = this.saveScheduleDate(label);
-          const next = no === 17 ? '확인' : no === 36 ? '이 날짜로 요청'
-            : this.screen.bookingStage === 'reinstall' ? '분리·재설치 접수' : '다음';
-          this.sayBot(`${date}을 선택했어요. ${next} 버튼을 눌러 주세요.`, { demo: true });
+          this.continueFromSchedule(this.saveScheduleDate(label));
           break;
         }
         case '$moreDates':
@@ -2464,8 +2477,7 @@
           const { id, stage } = this.context.dateScreen;
           const date = this.saveScheduleDate(label, stage);
           this.execute(id);
-          const next = stage === 'reinstall' ? '분리·재설치 접수' : stage === 'split' ? '다음' : no === 17 ? '확인' : '변경 요청';
-          this.sayBot(`${date}을 선택했어요. ${next} 버튼을 눌러 주세요.`, { demo: true });
+          this.continueFromSchedule(date);
           break;
         }
         case '$address':
@@ -2594,7 +2606,7 @@
           this.execute(this.visitRequestEntry());
           break;
         case '$visitAddressSchedule':
-          this.execute(this.context.visitAddressNeedsDate ? 'moveDateForChange' : '$commitVisitChange');
+          this.execute(this.context.visitAddressNeedsDate ? 'moveDateForChange' : 'visitAddressConfirm');
           break;
         case '$commitVisitChange': {
           const key = this.context.serviceVisit;
@@ -2640,7 +2652,12 @@
           this.execute('deliveryAddressCheck');
           break;
         case '$deliveryAddressSchedule':
-          this.execute(['reschedule', 'unavailable'].includes(this.deliveryOrderType()) ? 'deliveryAddressSchedule' : '$commitDeliveryChange');
+          if (['reschedule', 'unavailable'].includes(this.deliveryOrderType())) {
+            this.sayBot('새 배송지에는 기존 날짜로 배송하기 어려워요.');
+            this.execute('requestedDeliveryDate');
+          } else {
+            this.execute('deliveryAddressConfirm');
+          }
           break;
         case '$deliveryDateLookup':
           this.recordDeliveryEvent('IF_AICC_R040');

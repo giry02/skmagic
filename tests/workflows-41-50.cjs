@@ -114,9 +114,9 @@ test("44 checks a move-related site visit from the next business day and carries
   go(chat, "계속하기");
   go(chat, "이사 후 설치 환경 확인");
   go(chat, "이사 예정일 확인", { "이사 예정일": "2026-11-27" });
-  const tooSoon = go(chat, "재설치 방문 정보 확인", { "희망 날짜": "2026-11-28" });
+  const tooSoon = go(chat, "재설치 방문 요청", { "희망 날짜": "2026-11-28" });
   assert.match(tooSoon.fields.find((field) => field.label === "희망 날짜").error, /영업일/);
-  assert.equal(value(go(chat, "재설치 방문 정보 확인"), "접수번호"), "ES-261125-044");
+  assert.equal(value(go(chat, "재설치 방문 요청"), "접수번호"), "ES-261125-044");
   go(chat, "계속하기");
   go(chat, "사전 연락 요청");
   const callback = go(chat, "사전 연락 요청");
@@ -157,7 +157,7 @@ test("44 separates uncertain standalone cost, contact reuse and masked notice", 
   go(chat, "설치 환경 확인", { "제품명 또는 모델명": "직수 정수기" });
   go(chat, "계속하기");
   go(chat, "재설치 방문 접수");
-  assert.equal(go(chat, "재설치 방문 정보 확인", { "휴대폰 번호": "010-0000-0009" }).screen.id, "installationMultipleCustomers");
+  assert.equal(go(chat, "재설치 방문 요청", { "휴대폰 번호": "010-0000-0009" }).screen.id, "installationMultipleCustomers");
   go(chat, "설치 환경만 확인");
   const booked = go(chat, "조리수 밸브 필요 없음");
   assert.equal(value(booked, "재설치 예상 비용"), undefined);
@@ -173,7 +173,7 @@ test("44 resolves a shared verified number by registered address and carries the
   go(chat, "설치 환경 확인", { "제품명 또는 모델명": "식기세척기" });
   go(chat, "계속하기");
   go(chat, "재설치 방문 접수");
-  go(chat, "재설치 방문 정보 확인", { "휴대폰 번호": "010-0000-0009" });
+  go(chat, "재설치 방문 요청", { "휴대폰 번호": "010-0000-0009" });
   go(chat, "등록 고객 확인");
   go(chat, "휴대폰 확인");
   go(chat, "동의하고 계속");
