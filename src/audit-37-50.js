@@ -240,7 +240,11 @@
           ["해약철회 진행", "withdrawalAccountReason"], ["해약 신청 유지", "$finish"]
         ]),
         withdrawalAccountReason: { ...input("해약 신청을 철회하는 이유를 입력해 주세요.", withdrawal, "철회와 환불 조건 확인", "s7"), advanceOnSubmit: true },
-        s7: { actions: [["환불 진행", "withdrawalRefundPeriod"], ["진행하지 않기", "$finish"]] },
+        s7: {
+          message: "납부하신 해약 정산금은 계약자 명의의 계좌로 환불할 수 있어요. 환불을 진행하시겠어요?",
+          items: [detail("납부 월", withdrawalPayment.month), detail("납부 금액", withdrawalPayment.amount)],
+          actions: [["환불 진행", "withdrawalRefundPeriod"], ["진행하지 않기", "$finish"]]
+        },
         withdrawalRefundPeriod: {
           ...choice("철회할 계약에 납부한 해약 정산금이에요. 확인할 납부 월을 선택해 주세요.", [
             [`${withdrawalPayment.month} 납부 건 선택`, "withdrawalRefundAmount"], ["다른 납부 월 확인 요청", "$handoff"]
@@ -250,10 +254,15 @@
         withdrawalRefundAmount: result("선택한 월에 납부하신 해약 정산금이에요. 계약자 명의 계좌 확인 후 환불할 수 있어요.", [
           detail("환불 대상 월", withdrawalPayment.month), detail("확인된 납부 금액", withdrawalPayment.amount)
         ], [["환불 계좌 확인", "refundOwnership"], ["납부 월 다시 선택", "withdrawalRefundPeriod"]]),
-        refundOwnership: choice("환불은 계약자 본인 명의 계좌로만 받을 수 있어요. 계약자 본인 명의인가요?", [
-          ["계약자 본인 명의예요", "refundAccount"], ["계좌 명의를 확인할게요", "s7"], ["상담 요청 안내", "$handoff"]
-        ]),
-        refundAccount: input("계약자 명의의 환불 계좌를 입력해 주세요.", [bank, account], "환불 요청", "refundRequest"),
+        refundOwnership: {
+          ...choice("환불은 계약자 본인 명의 계좌로만 받을 수 있어요. 계약자 본인 명의인가요?", [
+            ["계약자 본인 명의예요", "refundAccount"], ["계좌 명의를 확인할게요", "s7"], ["상담 요청 안내", "$handoff"]
+          ]), items: [detail("환불 대상 월", withdrawalPayment.month), detail("확인된 납부 금액", withdrawalPayment.amount)]
+        },
+        refundAccount: {
+          ...input("계약자 명의의 환불 계좌를 입력해 주세요.", [bank, account], "환불 요청", "refundRequest"),
+          items: [detail("환불 대상 월", withdrawalPayment.month), detail("확인된 납부 금액", withdrawalPayment.amount)]
+        },
         refundRequest: result("해약철회와 환불 요청 내용을 확인했어요. 해약금 수납과 계좌 명의가 확인돼야 환불 일정을 안내받을 수 있어요.", [
           cancellationPending,
           detail("환불 대상 월", withdrawalPayment.month), detail("확인된 납부 금액", withdrawalPayment.amount),
@@ -382,7 +391,8 @@
         giftUnconfirmed: handoff("입력하신 계약에서 사은품 지급 내역을 확인하기 어려워요. 계약을 다시 확인하거나 판매 부서에 문의해 주세요.", [
           ["계약 다시 확인", "s1"], ["판매 부서 확인 요청", "$handoff"]
         ]),
-        giftChangeCases: resolved("giftUnconfirmed", giftServiceCases("s4")),
+        giftChangeCases: resolved("giftUnconfirmed", [contractCase("s2", "000"), contractCase("s7", "043"),
+          contractCase("digitalGiftChange", "061"), contractCase("s4", "062"), knownGift("digitalGiftChange")]),
         giftSupportCases: resolved("giftUnconfirmed", giftServiceCases("giftSupport")),
         s3: {
           message: "이 주문에는 월 구독료 1개월분의 포인트 혜택이 있어요. 설치일로부터 15일 후 매직몰 가입 아이디로 적립돼요.",
@@ -394,6 +404,9 @@
         ]),
         physicalGift: result("사은품은 설치 완료일부터 15일 이내에 제품과 별도로 배송돼요.", [
           detail("사은품", "휴대용 선풍기"), detail("설치 완료일", "2026년 11월 20일"), detail("별도 발송 예정", "2026년 12월 5일 이내")
+        ]),
+        digitalGiftChange: handoff("선택하신 혜택의 변경과 지급 조건은 신청하신 판매처에서 확인할 수 있어요.", [
+          ["판매처 확인 요청", "$handoff"], ["다른 계약 확인", "giftChangeLookup"]
         ]),
         giftSupport: choice("어떤 확인이 필요한가요?", [["사은품 불량", "giftEvidence"], ["판매처 연락 요청", "s7"]]),
         giftEvidence: {
@@ -869,11 +882,16 @@
           [detail("발송 방법", "[발송 방법]"), detail("수신처", "[마스킹된 수신처]")],
           [["승인 내역 다시 선택", "s5"], ["다른 문의", "$menu"]]),
         s7: { actions: [["발행으로 변경", "receiptChangeReview"], ["현재 상태 유지", "$finish"]] },
-        receiptChangeReview: choice("신규 발행을 선택하면 신청월부터 적용돼요. 이 조건으로 변경을 요청하시겠어요?", [
-          ["발행 변경 요청", "receiptEnabled"], ["현재 상태 유지", "$finish"]
-        ]),
+        receiptChangeReview: {
+          ...choice("신규 발행을 선택하면 신청월부터 적용돼요. 이 조건으로 변경을 요청하시겠어요?", [
+            ["발행 변경 요청", "receiptEnabled"], ["현재 상태 유지", "$finish"]
+          ]), items: [detail("현재 발행 상태", "미발행"), detail("변경 후 발행 상태", "발행"), detail("적용 시점", "신청월부터")]
+        },
         receiptEnabled: result("앞으로 현금영수증을 발행하도록 변경했어요. 새 설정은 신청월부터 적용돼요.", [
           detail("발행 상태", "발행"), detail("적용 시점", "신청월부터")
+        ], [["전월분 소급 발행 확인", "retroactiveEligibility"], ["다른 문의", "$menu"]]),
+        receiptSettingActive: result("이 계약은 현재 현금영수증을 발행하도록 설정되어 있어요. 이전 결제분의 승인 내역은 따로 확인해 주세요.", [
+          detail("현재 발행 상태", "발행"), detail("적용 시점", "신청월부터")
         ], [["전월분 소급 발행 확인", "retroactiveEligibility"], ["다른 문의", "$menu"]])
       }
     },

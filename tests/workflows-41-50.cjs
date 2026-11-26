@@ -94,10 +94,21 @@ test("43 verifies the contract before giving an order-specific benefit or an exc
   assert.equal(value(approve(chat), "혜택 종류"), "네이버페이");
   const exchange = begin(43);
   go(exchange, "사은품 변경");
-  go(exchange, "계약 확인");
-  approve(exchange);
-  go(exchange, "아직 개봉하거나 사용하지 않았어요");
-  assert.equal(go(exchange, "받은 지 7일이 지났어요").screen.id, "giftLate");
+  go(exchange, "계약 확인", { "계약 또는 제품명": "SK-261125-062" });
+  assert.equal(value(approve(exchange), "사은품"), "휴대용 선풍기");
+  assert.equal(value(go(exchange, "아직 개봉하거나 사용하지 않았어요"), "사은품"), "휴대용 선풍기");
+  const late = go(exchange, "받은 지 7일이 지났어요");
+  assert.equal(late.screen.id, "giftLate");
+  assert.equal(value(late, "사은품"), "휴대용 선풍기");
+  for (const [target, benefit] of [["직수 정수기", "구독 포인트"], ["SK-261125-061", "네이버페이"]]) {
+    const digital = begin(43);
+    go(digital, "사은품 변경");
+    go(digital, "계약 확인", { "계약 또는 제품명": target });
+    const shown = approve(digital);
+    assert.equal(shown.screen.id, "digitalGiftChange");
+    assert.equal(value(shown, "혜택 종류"), benefit);
+    assert.ok(shown.actions.every(({ label }) => !/개봉/.test(label)));
+  }
   for (const label of ["사은품 변경", "불량 또는 판매처 문의"]) {
     const unknown = begin(43);
     go(unknown, label);
@@ -113,10 +124,15 @@ test("44 checks a move-related site visit from the next business day and carries
   go(chat, "설치 환경 확인", { "제품명 또는 모델명": "식기세척기" });
   go(chat, "계속하기");
   go(chat, "이사 후 설치 환경 확인");
-  go(chat, "이사 예정일 확인", { "이사 예정일": "2026-11-27" });
+  const form = go(chat, "이사 예정일 확인", { "이사 예정일": "2026-11-27" });
+  assert.equal(value(form, "재설치할 제품"), "식기세척기");
   const tooSoon = go(chat, "재설치 방문 요청", { "희망 날짜": "2026-11-28" });
   assert.match(tooSoon.fields.find((field) => field.label === "희망 날짜").error, /영업일/);
-  assert.equal(value(go(chat, "재설치 방문 요청"), "접수번호"), "ES-261125-044");
+  const appointment = go(chat, "재설치 방문 요청", { 주소: "서울 영등포구 문래동 101호" });
+  assert.equal(value(appointment, "접수번호"), "ES-261125-044");
+  assert.equal(value(appointment, "재설치할 제품"), "식기세척기");
+  assert.equal(value(appointment, "방문 주소"), "서울 영등포구 •••");
+  assert.doesNotMatch(JSON.stringify(appointment.messages), /101호/);
   go(chat, "계속하기");
   go(chat, "사전 연락 요청");
   const callback = go(chat, "사전 연락 요청");
@@ -158,7 +174,9 @@ test("44 separates uncertain standalone cost, contact reuse and masked notice", 
   go(chat, "계속하기");
   go(chat, "재설치 방문 접수");
   assert.equal(go(chat, "재설치 방문 요청", { "휴대폰 번호": "010-0000-0009" }).screen.id, "installationMultipleCustomers");
-  go(chat, "설치 환경만 확인");
+  const valve = go(chat, "설치 환경만 확인");
+  assert.equal(value(valve, "재설치할 제품"), "직수 정수기");
+  assert.equal(value(valve, "방문 연락처"), "010-••••-0009");
   const booked = go(chat, "조리수 밸브 필요 없음");
   assert.equal(value(booked, "재설치 예상 비용"), undefined);
   assert.match(value(booked, "재설치 비용"), /구독·멤버십·일시불/);
@@ -365,11 +383,21 @@ test("47 requires the completed filter service and matched collection record bef
     assert.equal(result.screen.id, expected);
     if (suffix === "054") continue;
     assert.equal(value(result, "처리 내역"), "부품 사용 확인");
-    go(chat, "2026년 11월 필터 교체비 선택");
+    const account = go(chat, "2026년 11월 필터 교체비 선택");
+    assert.equal(value(account, "대상 계약"), "SK-••••-5053");
+    assert.equal(value(account, "필터 교체비 납부"), "2026년 11월 · 29,900원");
     const review = go(chat, "환불 정보 확인");
     assert.equal(value(review, "환불 사유"), "전환 멤버십");
+    assert.equal(value(review, "필터 교체비 납부"), "2026년 11월 · 29,900원");
     assert.equal(value(review, "처리 상태"), "계약자 명의 확인 필요");
   }
+  const retry = begin(47);
+  go(retry, "제휴카드로 다시 결제");
+  go(retry, "계약 확인");
+  const payment = approve(retry);
+  const consultation = go(retry, "제휴카드 재결제 상담");
+  assert.equal(value(consultation, "현재 결제수단"), value(payment, "현재 결제수단"));
+  assert.equal(value(consultation, "다시 결제할 금액"), "29,900원");
 });
 
 test("48 approved transaction delivery masks the recipient and applies the 10th inclusive deadline", () => {
@@ -406,6 +434,34 @@ test("48 protects receipt-number and retroactive lookup and checks approval date
   assert.equal(go(verified, "이 현금영수증 받기").screen.id, "approvedReceiptDelivery");
 });
 
+test("48 confirms the old and new setting and only keeps the applied verified contract change until reset", () => {
+  const chat = begin(48);
+  const lookup = (contract = "SK-261125-048") => {
+    chat.start(48);
+    go(chat, "새로 발행 신청");
+    return go(chat, "계약 확인", { "계약 또는 제품명": contract });
+  };
+  assert.equal(lookup().screen.id, "receiptAuth");
+  const original = approve(chat);
+  assert.equal(value(original, "대상 계약"), "SK-••••-5048");
+  assert.equal(value(original, "현재 발행 상태"), "미발행");
+  const review = go(chat, "발행으로 변경");
+  assert.equal(value(review, "현재 발행 상태"), "미발행");
+  assert.equal(value(review, "변경 후 발행 상태"), "발행");
+  assert.equal(value(review, "적용 시점"), "신청월부터");
+  assert.equal(lookup().screen.id, "s7");
+  go(chat, "발행으로 변경");
+  assert.equal(value(go(chat, "발행 변경 요청"), "발행 상태"), "발행");
+  assert.equal(lookup("SK-261125-000").screen.id, "s2");
+  const reopened = lookup();
+  assert.equal(reopened.screen.id, "receiptSettingActive");
+  assert.equal(value(reopened, "현재 발행 상태"), "발행");
+  assert.ok(reopened.actions.every(({ label }) => !/승인 내역|영수증 받기/.test(label)));
+  chat.reset();
+  lookup();
+  assert.equal(value(approve(chat), "현재 발행 상태"), "미발행");
+});
+
 test("49 changes one consent item and retains the other in the same conversation", () => {
   const chat = begin(49);
   go(chat, "휴대폰으로 확인");
@@ -413,14 +469,18 @@ test("49 changes one consent item and retains the other in the same conversation
   const { verification } = go(chat, "인증번호 받기");
   go(chat, "확인", { 인증번호: verification.code });
   go(chat, "SK매직 항목 확인");
-  go(chat, "마케팅 활용");
+  assert.equal(value(go(chat, "마케팅 활용"), "현재 동의 상태"), "동의");
   assert.equal(value(go(chat, "동의 철회"), "회사"), "SK매직");
   const settings = go(chat, "동의 상태 다시 보기");
   assert.equal(value(settings, "마케팅 활용"), "미동의");
   assert.equal(value(settings, "영리성 정보 수신"), "동의");
+  const commercial = go(chat, "영리성 정보 수신");
+  assert.equal(value(commercial, "변경할 항목"), "영리성 정보 수신");
+  assert.equal(value(commercial, "현재 동의 상태"), "동의");
   chat.start(49);
   go(chat, "휴대폰으로 확인");
   assert.equal(value(go(chat, "SK매직 항목 확인"), "마케팅 활용"), "미동의");
+  assert.equal(value(go(chat, "마케팅 활용"), "현재 동의 상태"), "미동의");
   chat.reset();
   chat.start(49);
   go(chat, "휴대폰으로 확인");

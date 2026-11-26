@@ -62,6 +62,8 @@
   const knownCustomer = (target) => matchIdentity(target, { 이름: userMatch, '휴대폰 번호': ownerPhoneMatch });
   const filterContracts = '^(?:직수\\s*정수기(?:\\s*계약)?|정수기|WPU-1000|CT-250601-001|SK-261125-029)$';
   const careRequest = (message) => ({ ...form(message, ['description'], 'careRequested', '요청 내용 확인'), advanceOnSubmit: true });
+  const giroSplitGroup = { representative: '직수 정수기', members: ['공기청정기'] };
+  const paymentSplitMembers = ['공기청정기', '비데'];
 
   Object.assign(window.SKIX_FLOW_OVERLAYS ??= {}, {
     18: {
@@ -296,6 +298,7 @@
       }
     },
     25: {
+      existingGiroGroup: giroSplitGroup,
       screens: {
         s1: auth('지로 고지서를 합치거나 나누기 전에 계약자 본인을 확인해 주세요.', 'giroGroupOwner', 'giroGroupDenied'),
         giroGroupOwner: resolved('giroGroupDenied', [matchIdentity('giroGroupContract', { '이름': userMatch, '휴대폰 번호': '^01000001234$' })]),
@@ -392,6 +395,7 @@
       }
     },
     27: {
+      groupMembers: paymentSplitMembers,
       screens: {
         s1: auth('묶인 결제를 분리하려면 계약자 본인 또는 계약에 등록된 납부자 정보를 확인해 주세요.', 'splitIdentity', 's7'),
         splitIdentity: resolved('splitAuthorityReview', [phoneCase('s7', '0000'), knownCustomer('splitLookup')]),
@@ -406,7 +410,7 @@
           ['전체 분리 신청', 's5'], ['다시 선택', 's2']
         ]), items: [{ title: '대표 계약', detail: '[대표 계약]' }] },
         splitSelection: form('묶음에서 분리할 계약을 입력해 주세요.', [
-          { ...field('분리할 계약', '묶음에 속한 계약 선택', '공기청정기'), options: ['공기청정기', '비데'] }
+          { ...field('분리할 계약', '묶음에 속한 계약 선택', '공기청정기'), options: paymentSplitMembers }
         ], 's6', '분리 요청'),
         s5: { items: [], message: '대표 계약에 묶여 있는 계약 전체의 분리 요청을 확인했어요.' },
         s6: { items: [{ title: '분리한 계약', detail: '[분리한 계약]' }], message: '요청하신 계약의 분리 내용을 확인했어요.' }

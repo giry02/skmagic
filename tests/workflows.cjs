@@ -289,10 +289,21 @@ test("billing links keep the authenticated contract and require separate authori
   assert.equal(change.choose("결제정보 변경").screen.id, "ordinaryPaymentDetails");
   change.choose("결제정보 변경");
   change.choose("결제정보 변경 진행");
-  change.choose("은행 계좌");
-  const signature = change.choose("PASS 전자서명", { 은행: "KB국민은행", 계좌번호: "000000001234", 생년월일: "900101" });
+  const edit = change.choose("은행 계좌");
+  const items = (state) => Object.fromEntries(state.messages.at(-1).items.map(({ title, detail }) => [title, detail]));
+  assert.equal(items(edit)["대상 계약"], "직수 정수기");
+  assert.match(items(edit)["현재 결제수단"], /신한카드.*1234/);
+  const signature = change.choose("PASS 전자서명", { 은행: "신한은행", 계좌번호: "000000006789", 생년월일: "900101" });
   assert.equal(signature.screen.id, "$auth");
   assert.ok(signature.actions.some(({ label }) => label === "전자서명 확인"));
+  assert.match(items(signature)["등록할 결제수단"], /신한은행.*6789/);
+  const saved = chooseAvailable(change, "전자서명 확인");
+  assert.match(items(saved)["변경 전 결제수단"], /신한카드.*1234/);
+  assert.match(items(saved)["계좌번호"], /6789$/);
+  chooseAvailable(change, "다른 계약 변경");
+  assert.match(items(chooseAvailable(change, "공기청정기 선택"))["결제정보"], /KB국민은행.*4321/);
+  chooseAvailable(change, "다른 계약 확인");
+  assert.match(items(chooseAvailable(change, "직수 정수기 선택"))["결제정보"], /신한은행.*6789/);
 
   const penalty = openDetails();
   assert.equal(penalty.choose("위약금 문의").fields[0].label, "해약접수 예정일");
@@ -629,6 +640,23 @@ test("an authenticated AS lookup carries the selected appointment into editing",
   assert.equal(chat.choose("방문주소").screen.id, "S07");
 });
 
+test("AS editing retains the verified appointment and shows the current and previous contact", () => {
+  const chat = begin(14);
+  verifyPhone(chat);
+  const detail = chooseAvailable(chat, "직수 정수기 접수 선택");
+  const pick = (state, title) => state.messages.at(-1).items.find((item) => item.title === title)?.detail;
+  const reference = pick(detail, "접수번호");
+  chooseAvailable(chat, "접수내용 변경");
+  const edit = chooseAvailable(chat, "방문 연락처");
+  assert.equal(pick(edit, "접수번호"), reference);
+  assert.equal(pick(edit, "현재 방문 연락처"), "010-••••-1234");
+  const saved = chooseAvailable(chat, "변경 요청", { 연락요청번호: "010-0000-9876" });
+  assert.equal(pick(saved, "변경 전 방문 연락처"), "010-••••-1234");
+  assert.equal(pick(saved, "방문 연락처"), "010-••••-9876");
+  chooseAvailable(chat, "접수내용 변경");
+  assert.equal(pick(chooseAvailable(chat, "방문 연락처"), "현재 방문 연락처"), "010-••••-9876");
+});
+
 test("advance AS contact links keep the verified AS or move appointment", () => {
   const chat = begin(13);
   verifyPhone(chat);
@@ -761,17 +789,23 @@ test("delivery inquiry details continue to additional questions without an edit 
 test("delivery changes follow the original address, order update, and installer connectors", () => {
   const created = begin(17);
   verifyPhone(created, "010-0000-0006");
-  chooseAvailable(created, "직수 정수기 주문 선택");
-  chooseAvailable(created, "배송주소 수정");
+  const selectedOrder = chooseAvailable(created, "직수 정수기 주문 선택");
+  const pick = (state, title) => state.messages.at(-1).items.find((item) => item.title === title)?.detail;
+  const editAddress = chooseAvailable(created, "배송주소 수정");
+  assert.equal(pick(editAddress, "주문번호"), pick(selectedOrder, "주문번호"));
+  assert.equal(pick(editAddress, "현재 배송지"), pick(selectedOrder, "배송지"));
   const review = chooseAvailable(created, "주소 확인", { "배송 주소": " 서울  종로구   청계천로 85 " });
   assert.equal(review.screen.id, "deliveryAddressConfirm");
   assert.deepEqual(Array.from(created.context.deliveryEvents), ["IF_AICC_R040", "IF_AICC_R037"]);
   const updated = chooseAvailable(created, "배송주소 변경 요청");
   assert.equal(updated.screen.id, "S07");
+  assert.equal(pick(updated, "변경 전 배송지"), pick(selectedOrder, "배송지"));
+  assert.equal(pick(updated, "배송지"), "서울 종로구 •••");
   assert.deepEqual(Array.from(created.context.deliveryEvents), [
     "IF_AICC_R040", "IF_AICC_R037", "IF_AICC_P004", "IF_AICC_P021", "S07", "IF_AICC_P014",
   ]);
   assert.doesNotMatch(JSON.stringify(updated.messages), /IF_AICC_/);
+  assert.doesNotMatch(JSON.stringify(updated.messages), /청계천로\s+85/);
 
   const dateChange = begin(17);
   verifyPhone(dateChange);
@@ -884,12 +918,17 @@ test("ownership transfer keeps the sole-proprietor registration field", () => {
 
   const business = chat.choose("개인사업자");
   assert.equal(business.fields.find(({ label }) => label === "사업자등록번호")?.required, true);
+  const item = (state, title) => state.messages.at(-1).items.find((entry) => entry.title === title)?.detail;
+  assert.equal(item(business, "대상 계약"), "직수 정수기 · WPU-1000");
+  assert.equal(item(business, "현재 계약자"), "김○○");
   const pending = chat.choose("확인", {
     이름: "김매직",
     "휴대폰 번호": "010-0000-1234",
     사업자등록번호: "000-00-00000",
   });
   assert.equal(pending.screen.id, "transfereeConsent");
+  assert.equal(item(pending, "새 계약자 연락처"), "010-••••-1234");
+  assert.doesNotMatch(JSON.stringify(pending.messages), /000-00-00000/);
   assert.equal(chat.choose("동의하고 신청하기").screen.id, "S08");
 });
 
@@ -1131,8 +1170,11 @@ test("installation cancellation verifies the selected order and keeps a dispatch
   chooseAvailable(chat, "다른 주문 선택");
   const shipped = chooseAvailable(chat, "식기세척기 · 출고");
   assert.equal(shipped.messages.at(-1).items.find(({ title }) => title === "배송 상태")?.detail, "출고");
-  chooseAvailable(chat, "이 주문이 맞아요");
-  chooseAvailable(chat, "설치 담당자 확인이 필요한 사유 입력");
+  const confirmed = chooseAvailable(chat, "이 주문이 맞아요");
+  assert.match(confirmed.messages.at(-1).items.find(({ title }) => title === "주문번호")?.detail, /004$/);
+  const reason = chooseAvailable(chat, "설치 담당자 확인이 필요한 사유 입력");
+  assert.equal(reason.messages.at(-1).items.find(({ title }) => title === "배송 상태")?.detail, "출고");
+  assert.match(reason.messages.at(-1).items.find(({ title }) => title === "주문번호")?.detail, /004$/);
   const requested = chooseAvailable(chat, "취소 사유 확인", { "취소 사유": "일정 변경" });
   assert.equal(requested.screen.id, "orderHandoff");
   assert.ok(requested.actions.every(({ label }) => !label.includes("환불")));
@@ -1192,17 +1234,24 @@ test("contract withdrawal distinguishes closed, unpaid, card and account routes"
   const card = enter("051").chat;
   const reason = chooseAvailable(card, "해약철회 진행");
   assert.deepEqual(Array.from(reason.fields, ({ label }) => label), ["해약취소 사유", "취소 상세내용"]);
+  assert.equal(reason.messages.at(-1).items.find(({ title }) => title === "대상 계약")?.detail, "SK-••••-5051");
+  assert.equal(reason.messages.at(-1).items.find(({ title }) => title === "해약 정산금 납부 방법")?.detail, "카드");
   const cardRequest = chooseAvailable(card, "철회와 카드 취소 요청", { "해약취소 사유": "계속 이용", "취소 상세내용": "기존 조건 유지" });
   assert.match(cardRequest.messages.at(-1).text, /3~5일/);
   assert.doesNotMatch(cardRequest.messages.at(-1).text, /결제를 취소했어요/);
+  assert.equal(cardRequest.messages.at(-1).items.find(({ title }) => title === "철회 상세 내용")?.detail, "기존 조건 유지");
   const account = enter("052").chat;
   chooseAvailable(account, "해약철회 진행");
-  chooseAvailable(account, "철회와 환불 조건 확인", { "해약취소 사유": "계속 이용" });
+  const offered = chooseAvailable(account, "철회와 환불 조건 확인", { "해약취소 사유": "계속 이용" });
+  assert.equal(offered.messages.at(-1).items.find(({ title }) => title === "납부 금액")?.detail, "87,500원");
+  assert.doesNotMatch(JSON.stringify(offered.messages.at(-1)), /29,900원/);
   assert.equal(chooseAvailable(account, "환불 진행").screen.id, "withdrawalRefundPeriod");
   const refund = chooseAvailable(account, "2026년 11월 납부 건 선택");
   assert.ok(refund.messages.at(-1).items.some(({ title, detail }) => title === "확인된 납부 금액" && detail === "87,500원"));
   assert.equal(chooseAvailable(account, "환불 계좌 확인").screen.id, "refundOwnership");
-  assert.equal(chooseAvailable(account, "계약자 본인 명의예요").screen.id, "refundAccount");
+  const accountForm = chooseAvailable(account, "계약자 본인 명의예요");
+  assert.equal(accountForm.screen.id, "refundAccount");
+  assert.equal(accountForm.messages.at(-1).items.find(({ title }) => title === "확인된 납부 금액")?.detail, "87,500원");
 });
 
 test("a typed appliance determines whether a cooking-water valve is offered", () => {
