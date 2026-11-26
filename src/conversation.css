@@ -196,6 +196,32 @@ p, h1, h2, h3 { margin: 0; }
 }
 .catalog-search input::placeholder { color: var(--muted); opacity: 1; }
 
+.catalog-phases {
+  display: grid;
+  flex: none;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  margin: 0 2px 11px;
+}
+.catalog-phase-button {
+  min-height: 38px;
+  padding: 5px 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--quiet);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.catalog-phase-button:hover { background: var(--paper); color: var(--ink); }
+.catalog-phase-button[aria-expanded="true"] {
+  border-color: #eac4cb;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.catalog-phase-button:focus-visible { outline-offset: -3px; }
+
 .catalog-list {
   flex: 1 1 auto;
   min-height: 0;
@@ -806,6 +832,7 @@ a.choice-card { color: inherit; text-decoration: none; }
     box-shadow: 8px 0 30px #2d1d2426;
   }
   .catalog-search input { font-size: 16px; }
+  .catalog-phase-button { min-height: 44px; }
   .catalog-heading { margin-right: 1px; }
 }
 

@@ -27,6 +27,7 @@
   composeNote.firstElementChild.href = localFile ? localServer : location.href;
   const catalog = byId("catalog");
   const catalogList = byId("catalog-list");
+  const catalogPhaseButtons = byId("catalog-phases");
   const catalogSearch = byId("catalog-search");
   const catalogToggle = byId("catalog-toggle");
   const catalogClose = byId("catalog-close");
@@ -120,6 +121,7 @@
   function renderCatalog(focusPhase) {
     const term = catalogSearch.value.trim();
     const matches = term ? engine.find(term) : [...scenarios.values()];
+    const shortcuts = document.createDocumentFragment();
     const content = document.createDocumentFragment();
     if (term) {
       const text = matches.length ? `검색 결과 ${matches.length}개` : "해당 업무를 찾지 못했어요.";
@@ -129,33 +131,51 @@
     }
     for (const { id, label, phase, note } of catalogPhases) {
       const phaseMatches = matches.filter((scenario) => scenario.phase === phase);
-      if (term && !phaseMatches.length) continue;
-      const expanded = Boolean(term) || openPhases.has(id);
+      const expanded = term ? phaseMatches.length > 0 : openPhases.has(id);
       const groupId = `catalog-phase-${id}`;
-      const heading = term ? element("h3", "catalog-group") : button("", "catalog-group");
-      const mark = icon("folder");
-      mark.classList.add("catalog-group-icon");
-      heading.append(mark, element("span", "", label));
-      if (note) heading.append(element("span", "catalog-phase-note", note));
-      if (!term) {
-        heading.dataset.phase = String(id);
-        heading.setAttribute("aria-expanded", String(expanded));
-        heading.setAttribute("aria-controls", groupId);
-        const chevron = icon("chevron");
-        chevron.classList.add("catalog-chevron");
-        heading.append(chevron);
+      const shortcut = button(label, "catalog-phase-button");
+      shortcut.dataset.phase = String(id);
+      shortcut.setAttribute("aria-controls", groupId);
+      shortcut.setAttribute("aria-expanded", String(expanded));
+      if (note) shortcut.title = note;
+      shortcuts.append(shortcut);
+
+      const section = element("section");
+      section.id = groupId;
+      section.setAttribute("aria-label", `${label} 상담 업무`);
+      section.hidden = !expanded;
+      if (expanded) {
+        const heading = term ? element("h3", "catalog-group") : button("", "catalog-group");
+        const mark = icon("folder");
+        mark.classList.add("catalog-group-icon");
+        heading.append(mark, element("span", "", label));
+        if (note) heading.append(element("span", "catalog-phase-note", note));
+        if (!term) {
+          heading.dataset.collapsePhase = String(id);
+          heading.setAttribute("aria-label", `${label} 업무 접기`);
+          heading.setAttribute("aria-expanded", "true");
+          heading.setAttribute("aria-controls", `${groupId}-items`);
+          const chevron = icon("chevron");
+          chevron.classList.add("catalog-chevron");
+          heading.append(chevron);
+        }
+        const items = element("div", "catalog-items");
+        items.id = `${groupId}-items`;
+        for (const scenario of phaseMatches) items.append(catalogItem(scenario));
+        section.append(heading, items);
       }
-      const items = element("div", "catalog-items");
-      items.id = groupId;
-      items.hidden = !expanded;
-      if (expanded) for (const scenario of phaseMatches) items.append(catalogItem(scenario));
-      content.append(heading, items);
+      content.append(section);
     }
+    catalogPhaseButtons.replaceChildren(shortcuts);
     catalogList.replaceChildren(content);
     catalogAll.textContent = !term && openPhases.size === catalogPhases.length ? "전체 접기" : "전체 펼치기";
     syncCatalogSelection(demoMode || workflow ? engine.getState() : null);
     if (focusPhase) {
-      catalogList.querySelector(`[data-phase="${focusPhase}"]`)?.focus({ preventScroll: true });
+      catalogPhaseButtons.querySelector(`[data-phase="${focusPhase}"]`)?.focus({ preventScroll: true });
+      const section = byId(`catalog-phase-${focusPhase}`);
+      if (section && !section.hidden) {
+        catalogList.scrollTop += section.getBoundingClientRect().top - catalogList.getBoundingClientRect().top;
+      }
     }
   }
 
@@ -1085,12 +1105,22 @@
       catalogList.querySelector(`[data-scenario="${match.no}"]:not(:disabled)`)?.focus();
     }
   });
-  catalogList.addEventListener("click", (event) => {
+  catalogPhaseButtons.addEventListener("click", (event) => {
     const toggle = event.target.closest("[data-phase]");
-    if (toggle) {
-      const id = Number(toggle.dataset.phase);
-      if (openPhases.has(id)) openPhases.delete(id);
-      else openPhases.add(id);
+    if (!toggle) return;
+    const id = Number(toggle.dataset.phase);
+    catalogSearch.value = "";
+    openPhases.add(id);
+    renderCatalog(id);
+    if (event.detail === 0) {
+      byId(`catalog-phase-${id}`).querySelector("[data-scenario]:not(:disabled)")?.focus({ preventScroll: true });
+    }
+  });
+  catalogList.addEventListener("click", (event) => {
+    const collapse = event.target.closest("[data-collapse-phase]");
+    if (collapse) {
+      const id = Number(collapse.dataset.collapsePhase);
+      openPhases.delete(id);
       renderCatalog(id);
       return;
     }
