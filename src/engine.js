@@ -46,6 +46,11 @@
   };
 
   const registeredServiceProduct = { title: '직수 정수기', detail: 'WPU-1000', family: 'water', icon: 'water', kind: 'product' };
+  const additionalServiceProducts = [
+    { title: '비데', detail: 'BID-1000', family: 'bidet', icon: 'water', kind: 'product' },
+    { title: '공기청정기', detail: 'ACL-1000', family: 'air', icon: 'power', kind: 'product' }
+  ];
+  const unavailableBillingScreens = { 1: 'S07', 2: 'S05', 3: 'changeNotFound', 4: 'chargeNotFound', 5: 'arrearsNotFound' };
   const serviceVisits = {
     water: { id: 'AS-261125-001', product: '직수 정수기', symptom: '정수 출수 안 됨', family: 'water', days: 2 },
     bidet: { id: 'ES-261125-002', product: '비데', service: '재설치', family: 'bidet', days: 7, subscription: true },
@@ -55,6 +60,12 @@
     dishwasher: { id: 'AS-261125-006', product: '식기세척기', symptom: '세척 중 멈춤', family: 'dishwasher', days: 10 }
   };
   const visitListScreens = { 13: 'S02', 14: 'S01', 15: 'S02', 34: 'visitList' };
+  const serviceDocumentFixtures = {
+    '일반 AS': { product: '직수 정수기', code: 'WPU-1000', date: '2026-11-25', aliases: ['정수기'] },
+    재설치: { product: '비데', code: 'BID-1000', date: '2026-11-24', aliases: [] },
+    분리: { product: '비데', code: 'BID-1000', date: '2026-11-23', aliases: [] },
+    '필터 서비스': { product: '공기청정기', code: 'ACL-1000', date: '2026-11-20', aliases: [] }
+  };
   const carePaymentProduct = '공기청정기';
   const deliveryOrders = {
     water: { id: 'DL-261125-001', product: '직수 정수기', days: 5 },
@@ -204,7 +215,7 @@
     28: ['s2', 'passRetry'], 45: ['prepaidCardConfirm']
   };
 
-  const phoneSuccess = { 8: 'S02', 9: 'S02', 12: 'S04', 13: 'S02', 14: 'S01', 15: 'S02', 16: 'S02', 17: 'S02', 49: 's4' };
+  const phoneSuccess = { 8: 'S02', 9: 'S02', 12: 'S04', 13: 'S02', 14: 'S01', 15: 'S02', 16: 'S02', 17: 'S02', 49: 'consentCustomerLookup' };
   const phoneFailures = { 8: 'S08', 9: 'S08', 12: 'S09', 13: 'S07', 14: 'S11', 15: 'S08', 16: 'S06', 17: 'S10', 49: 'consentAuthFailed' };
   const dateScenarios = new Set([8, 9, 12, 14, 17]);
   const schedulingScreens = { 8: 'S05', 9: 'S05', 12: 'S05', 14: 'S04', 17: 'S05', 36: 's6' };
@@ -284,8 +295,19 @@
     });
   }
 
+  function giroContractKey(name) {
+    const key = normalize(name).replace(/계약$/, '');
+    if (/^(?:직수정수기|정수기|wpu1000|ct250601001)$/.test(key)) return 'water';
+    if (/^(?:공기청정기|acl1000|ct250901001)$/.test(key)) return 'air';
+    return /^(?:비데|bid1000)$/.test(key) ? 'bidet' : key;
+  }
+
   function receiptReason(value) {
     return paymentContractDisplay(value).replace(/[^\s@]+@[^\s@]+\.[^\s@]+/gu, '•••@•••');
+  }
+
+  function mergeContractList(value) {
+    return String(value ?? '').split(/[,，]/).map((contract) => contract.trim()).filter(Boolean);
   }
 
   function customerAddressDistrict(address) {
@@ -375,6 +397,14 @@
     return auditFlows[no]?.screens?.S01?.actions?.find(([label]) => label === 'PASS 본인인증')?.[1];
   }
 
+  function serviceProviderFor(product) {
+    const key = normalize(product ?? '');
+    if (/필립스|커피머신|에스프레소머신/.test(key)) return '필립스';
+    if (/삼성전자|삼성|에어컨|의류관리기|에어드레서|의류건조기|냉장고|텔레비전|제트봇|세탁기|^tv/.test(key)) return '삼성전자';
+    if (!/eonb450/.test(key) && /경동나비엔|가스레?인지|가스렌지|전기레?인지|전기렌지|인덕션|하이라이트|하이브리드(?:전기)?(?:레?인지|렌지)|전기오븐/.test(key)) return '경동나비엔';
+    return '';
+  }
+
   function estimateDateRange() {
     const today = new Intl.DateTimeFormat('sv-SE', {
       timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit'
@@ -431,6 +461,10 @@
   class SKIXChat {
     #sessionIdentity = null;
     #pendingIdentity = null;
+    #transferCancelled = false;
+    #consentSettings = {};
+    #membershipOptOut = false;
+    #transferPayment = {};
     static inboundReviewReply(message) {
       const text = normalize(String(message ?? ''));
       if (!/(?:구독|렌탈|계약).{0,25}심사|심사.{0,12}(?:구독|렌탈|계약)/u.test(text)) return '';
@@ -455,7 +489,13 @@
     }
 
     reset({ preserveIdentity = false } = {}) {
-      if (!preserveIdentity) this.#sessionIdentity = null;
+      if (!preserveIdentity) {
+        this.#sessionIdentity = null;
+        this.#transferCancelled = false;
+        this.#consentSettings = {};
+        this.#membershipOptOut = false;
+        this.#transferPayment = {};
+      }
       this.history = [];
       this.messages = [{ role: 'bot', text: welcome }];
       this.clearWorkflow();
@@ -536,13 +576,17 @@
         && previous.serviceProduct && previous.serviceSymptom;
       const visitCallbackLink = previous.serviceVisit && ((previousNo === 13 && scenario.no === 34)
         || (previousNo === 34 && scenario.no === 13));
-      const reuseVisit = !echo && previous.phoneVerified && ((scenario.no === 13 && [12, 14, 15].includes(previousNo))
+      const reuseVisit = !echo && previous.phoneVerified && ((scenario.no === 13 && ([14, 15].includes(previousNo)
+        || previousNo === 12 && this.isKnownSessionOwner()))
         || ([13, 14].includes(previousNo) && [14, 15].includes(scenario.no) && previous.serviceVisit) || visitCallbackLink);
       const billingEntry = billingLookupTarget(scenario.no);
       const reuseBilling = !echo && previous.billingVerified && billingEntry;
       const reuseDepositInquiry = !echo && previousNo === 1 && scenario.no === 39 && previous.billingVerified && previous.product === '직수 정수기';
       this.scenario = scenario;
       this.context = { request: customerText || '' };
+      if (!echo && previousNo === 19 && scenario.no === 4 && previous.phoneVerified && this.screen?.id === 's7') {
+        this.context.documentPaymentProduct = { water: '직수 정수기', air: '공기청정기' }[giroContractKey(previous.billContract)];
+      }
       if (!echo && previousNo === 30 && scenario.no === 4 && previous.phoneVerified && this.screen?.id === 'E7') {
         this.context.carePaymentReturn = previous;
       }
@@ -554,7 +598,15 @@
         this.context.serviceSymptom = previous.serviceSymptom;
       }
       let entry = reuseServiceDetails ? this.serviceRegistrationEntry() : auditFlows[scenario.no]?.entry;
-      if (!echo && previousNo === 44 && this.screen?.id === 's5' && scenario.no === 9 && previous.installationProduct) {
+      if (!echo && previousNo === 10 && this.screen?.id === 'S04' && [4, 5].includes(scenario.no)) {
+        Object.assign(this.context, { transferPaymentReturn: true, billingVerified: true, product: '공기청정기' });
+        entry = scenario.no === 5 ? 'airArrears' : this.#transferPayment.arrears ? 'transferCurrentCharge' : 'paymentScope';
+      }
+      if (!echo && scenario.no === 10 && previous.transferPaymentReturn && ['S07', 'installmentResult'].includes(this.screen?.id)) {
+        entry = this.transferAirScreen();
+      }
+      if (!echo && previousNo === 44 && ['s5', 's6', 'installationWaterCustomer', 'installationDishwasherCustomer'].includes(this.screen?.id)
+        && scenario.no === 9 && previous.installationProduct) {
         this.context.priorReinstallProduct = previous.installationProduct;
         entry = 'phoneInput';
       }
@@ -621,6 +673,10 @@
         if (actions) screen.explicitActions = actions;
         if (fields) screen.explicitFields = fields;
       }
+      if (this.scenario.no === 42 && this.#membershipOptOut && !properties.demo && ['s3', 'E7'].includes(screen.id)) {
+        this.execute('optOutStatus');
+        return;
+      }
       if (screen.resolve && !properties.demo) {
         const key = this.scenario.no + ':' + screen.id;
         if (this.resolving.has(key)) throw new Error('Circular workflow resolution: ' + key);
@@ -672,6 +728,11 @@
         this.context.paymentOptions = screen.id;
         this.context.registeredPayment = screen.registeredPayment === 'account' ? savedAccount : savedCard;
         this.context.paymentReceiptRequested = false;
+      }
+      if (this.context.transferPaymentReturn && ['S07', 'installmentResult'].includes(screen.id)) {
+        const amount = this.context.paymentAmount;
+        if (amount === 59700 || amount === 79600) this.#transferPayment.arrears = true;
+        if (amount === 19900 || amount === 79600) this.#transferPayment.current = true;
       }
       this.candidates = [];
       this.fields = this.buildFields(screen);
@@ -759,6 +820,8 @@
       }
       if (no === 17 && screen.id === 'S07' && this.context.deliveryChange) {
         message.items = this.deliveryItems(this.context.deliveryChange);
+        if (this.context.deliveryChange.reason) message.items.push({ title: '일정 변경 사유', detail: this.context.deliveryChange.reason });
+        if (this.context.deliveryChange.note) message.items.push({ title: '배송 변경 메모', detail: this.context.deliveryChange.note });
         if (this.deliveryOrderType() === 'created') {
           message.text += ' 납품생성 주문의 변경 내용은 설치마스터에게 안내돼요.';
         }
@@ -768,7 +831,15 @@
         message.items = [{ title: '요청사항', detail: this.context.deliveryNote }];
       }
       if (no === 28 && screen.kind === 'result' && this.context.customerChange) {
-        message.items = this.context.customerChange;
+        message.items = [...this.context.customerChange];
+        if (screen.id === 's8' && this.context.customerInvoicePeriod) {
+          message.items.unshift({ title: '확인할 발행 월', detail: this.context.customerInvoicePeriod });
+          message.items.push({ title: '발송 구분', detail: '기존 발행분 재발송 · 담당 확인 필요' });
+        }
+      }
+      if (no === 32 && screen.id === 'membershipPrintedSerial' && this.context.membershipSerialCodes) {
+        const { year, month } = this.context.membershipSerialCodes;
+        message.items = [{ title: '생산연도 코드', detail: year }, { title: '생산월 코드', detail: month }];
       }
       if (no === 38 && ['s4', 's5', 'orderHandoff'].includes(screen.id) && this.context.confirmedCancellationOrder) {
         message.items = [...this.context.confirmedCancellationOrder, ...items,
@@ -788,6 +859,28 @@
       if (no === 12 && screen.id === 'S06' && this.context.serviceProduct && this.context.serviceSymptom) {
         message.items = [...items, { title: '접수 제품', detail: this.serviceProductLabel() },
           { title: '접수 증상', detail: this.context.serviceSymptom }];
+      }
+      if ([8, 9].includes(no)) {
+        if (this.context.movePackage && ['S04', 'pairInstallAddress'].includes(screen.id)) {
+          message.items.push({ title: '묶음 계약의 주소', detail: '서비스 완료 후 패키지 상품 전체에 주소 변경이 적용돼요. 개별 주소 변경은 어려워요.' });
+        }
+        if (['S05', 'pairSplitSchedule', 'pairInstallSchedule'].includes(screen.id)) {
+          const separate = no === 8 && screen.id === 'S05' || screen.id === 'pairSplitSchedule';
+          const knownProduct = !this.context.customMoveProduct && !this.context.movePackage;
+          const fee = separate ? '28,000원' : this.context.moveValve ? '43,000원' : '38,000원';
+          message.items = [
+            { title: '구독 제품 예상 비용', detail: knownProduct
+              ? `가정용 정수기 기본비 예시 ${fee}. 현장 조건에 따라 달라질 수 있어요.`
+              : '제품 모델과 구독 계약 상태, 설치 환경을 확인한 뒤 적용 비용을 안내해요.' },
+            { title: '멤버십·일시불 제품 비용', detail: '제품과 판매 유형, 작업 내용을 확인한 뒤 적용 비용을 안내해요.' }
+          ];
+        }
+      }
+      if (no === 10 && screen.id === 'transferStatusList' && this.#transferCancelled) {
+        message.items = [{ title: '직수 정수기 명의변경 신청', detail: 'NC-261125-001 · WPU-1000 · 취소 완료' }];
+      }
+      if (no === 10 && screen.id === 'S04' && this.#transferPayment.arrears) {
+        message.items = items.map((item) => item.title === '미납금(당월 미포함)' ? { ...item, detail: '0원' } : item);
       }
       if (screen.kind === 'internal-only') message.status = '별도 검토';
       if (no === 34 && ['visitCallbackNote', 's6'].includes(screen.id) && this.context.installationAppointment) {
@@ -811,6 +904,8 @@
       if (no === 36 && screen.id === 's8' && this.context.returnContract) {
         message.items = [
           { title: '대상 계약', detail: this.context.returnContract },
+          { title: '요청 항목', detail: '방문 담당자 전달' },
+          ...(this.context.date ? [{ title: '선택한 희망 회수일', detail: this.context.date }] : []),
           { title: '처리 상태', detail: '방문 담당자 확인 필요' }
         ];
       }
@@ -827,6 +922,29 @@
       }
       if (no === 48 && this.context.approvedCashReceipt && ['approvedReceiptDelivery', 's6'].includes(screen.id)) {
         message.items = [...this.context.approvedCashReceipt, ...items];
+      }
+      if (no === 19 && ['s7', 'billMonthlySaved'].includes(screen.id)) {
+        const settings = this.context.billDocumentSettings ?? {};
+        message.items = [
+          ...items,
+          ...Object.entries(settings).filter(([, detail]) => detail).map(([title, detail]) => ({ title, detail }))
+        ];
+      }
+      if (no === 22 && screen.id === 's6' && this.context.serviceDocumentRecord) {
+        const { product, code, date } = this.context.serviceDocumentRecord;
+        message.items = [...items, { title: '대상 제품', detail: `${product} · ${code}` }, { title: '서비스 처리일', detail: date }];
+      }
+      if (no === 24 && ['s5', 's6', 's7'].includes(screen.id) && this.context.giroSelectedContract) {
+        message.items = [
+          { title: '대상 계약', detail: this.context.giroSelectedContract },
+          ...(screen.id === 's7' ? items : [
+            { title: '발송 방법', detail: this.context.channel },
+            { title: '수신처', detail: this.context.receiptRecipient }
+          ])
+        ];
+      }
+      if (no === 20 && screen.id === 'terminationInquirySent' && this.context.terminationDocumentRequest) {
+        message.items = [...items, ...this.context.terminationDocumentRequest];
       }
       if (no === 37 && screen.id === 's8' && this.context.document) {
         const recipients = this.context.documentRecipients ?? {};
@@ -878,6 +996,7 @@
         message.items = [
           ...(prepaidContract ? [{ title: '대상 계약', detail: prepaidContract }] : []),
           ...(prepaid ? [{ title: '선납 적용 기간', detail: `${prepaid.months}개월` }] : []),
+          ...(prepaid?.start ? [{ title: '적용 회차 범위', detail: this.fill('[선납 적용 회차]') }] : []),
           ...items,
           ...(method && prepaidPayment ? [
             { title: '결제수단', detail: prepaidPayment.instrument },
@@ -894,10 +1013,11 @@
       }
       if (no === 47 && this.context.refundContract && [
         's3', 's4', 's5', 's8', 'refundRequested', 'refundComplete', 'refundAccountReview', 'retryCardCancellation', 'retryAfterPayment',
-        'retryPriorMonth', 'retryCms'
+        'retryPriorMonth', 'retryCms', 'switchRefundVerified', 'transferRefundVerified'
       ].includes(screen.id)) {
         message.items = [{ title: '대상 계약', detail: this.context.refundContract }, ...items];
         if (screen.id === 'refundAccountReview' && this.context.refundAccount) {
+          if (this.context.refundReason) message.items.push({ title: '환불 사유', detail: this.context.refundReason });
           message.items.push({ title: '입력한 환불 계좌', detail: this.context.refundAccount });
         }
         if (screen.id === 's8' && this.context.refundDeposit) {
@@ -910,8 +1030,10 @@
           ];
         }
       }
-      if (no === 25 && screen.id === 's6' && this.context.giroGroupRequest) {
-        message.items = [...this.context.giroGroupRequest, ...items, { title: '처리 상태', detail: '담당자 확인 필요' }];
+      if (no === 25 && ['s6', 'giroEvidenceReview'].includes(screen.id) && this.context.giroGroupRequest) {
+        message.items = [...this.context.giroGroupRequest, ...items,
+          ...(this.context.giroEvidence ? [{ title: '증빙 발행 요청', detail: this.context.giroEvidence }] : []),
+          { title: '처리 상태', detail: '담당자 확인 필요' }];
       }
       if (no === 26 && screen.id === 's7' && this.context.mergeMembers) {
         message.items = [{ title: '통합 대상 계약', detail: this.context.mergeMembers }, ...items];
@@ -956,6 +1078,7 @@
         if (no === 25 && key === '고지서 수령 방법') return this.context.giroDeliveryMethod ?? '미지정';
         if ([26, 27].includes(no) && key === '대표 계약') return this.context.representativeContract ?? '확인한 대표 계약';
         if (no === 26 && key === '증빙 발행') return this.context.mergeEvidence ?? '기존 정보 유지';
+        if (no === 26 && key === '통합 대상 계약') return this.context.mergeMembers ?? '확인한 계약';
         if (no === 27 && key === '분리한 계약') return this.context.splitSelectedContract ?? '확인한 계약';
         if (no === 29 && key === '필터 배송 주소') return this.context.filterDeliveryAddress ?? demoAddress;
         if ([19, 20, 21, 22].includes(no) && key === '마스킹된 수신처') {
@@ -965,10 +1088,14 @@
           return (this.context.paymentAmount ?? 29900).toLocaleString('ko-KR') + '원';
         }
         if (key === '할부 기간' && [4, 5].includes(this.scenario.no)) return this.context.installmentPeriod ?? '일시불';
-        if (this.scenario.no === 45) {
+      if (no === 42 && key === '멤버십 해약 사유') return this.context.membershipTerminationReason || '사유 확인 필요';
+      if (no === 42 && key === '선택한 날짜') return this.context.membershipTerminationDate || '희망일 확인 필요';
+      if (this.scenario.no === 45) {
           const prepaid = this.context.prepaid;
           if (key === '선납 기간') return prepaid ? `${prepaid.months}개월` : '기간 확인 필요';
           if (key === '선납 금액') return prepaid ? prepaid.amount.toLocaleString('ko-KR') + '원' : '금액 확인 필요';
+          if (key === '선납 시작 회차') return prepaid?.start ? `${prepaid.start}회차` : '회차 확인 필요';
+          if (key === '선납 적용 회차') return prepaid?.start ? `${prepaid.start}~${prepaid.start + prepaid.months - 1}회차` : '회차 확인 필요';
           if (key === '선납 가상계좌 은행') return this.context.prepaidBank || '은행 확인 필요';
           if (key === '선택한 날짜') return this.context.date || '마감일 확인 필요';
           if (key === '선납 계산서') {
@@ -976,12 +1103,12 @@
           }
         }
         if (this.scenario.no === 49) {
-          if (key === '마케팅 활용 상태') return this.context.marketingConsent === false ? '미동의' : '동의';
-          if (key === '영리성 수신 상태') return this.context.commercialConsent === false ? '미동의' : '동의';
+          if (key === '마케팅 활용 상태') return this.#consentSettings.marketing === false ? '미동의' : '동의';
+          if (key === '영리성 수신 상태') return this.#consentSettings.commercial === false ? '미동의' : '동의';
         }
         if (this.scenario.no === 44) {
           if (key === '선택한 날짜') return this.context.date || dateLabel(offsetDate(estimateDateRange().today, 3));
-          if (key === '마스킹된 번호') return this.context.maskedPhone || maskNumber(demoPhone);
+          if (key === '마스킹된 번호') return this.context.installationAppointment?.phone || this.context.maskedPhone || maskNumber(demoPhone);
         }
         if ([41, 45, 48].includes(this.scenario.no) && key === '마스킹된 수신처') {
           return this.context.receiptRecipient || '등록된 수신처';
@@ -1130,6 +1257,17 @@
       return this.context.serviceProduct?.detail || this.context.serviceProduct?.model ? 'S02' : 'serviceModel';
     }
 
+    showServiceProvider(provider, back) {
+      this.synthetic('이 제품의 서비스는 해당 대행업체에서 접수해 주세요.', {
+        id: '$externalServiceProvider', kind: 'handoff', items: [{ title: '서비스 대행업체', detail: provider }],
+        actions: [['대행업체 연락처 안내', '@41'], ['제품 다시 선택', back]]
+      });
+    }
+
+    transferAirScreen() {
+      return this.#transferPayment.arrears && this.#transferPayment.current ? 'transferAirPaid' : 'S04';
+    }
+
     symptomStep() {
       const id = this.screen?.id;
       if ((this.scenario?.no === 11 && id === 'S02') || id === 'serviceSymptom' || id === 'editSymptomPicker') return 0;
@@ -1215,7 +1353,7 @@
       if (this.scenario.no === 11) {
         this.execute(outcome === 'urgent' ? 'S04' : outcome === 'noWater' ? 'S05' : 'S06');
       } else if (this.scenario.no === 12) {
-        this.execute(outcome === 'urgent' ? 'serviceSafety' : this.serviceRegistrationEntry());
+        this.execute(outcome === 'urgent' ? 'serviceSafety' : outcome === 'noWater' ? 'serviceSelfHelp' : this.serviceRegistrationEntry());
       } else {
         this.execute('editSymptomConfirm');
       }
@@ -1225,7 +1363,10 @@
       const no = this.scenario?.no;
       const id = this.screen?.id;
       if (no === 9 && id === 'priorReinstallProduct') return { kind: 'service-product', title: '재설치 제품 확인' };
-      if (([11, 12].includes(no) && id === 'S01') || ([8, 9].includes(no) && id === 'S02')) {
+      if ([11, 12].includes(no) && id === 'S01') {
+        return { kind: 'service-product', title: this.isKnownSessionOwner() ? '나의 보유제품' : '제품 선택' };
+      }
+      if ([8, 9].includes(no) && id === 'S02') {
         return { kind: 'service-product', title: '보유 제품 선택' };
       }
       const step = this.symptomStep();
@@ -1243,7 +1384,7 @@
         return { kind: 'card-transaction', title: '카드 결제 내역 선택' };
       }
       if ((no === 3 && id === 'S03') || ([4, 5].includes(no) && (
-        typeof this.screen.paymentAmount === 'number' || ['oneTimeMethods', 'receiptPaymentMethods'].includes(id)
+        typeof this.screen.paymentAmount === 'number' || ['oneTimeMethods', 'receiptPaymentMethods', 'invoiceReceiptMethods'].includes(id)
       ))) {
         return { kind: 'payment-method', title: '결제수단 선택' };
       }
@@ -1273,7 +1414,10 @@
           id: `symptom:${step}:${index}`, label: item.title, target: '$selectSymptom',
           card: { kind: 'symptom', title: item.title, detail: item.detail, icon: item.icon }
         }));
-        return [...choices, { id: 'symptom:manual', label: '증상 직접 입력', target: 'customSymptom' },
+        const modelChoice = no === 11 && step === 0 && this.context.serviceProduct
+          && !this.context.serviceProduct.detail && !this.context.serviceProduct.model;
+        return [...choices, ...(modelChoice ? [{ id: 'symptom:model', label: '제품 모델명 입력', target: 'serviceDiagnosticModel' }] : []),
+          { id: 'symptom:manual', label: '증상 직접 입력', target: 'customSymptom' },
           { id: 'symptom:back', label: step === 0 && no === 14 ? '변경 항목으로' : step === 0 ? '제품 다시 선택' : '이전 단계', target: '$symptomBack' }];
       }
       const list = this.partnerCards();
@@ -1327,6 +1471,13 @@
       const extras = screen.explicitActions ? [] : continuation[no]?.[screen.id] ?? [];
       const custom = this.selectionActions();
       const defaults = [...steps, ...extras];
+      if ([11, 12].includes(no) && screen.id === 'S01' && this.isKnownSessionOwner()) {
+        defaults.splice(1, 0, ...additionalServiceProducts.map(({ title }) => [title + ' 선택', no === 11 ? 'S02' : 'serviceSymptom']));
+      }
+      if (no === 10 && screen.id === 'S04' && this.#transferPayment.arrears) defaults.shift();
+      if ([4, 5].includes(no) && this.context.transferPaymentReturn && ['S07', 'installmentResult'].includes(screen.id)) {
+        defaults.unshift(['명의변경 계속', '@10']);
+      }
       if (no === 9 && screen.id === 'S02' && this.context.priorReinstallProduct && this.context.phoneVerified) {
         defaults.unshift(['앞서 확인한 제품 선택', '$selectPriorReinstallProduct']);
       }
@@ -1357,6 +1508,7 @@
       if (selectionKind === 'service-product') {
         for (const action of actions) {
           if (/^(직수 )?정수기 선택$/.test(action.label)) action.card = registeredServiceProduct;
+          if ([11, 12].includes(no)) action.card ??= additionalServiceProducts.find(({ title }) => action.label === title + ' 선택');
           if (action.target === '$selectPriorReinstallProduct' && this.context.priorReinstallProduct) {
             action.card = { kind: 'product', title: this.context.priorReinstallProduct, detail: '앞서 확인한 제품' };
           }
@@ -1373,7 +1525,7 @@
         || (no === 40 && screen.id === 'withdrawalCardReason');
       return actions.map((action, index) => ({
         ...action,
-        requiresFields: Boolean(this.fields.length && action.target !== '$resendOtp' && !/재전송|뒤로|나가기/.test(action.label)
+        requiresFields: Boolean(this.fields.length && !['$resendOtp', 'membershipSerialGuide'].includes(action.target) && !/재전송|뒤로|나가기/.test(action.label)
           && (cancellationIntake || !/취소/.test(action.label))),
         ...(action.target === '$commitVisitCancellation' && { disabled: !this.context.cancellationReason }),
         ...(screen.bookingStage && ['다음', '분리·재설치 접수'].includes(action.label) && { disabled: !selectedDate }),
@@ -1469,6 +1621,16 @@
       const action = this.actionList().find((item) => item.id === actionId);
       if (action?.target === '$address' && !field.label.endsWith('주소')) return '';
       const error = validationError(field, input);
+      if (!error && this.scenario.no === 26 && field.label === '통합할 계약') {
+        const list = mergeContractList(input);
+        if (list.length < 3 || new Set(list.map(normalize)).size !== list.length) {
+          return '서로 다른 계약 세 건 이상을 쉼표로 구분해서 입력해 주세요.';
+        }
+      }
+      if (!error && this.scenario.no === 28 && field.label === '발행 월'
+        && (!/^\d{4}-(?:0[1-9]|1[0-2])$/.test(input) || input > estimateDateRange().today.slice(0, 7))) {
+        return '이미 발행된 월을 YYYY-MM 형식으로 입력해 주세요.';
+      }
       if (!error && this.scenario.no === 45 && field.label === '선납 개월 수'
         && (!/^[1-9]\d*\s*(?:개월)?$/.test(input)
           || !Number.isSafeInteger(Number.parseInt(input, 10) * 29900))) return '1개월 이상의 개월 수를 숫자로 입력해 주세요.';
@@ -1519,14 +1681,25 @@
       }
       const allowed = this.screen.validate?.oneOf;
       const dateOrder = this.screen.validate?.dateOrder ?? [];
+      const giroMembers = this.scenario.no === 25 && this.screen.id === 'giroMergeContracts'
+        ? ['첫 번째 계약', '두 번째 계약', '추가할 계약'] : [];
       this.fields = this.fields.map((field) => {
         const input = inputs[field.label];
         let error = this.validateFieldValue(field.id, input, action.id);
         if (!error && allowed?.field === field.label
-          && !allowed.sources.some((name) => normalize(inputs[name]) === normalize(input))) {
+          && !allowed.sources.some((name) => giroMembers.length ? giroContractKey(inputs[name]) === giroContractKey(input)
+            : normalize(inputs[name]) === normalize(input))) {
           error = '입력하신 계약 중에서 대표 계약을 입력해 주세요.';
         }
+        if (!error && input && giroMembers.includes(field.label)
+          && giroMembers.slice(0, giroMembers.indexOf(field.label)).some((member) => giroContractKey(inputs[member]) === giroContractKey(input))) {
+          error = '이미 선택한 계약과 다른 계약을 입력해 주세요.';
+        }
         const datePair = dateOrder.find(([earlier, later]) => earlier === field.label && inputs[later]);
+        if (!error && this.scenario.no === 26 && this.screen.id === 'mergeAdditionalContracts' && field.label === '대표 계약'
+          && !mergeContractList(inputs['통합할 계약']).some((contract) => normalize(contract) === normalize(input))) {
+          error = '입력하신 계약 중에서 대표 계약을 입력해 주세요.';
+        }
         if (!error && input && datePair && (datePair[2] ? input > inputs[datePair[1]] : input >= inputs[datePair[1]])) {
           error = datePair[2] ? `${datePair[0]}은 ${datePair[1]}과 같거나 그보다 앞서야 해요.`
             : `${datePair[0]}은 ${datePair[1]}보다 앞선 날짜를 입력해 주세요.`;
@@ -1582,7 +1755,7 @@
       if ([16, 17].includes(no) && actionId.startsWith('delivery:')) {
         this.context.deliveryOrderKey = actionId.slice(9);
       }
-      if (no === 12 && screen === 'serviceModel' && values.모델명) {
+      if ((no === 12 && screen === 'serviceModel' || no === 11 && screen === 'serviceDiagnosticModel') && values.모델명) {
         this.context.serviceProduct = { ...this.context.serviceProduct, detail: values.모델명 };
       }
       if ([8, 9, 12].includes(no)) {
@@ -1622,7 +1795,15 @@
       if ([4, 5].includes(no) && ['receiptTransfer', 'receiptVirtual'].includes(screen)) {
         this.context.paymentReceiptRequested = label === '현금영수증 신청';
       }
-      if ([8, 9].includes(no) && values['제품명 또는 모델명']) this.context.product = values['제품명 또는 모델명'];
+      if ([8, 9].includes(no)) {
+        const product = values['제품명 또는 모델명'];
+        if (product || screen === 'S02' && /정수기 선택$/.test(label)) {
+          this.context.product = product || registeredServiceProduct.title;
+          this.context.customMoveProduct = Boolean(product);
+          this.context.movePackage = /묶음 계약의 직수 정수기 선택/.test(label);
+        }
+        if (['valveOption', 'pairValveOption'].includes(screen)) this.context.moveValve = label === '조리수 밸브 포함';
+      }
       if ([3, 4, 5].includes(no) && values.카드번호) {
         this.context.payment = {
           title: this.context.issuer?.title || '신한카드',
@@ -1654,18 +1835,21 @@
           };
         }
       }
-      if ((screen === billingContractScreens[no] || no === 7 && screen === 'S02') && / 선택$/.test(label)) {
+      if ((screen === billingContractScreens[no] || no === 4 && screen === 'chargeMoreContracts' || no === 7 && screen === 'S02') && / 선택$/.test(label)) {
         this.context.product = label.replace(/ 선택$/, '');
+        if ([4, 5].includes(no) && this.context.product !== '공기청정기') this.context.transferPaymentReturn = false;
       } else if (/정수기 선택|공기청정기 선택/.test(label)) {
         this.context.product = label.replace(' 선택', '');
       }
       if ((no !== 28 && /주소/.test(label)) || no === 17) {
         this.context.modifiedAddress = values.주소 || values['배송 주소'] || this.context.modifiedAddress;
       }
-      if (screen === 's1' && no === 35) this.context.serviceKind = label;
+      if (no === 35 && ['s1', 'serviceOwnedKind'].includes(screen)) this.context.serviceKind = label;
       if (screen === 's1' && no === 39) this.context.paymentKind = label;
       if (screen === 's1' && no === 44) this.context.installationKind = label;
       if (no === 44) {
+        if (label === '직수 정수기 재설치 선택') this.context.installationProduct = '직수 정수기 WPU-1000';
+        if (label === '식기세척기 재설치 선택') this.context.installationProduct = '식기세척기 DWA-2000';
         if (screen === 's2') this.context.installationProduct = values['제품명 또는 모델명'];
         if (screen === 's5') this.context.installationMoveDate = undefined;
         if (screen === 'installationMoveDate') this.context.installationMoveDate = values['이사 예정일'];
@@ -1680,17 +1864,46 @@
         if (screen === 's2') this.context.refundOrderDetails = undefined;
       }
       if (screen === 's2' && no === 18) this.context.contactTopic = label;
-      if (no === 19 && (['billDocuments', 'contractDocuments'].includes(screen) || screen === 's1' && label === '가상계좌확인서')) {
-        this.context.document = label;
+      if (no === 19) {
+        if (['billDocuments', 'contractDocuments'].includes(screen) || screen === 's1' && label === '가상계좌확인서') {
+          this.context.document = label;
+          this.context.documentSchedule = undefined;
+          this.context.billDocumentSettings = { ...this.context.billDocumentSettings, '조회 기간': undefined,
+            '선수금': undefined, '가해약 계약': undefined, '부가세 기준': undefined };
+        }
+        if (/^매월 \d+일$/.test(label)) this.context.documentSchedule = label;
+        const option = {
+          billAdvance: '선수금', billMonthlyAdvance: '선수금', billProvisional: '가해약 계약',
+          billTax: '부가세 기준', billMonthlyTax: '부가세 기준'
+        }[screen];
+        if (option) this.context.billDocumentSettings = { ...this.context.billDocumentSettings, [option]: label };
+        if (values.시작일 && values.종료일) this.context.billDocumentSettings = {
+          ...this.context.billDocumentSettings, '조회 기간': `${values.시작일} ~ ${values.종료일}`
+        };
+        if (values['계약 또는 제품명']) {
+          this.context.billContract = values['계약 또는 제품명'];
+          this.context.billDocumentSettings = { ...this.context.billDocumentSettings, '대상 계약': paymentContractDisplay(this.context.billContract) };
+        }
       }
-      if (no === 19 && /^매월 \d+일$/.test(label)) this.context.documentSchedule = label;
-      if (no === 22 && screen === 's3') this.context.serviceKind = label;
-      if (no === 22 && values.시작일 && values.종료일) this.context.documentPeriod = `${values.시작일} ~ ${values.종료일}`;
+      if (no === 20 && screen === 's3') {
+        this.context.terminationDocumentRequest = [
+          { title: '해약 유형', detail: receiptReason(values['해약 유형']) },
+          { title: '해약 사유', detail: receiptReason(values['해약 사유']) },
+          { title: '희망 회수일', detail: values['희망 회수일'] }
+        ];
+      }
+      if (no === 22) {
+        if (screen === 's1') this.context.serviceDocumentContract = undefined;
+        if (screen === 'serviceContractLookup') this.context.serviceDocumentContract = values['계약 또는 제품명'];
+        if (screen === 's3') this.context.serviceKind = label;
+      }
+      if (no === 24 && values['계약 또는 제품명']) this.context.giroSelectedContract = paymentContractDisplay(values['계약 또는 제품명']);
       if (no === 25 && screen === 'giroMergeContracts') {
         this.context.giroGroupRequest = [
           { title: '요청 구분', detail: '고지서 통합' },
           { title: '대표 계약', detail: paymentContractDisplay(values['대표 계약']) },
-          { title: '통합 대상 계약', detail: [values['첫 번째 계약'], values['두 번째 계약']].map(paymentContractDisplay).join(' · ') }
+          { title: '통합 대상 계약', detail: [values['첫 번째 계약'], values['두 번째 계약'], values['추가할 계약']]
+            .filter(Boolean).map(paymentContractDisplay).join(' · ') }
         ];
       }
       if (no === 25 && ['giroSplitAll', 'giroSplitSome'].includes(screen)) {
@@ -1701,10 +1914,16 @@
           { title: contractLabel, detail: paymentContractDisplay(values[contractLabel]) }
         ];
       }
-      if (no === 25 && screen === 's5') this.context.giroDeliveryMethod = label;
-      if (no === 26 && screen === 'mergeContracts') {
+      if (no === 25 && screen === 's5') {
+        this.context.giroDeliveryMethod = label;
+        this.context.giroEvidence = undefined;
+      }
+      if (no === 25 && screen === 'giroEvidence' && label !== '뒤로') this.context.giroEvidence = label;
+      if (no === 26 && ['mergeContracts', 'mergeAdditionalContracts'].includes(screen)) {
         this.context.representativeContract = paymentContractDisplay(values['대표 계약']);
-        this.context.mergeMembers = [values['첫 번째 계약'], values['두 번째 계약']].map(paymentContractDisplay).join(' · ');
+        const contracts = screen === 'mergeContracts' ? [values['첫 번째 계약'], values['두 번째 계약']]
+          : mergeContractList(values['통합할 계약']);
+        this.context.mergeMembers = contracts.map(paymentContractDisplay).join(' · ');
       }
       if (no === 26 && screen === 's5') {
         this.context.mergeEvidence = label === '증빙 정보도 변경' ? '대표 계약 기준으로 변경' : '기존 정보 유지';
@@ -1718,9 +1937,23 @@
       }
       if (no === 30 && screen === 'careLookup') this.context.careContract = paymentContractDisplay(values['계약 또는 제품명']);
       if (no === 30 && values['요청 내용']) {
-        this.context.careRequestKind = { careReschedule: '방문 날짜 변경', careEarlier: '사전 점검', careCallback: '방문 담당자 연락' }[screen];
+        this.context.careRequestKind = {
+          careReschedule: '방문 날짜 변경', careEarlier: '사전 점검', careCallback: '방문 담당자 연락', careStopNotice: '방문 중지·특별관리 확인'
+        }[screen];
+      }
+      if (no === 32 && screen === 's2' && values['제품 제조번호']) {
+        const serial = values['제품 제조번호'];
+        this.context.membershipSerialCodes = serial.length === 22
+          ? { year: serial.slice(14, 15), month: serial.slice(15, 17) }
+          : { year: serial.slice(15, 17), month: serial.slice(17, 18).toUpperCase() };
       }
       if (no === 36 && screen === 's2') this.context.returnContract = paymentContractDisplay(values['계약 또는 제품명']);
+      if (no === 42 && screen === 's6' && values['해약 희망일']) {
+        const date = values['해약 희망일'];
+        this.context.membershipTerminationDate = date.slice(0, 4) + '년 ' + dateLabel(date);
+        this.context.membershipTerminationReason = receiptReason(values['해약 사유']);
+      }
+      if (no === 42 && screen === 'optOutReason' && values['연장 거부 사유']) this.#membershipOptOut = true;
       if (no === 45) {
         if (values['계약 또는 제품명']) this.context.prepaidContract = prepaidRefundContractDisplay(values['계약 또는 제품명']);
         const years = screen === 'prepaidTerms' ? Number(/^([1-5])년/.exec(label)?.[1]) : 0;
@@ -1728,8 +1961,11 @@
         if (months) {
           const rate = years ? 2 + years * 2 : 0;
           const subtotal = 29900 * months;
-          this.context.prepaid = { months, amount: rate ? Math.round(subtotal * (100 - rate) / 100) : subtotal };
+          this.context.prepaid = { months, start: years ? 12 : undefined,
+            amount: rate ? Math.round(subtotal * (100 - rate) / 100) : subtotal };
         }
+        const start = screen === 'prepaidStartChoice' && /^(12|13)회차/.exec(label)?.[1];
+        if (start && this.context.prepaid?.start) this.context.prepaid = { ...this.context.prepaid, start: Number(start) };
         if (screen === 'prepaidPaymentMethods') {
           this.context.prepaidPayment = undefined;
           this.context.prepaidPaymentDate = undefined;
@@ -1753,6 +1989,7 @@
       }
       if (no === 47) {
         if (values['계약 또는 제품명']) this.context.refundContract = prepaidRefundContractDisplay(values['계약 또는 제품명']);
+        if (screen === 'refundReasons') this.context.refundReason = label;
         if (screen === 's6' && values.계좌번호) {
           this.context.refundAccount = values.은행 + ' · ••••-••••-' + values.계좌번호.replace(/\D/g, '').slice(-4);
         }
@@ -1760,12 +1997,13 @@
       if (no === 49) {
         if (screen === 's4') this.context.consent = label;
         if (label === '동의하기' || label === '동의 철회') {
-          if (screen === 'marketingConsent') this.context.marketingConsent = label === '동의하기';
-          if (screen === 'commercialConsent') this.context.commercialConsent = label === '동의하기';
+          if (screen === 'marketingConsent') this.#consentSettings.marketing = label === '동의하기';
+          if (screen === 'commercialConsent') this.#consentSettings.commercial = label === '동의하기';
         }
       }
       if (no === 28) {
         if (screen === 's1') this.context.customerChange = undefined;
+        if (screen === 'customerInvoicePeriod') this.context.customerInvoicePeriod = values['발행 월'];
         if (['s2', 's4', 'customerContractAddress', 'customerAddress', 'customerUserName', 'customerUserPhone', 'customerUserBoth', 'customerLandline'].includes(screen)) {
           const phone = values['휴대폰 번호'] || values['유선 전화번호'];
           const email = values['이메일 주소'];
@@ -1833,7 +2071,12 @@
         this.context.modifiedAddress = undefined;
         this.context.dateIso = undefined;
         this.context.date = undefined;
+        this.context.deliveryDateRequest = undefined;
       }
+      if (no === 17 && screen === 'requestedDeliveryDate') this.context.deliveryDateRequest = {
+        reason: values['일정 변경 사유'] && receiptReason(values['일정 변경 사유']),
+        note: values['배송 변경 메모'] && receiptReason(values['배송 변경 메모'])
+      };
       if (no === 17 && screen === 'S06') this.context.deliveryNote = values['전달 요청 사항'];
     }
 
@@ -1903,6 +2146,10 @@
       const no = this.scenario.no;
       if (method === 'PASS 본인인증' && this.isReusablePass(source)) {
         this.#sessionIdentity ??= { ...demoIdentity };
+        if (target === billingLookupTarget(no) && unavailableBillingScreens[no] && normalize(this.#sessionIdentity.phone) === '01000000000') {
+          this.execute(unavailableBillingScreens[no]);
+          return;
+        }
         // The demo contract holder and a service address's eligibility are separate checks.
         if (!this.isKnownSessionOwner() && ![8, 9, 12].includes(no)) {
           const rejected = failure ?? authFailures[no]?.[source];
@@ -1922,6 +2169,9 @@
       if (no === 4 && target === 'chargeContract' && this.context.carePaymentReturn) {
         this.context.product = carePaymentProduct;
         this.execute('paymentScope');
+      } else if (no === 4 && target === 'chargeContract' && this.context.documentPaymentProduct) {
+        this.context.product = this.context.documentPaymentProduct;
+        this.execute(this.context.product === '직수 정수기' ? 'chargeDetails' : 'paymentScope');
       } else {
         if (no === 45 && target === 'prepaidPaid' && this.context.prepaidPayment) {
           const today = estimateDateRange().today;
@@ -1979,6 +2229,7 @@
           break;
         case '$handoff': {
           const items = [{ title: '상담 분류', detail: this.scenario.displayTitle || this.scenario.title }];
+          if (no === 25 && this.context.giroEvidence) items.push({ title: '증빙 발행 요청', detail: this.context.giroEvidence });
           if (counselorIsAvailable()) {
             this.synthetic('상담사가 문의 내용을 확인할 수 있도록 채팅 상담 연결을 요청하시겠어요?', {
               id: '$handoff', kind: 'handoff', items,
@@ -2237,14 +2488,9 @@
           break;
         case '$identifyServiceProduct': {
           const name = values['제품명 또는 모델명'];
-          const key = normalize(name);
-          const provider = /필립스/.test(key) ? '필립스' : /삼성전자|^삼성$/.test(key) ? '삼성전자'
-            : !/eonb450/.test(key) && /경동나비엔|가스레인지|전기레인지|인덕션레인지|전기오븐레인지/.test(key) ? '경동나비엔' : '';
+          const provider = serviceProviderFor(name);
           if (provider) {
-            this.synthetic('이 제품의 서비스는 해당 대행업체에서 접수해 주세요.', {
-              kind: 'handoff', items: [{ title: '서비스 대행업체', detail: provider }],
-              actions: [['대행업체 안내 보기', '@41'], ['제품 다시 선택', 'S01']]
-            });
+            this.showServiceProvider(provider, 'S01');
             break;
           }
           const family = /비데|bidet/i.test(name) ? 'bidet' : /정수기|wpu/i.test(name) ? 'water' : 'other';
@@ -2297,10 +2543,38 @@
         }
         case '$selfHelp':
           this.synthetic('출수가 되지 않으면 단수 여부와 제품 표시창의 오류 메시지를 확인해 주세요. 증상이 계속되면 AS 방문을 접수할 수 있어요.', {
-            kind: 'result', actions: [['문제가 계속돼요', 'S06'], ['해결했어요', '$finish']]
+            kind: 'result', actions: [['문제가 계속돼요', no === 12 ? '$continueServiceRegistration' : 'S06'], ['해결했어요', '$finish']]
           });
           break;
+        case '$checkMoveServiceProduct': {
+          const paired = screen === 'pairSplitAddress';
+          const next = paired ? 'pairSplitCheck' : 'customMoveStatus';
+          const provider = serviceProviderFor(values['제품명 또는 모델명']);
+          if (provider) this.showServiceProvider(provider, screen);
+          else this.execute(next);
+          break;
+        }
+        case '$viewTransferApplication':
+          this.execute(this.#transferCancelled ? 'transferAlreadyCancelled' : 'transferPending');
+          break;
+        case '$viewTransferAir':
+          this.execute(this.transferAirScreen());
+          break;
+        case '$reviewTransferCancellation':
+          this.execute(this.#transferCancelled ? 'transferAlreadyCancelled' : 'transferCancelConfirm');
+          break;
+        case '$openTransferCancellation':
+          this.execute(this.#transferCancelled ? 'transferCancelEmpty' : 'transferCancelList');
+          break;
+        case '$cancelTransferApplication':
+          this.#transferCancelled = true;
+          this.execute('transferCancelled');
+          break;
         case '$visitResults':
+          this.showVisitResults();
+          break;
+        case '$visitSingleCustomer':
+          this.context.visitProfile = 'single';
           this.showVisitResults();
           break;
         case '$visitDetails':
@@ -2365,7 +2639,7 @@
           break;
         case '$commitDeliveryChange':
           this.recordDeliveryEvent('IF_AICC_P004');
-          this.context.deliveryChange = { address: this.context.modifiedAddress, date: this.context.dateIso };
+          this.context.deliveryChange = { address: this.context.modifiedAddress, date: this.context.dateIso, ...this.context.deliveryDateRequest };
           this.recordDeliveryEvent('IF_AICC_P021');
           this.execute('S07');
           this.recordDeliveryEvent('S07');
@@ -2410,6 +2684,23 @@
             actions: [['발송 방법 선택', 's4'], ['여기서 마치기', '$finish']]
           });
           break;
+        case '$lookupServiceDocument': {
+          const record = serviceDocumentFixtures[this.context.serviceKind];
+          const product = normalize(values['제품명 또는 모델명']);
+          const contract = normalize(this.context.serviceDocumentContract);
+          const aliases = record ? [record.product, record.code, ...record.aliases].map(normalize) : [];
+          const exactContract = !contract || aliases.includes(contract.replace(/계약$/, ''))
+            || contract === (record?.code === 'WPU-1000' ? 'ct250601001' : record?.code === 'ACL-1000' ? 'ct250901001' : undefined);
+          if (!record || !aliases.includes(product) || !exactContract || record.date < values.시작일 || record.date > values.종료일) {
+            this.context.serviceDocumentRecord = undefined;
+            this.execute('serviceNoPeriodRecord');
+            break;
+          }
+          this.context.serviceDocumentRecord = record;
+          this.context.documentPeriod = `${values.시작일} ~ ${values.종료일}`;
+          this.execute('s4');
+          break;
+        }
         case '$receiptPicker':
           if (no === 23 && this.context.phoneVerified) {
             this.synthetic('발급할 서류의 카드 결제 내역을 선택해 주세요.', { id: '$receiptPicker' });
@@ -2490,6 +2781,10 @@
           break;
         case '$costResult':
           this.execute(this.context.serviceKind === '필터 교체' ? 's4' : this.context.serviceKind === 'AS 점검' ? 's5' : 's3');
+          break;
+        case '$serviceCommercialCost':
+        case '$serviceValveOnlyCost':
+          this.execute(this.context.serviceKind === '필터 교체' ? 's4' : target.slice(1));
           break;
         case '$relatedService':
           this.execute(this.context.serviceKind === '이전설치' ? '@8' : this.context.serviceKind === '필터 교체' ? '@30' : '@12');

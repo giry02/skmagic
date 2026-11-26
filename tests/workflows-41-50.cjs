@@ -67,6 +67,24 @@ test("42 collects a reason after the irreversible opt-out confirmation", () => {
   assert.equal(go(chat, "연장 거부 등록", { "연장 거부 사유": "" }).screen.id, "optOutReason");
   go(chat, "연장 거부 등록");
   assert.equal(value(go(chat, "멤버십 상태 확인"), "자동연장"), "제외");
+  chat.start(42);
+  go(chat, "연장 여부 확인");
+  assert.equal(go(chat, "연장 상태 확인").screen.id, "optOutStatus");
+});
+
+test("42 blocks unknown membership and keeps the selected termination request", () => {
+  const unknown = begin(42);
+  go(unknown, "자동연장 거부");
+  go(unknown, "대상 계약 확인", { "계약 또는 제품명": "UNKNOWN-777" });
+  assert.equal(approve(unknown).screen.id, "s2");
+  const chat = begin(42);
+  go(chat, "멤버십 해약 문의");
+  go(chat, "대상 계약 확인");
+  approve(chat);
+  const review = go(chat, "해약 상담 내용 확인", { "해약 희망일": "2026-12-10", "해약 사유": "이사 예정" });
+  assert.equal(value(review, "해약 희망일"), "2026년 12월 10일(목)");
+  assert.equal(value(review, "해약 사유"), "이사 예정");
+  assert.equal(value(review, "납입 예정금액"), "상담 확인 필요");
 });
 
 test("43 verifies the contract before giving an order-specific benefit or an exchange review", () => {
@@ -80,6 +98,13 @@ test("43 verifies the contract before giving an order-specific benefit or an exc
   approve(exchange);
   go(exchange, "아직 개봉하거나 사용하지 않았어요");
   assert.equal(go(exchange, "받은 지 7일이 지났어요").screen.id, "giftLate");
+  for (const label of ["사은품 변경", "불량 또는 판매처 문의"]) {
+    const unknown = begin(43);
+    go(unknown, label);
+    go(unknown, "계약 확인", { "계약 또는 제품명": "UNKNOWN-777" });
+    assert.equal(approve(unknown).screen.id, "giftUnconfirmed");
+    assert.ok(unknown.getState().actions.every(({ label: action }) => !/개봉|불량/.test(action)));
+  }
 });
 
 test("44 checks a move-related site visit from the next business day and carries the appointment into callback", () => {
@@ -126,6 +151,46 @@ test("44 carries the checked model into 09 without skipping phone verification",
   }
 });
 
+test("44 separates uncertain standalone cost, contact reuse and masked notice", () => {
+  const chat = begin(44, "2026-11-26T09:00:00+09:00");
+  go(chat, "재설치 방문");
+  go(chat, "설치 환경 확인", { "제품명 또는 모델명": "직수 정수기" });
+  go(chat, "계속하기");
+  go(chat, "재설치 방문 접수");
+  assert.equal(go(chat, "재설치 방문 정보 확인", { "휴대폰 번호": "010-0000-0009" }).screen.id, "installationMultipleCustomers");
+  go(chat, "설치 환경만 확인");
+  const booked = go(chat, "조리수 밸브 필요 없음");
+  assert.equal(value(booked, "재설치 예상 비용"), undefined);
+  assert.match(value(booked, "재설치 비용"), /구독·멤버십·일시불/);
+  const notice = go(chat, "접수 안내 알림톡 받기");
+  assert.equal(value(notice, "받는 방법"), "알림톡");
+  assert.equal(value(notice, "받는 번호"), "010-••••-0009");
+});
+
+test("44 resolves a shared verified number by registered address and carries the chosen product into 09", () => {
+  const chat = begin(44, "2026-11-26T09:00:00+09:00");
+  go(chat, "재설치 방문");
+  go(chat, "설치 환경 확인", { "제품명 또는 모델명": "식기세척기" });
+  go(chat, "계속하기");
+  go(chat, "재설치 방문 접수");
+  go(chat, "재설치 방문 정보 확인", { "휴대폰 번호": "010-0000-0009" });
+  go(chat, "등록 고객 확인");
+  go(chat, "휴대폰 확인");
+  go(chat, "동의하고 계속");
+  const { verification } = go(chat, "인증번호 받기", { "휴대폰 번호": "010-0000-0009" });
+  go(chat, "확인", { 인증번호: verification.code });
+  const match = go(chat, "등록 고객 조회");
+  assert.equal(value(match, "보유 제품"), "직수 정수기 · WPU-1000");
+  assert.equal(value(match, "연락처"), "010-••••-0009");
+  go(chat, "다른 주소 확인");
+  const second = go(chat, "등록 고객 조회", { "등록된 사용 주소": "서울 영등포구 신길동" });
+  assert.equal(value(second, "보유 제품"), "식기세척기 · DWA-2000");
+  const reinstall = go(chat, "식기세척기 재설치 선택");
+  assert.equal(reinstall.scenario.no, 9);
+  assert.ok(reinstall.actions.every(({ label }) => !/휴대폰 확인|인증번호 받기/.test(label)));
+  assert.equal(reinstall.actions.find(({ label }) => label === "앞서 확인한 제품 선택")?.card?.title, "식기세척기 DWA-2000");
+});
+
 test("45 calculates a nonstandard estimate but requires verified remaining months before payment", () => {
   const chat = begin(45, "2026-11-26T09:00:00+09:00");
   go(chat, "선납 금액·할인 확인");
@@ -149,15 +214,34 @@ test("45 regular contracts can issue an unpaid virtual account without a receipt
   approve(chat);
   go(chat, "1년 금액 확인");
   go(chat, "계속하기");
+  go(chat, "선납 시작 회차 변경");
+  assert.equal(value(go(chat, "13회차부터 적용"), "적용 회차 범위"), "13~24회차");
   go(chat, "선납 진행");
   go(chat, "발행하지 않기");
   go(chat, "선납 결제수단 확인");
   go(chat, "가상계좌");
   const issued = go(chat, "가상계좌 발급");
   assert.equal(value(issued, "입금 금액"), "344,448원");
+  assert.equal(value(issued, "적용 회차 범위"), "13~24회차");
   assert.equal(value(issued, "선납 상태"), "입금 대기");
   assert.equal(value(issued, "선납 적용 기간"), "12개월");
   assert.ok(!issued.actions.some((action) => action.label.includes("영수증")));
+});
+
+test("45 tax invoice lookup checks contract and issue date before resend", () => {
+  for (const [contract, expected] of [["SK-261125-063", "prepaidTaxInvoice"], ["직수 정수기", "prepaidTaxApproved"]]) {
+    const chat = begin(45);
+    go(chat, "선납 견적서·영수증");
+    go(chat, "선납 상태 확인", { "계약 또는 제품명": contract });
+    approve(chat);
+    go(chat, "세금계산서 재발송 문의");
+    assert.equal(go(chat, "세금계산서 조회", { "세금계산서 발행일": "2026-11-24" }).screen.id, "prepaidTaxInvoiceNotFound");
+    go(chat, "발행일 다시 입력");
+    const matched = go(chat, "세금계산서 조회");
+    assert.equal(matched.screen.id, expected);
+    assert.equal(value(matched, "세금계산서 발행일"), "2026년 11월 25일");
+    assert.equal(matched.actions.some(({ label }) => label === "등록된 이메일로 재발송"), expected === "prepaidTaxInvoice");
+  }
 });
 
 test("45 retains the settled tender, selected term, and known payment date on its result and receipt", () => {
@@ -224,6 +308,17 @@ test("46 confirms the selected order before displaying the masked refund account
   assert.equal(value(cancelled, "환불 예정일"), undefined);
 });
 
+test("46 will not offer any order or refund account unless all three identity fields match", () => {
+  for (const inputs of [{ 이름: "임가람" }, { "휴대폰 번호": "010-0000-4321" }, { 주소: "서울 영등포구 문래동 777" }]) {
+    const chat = begin(46);
+    go(chat, "선납 환불 확인");
+    const unknown = go(chat, "대상 주문 조회", inputs);
+    assert.equal(unknown.screen.id, "refundOrderNotFound");
+    assert.equal(value(unknown, "환불 계좌"), undefined);
+    assert.ok(unknown.actions.every(({ label }) => !/주문 선택/.test(label)));
+  }
+});
+
 test("47 separates same-day re-payment and matches all virtual deposit fields before evidence review", () => {
   const card = begin(47);
   go(card, "제휴카드로 다시 결제");
@@ -260,6 +355,23 @@ test("47 keeps unknown contracts away from refunds or card re-payment details", 
   assert.equal(value(refund, "입금 완료일"), "2026년 11월 24일");
 });
 
+test("47 requires the completed filter service and matched collection record before account review", () => {
+  for (const [suffix, expected] of [["053", "switchRefundVerified"], ["054", "switchRefundReview"]]) {
+    const chat = begin(47);
+    go(chat, "교체·전환·명의변경");
+    go(chat, "계약 확인", { "계약 또는 제품명": `SK-261125-${suffix}` });
+    approve(chat);
+    const result = go(chat, "전환 멤버십");
+    assert.equal(result.screen.id, expected);
+    if (suffix === "054") continue;
+    assert.equal(value(result, "처리 내역"), "부품 사용 확인");
+    go(chat, "2026년 11월 필터 교체비 선택");
+    const review = go(chat, "환불 정보 확인");
+    assert.equal(value(review, "환불 사유"), "전환 멤버십");
+    assert.equal(value(review, "처리 상태"), "계약자 명의 확인 필요");
+  }
+});
+
 test("48 approved transaction delivery masks the recipient and applies the 10th inclusive deadline", () => {
   const chat = begin(48);
   go(chat, "영수증 받기");
@@ -276,6 +388,24 @@ test("48 approved transaction delivery masks the recipient and applies the 10th 
   }
 });
 
+test("48 protects receipt-number and retroactive lookup and checks approval date and suffix", () => {
+  for (const label of ["발행번호 안내", "전월분 소급 발행"]) {
+    const unknown = begin(48, "2026-12-08T09:00:00+09:00");
+    go(unknown, label);
+    go(unknown, "계약 확인", { "계약 또는 제품명": "UNKNOWN-777" });
+    assert.equal(approve(unknown).screen.id, "s2");
+  }
+  const verified = begin(48);
+  go(verified, "영수증 받기");
+  go(verified, "계약 확인");
+  approve(verified);
+  go(verified, "발행일·인증값으로 찾기");
+  assert.equal(go(verified, "발행 내역 조회", { "발행번호 끝 4자리": "9999" }).screen.id, "receiptTransactionNotFound");
+  go(verified, "조회 정보 다시 입력");
+  assert.equal(value(go(verified, "발행 내역 조회"), "거래 상태"), "승인");
+  assert.equal(go(verified, "이 현금영수증 받기").screen.id, "approvedReceiptDelivery");
+});
+
 test("49 changes one consent item and retains the other in the same conversation", () => {
   const chat = begin(49);
   go(chat, "휴대폰으로 확인");
@@ -288,6 +418,28 @@ test("49 changes one consent item and retains the other in the same conversation
   const settings = go(chat, "동의 상태 다시 보기");
   assert.equal(value(settings, "마케팅 활용"), "미동의");
   assert.equal(value(settings, "영리성 정보 수신"), "동의");
+  chat.start(49);
+  go(chat, "휴대폰으로 확인");
+  assert.equal(value(go(chat, "SK매직 항목 확인"), "마케팅 활용"), "미동의");
+  chat.reset();
+  chat.start(49);
+  go(chat, "휴대폰으로 확인");
+  go(chat, "동의하고 계속");
+  const second = go(chat, "인증번호 받기");
+  go(chat, "확인", { 인증번호: second.verification.code });
+  assert.equal(value(go(chat, "SK매직 항목 확인"), "마케팅 활용"), "동의");
+});
+
+test("49 SMS verification does not authorize unrelated customer consent data", () => {
+  for (const inputs of [{ 이름: "임가람" }, { "휴대폰 번호": "010-0000-5678" }]) {
+    const chat = begin(49);
+    go(chat, "휴대폰으로 확인");
+    go(chat, "동의하고 계속");
+    const { verification } = go(chat, "인증번호 받기", inputs);
+    const unknown = go(chat, "확인", { 인증번호: verification.code });
+    assert.equal(unknown.screen.id, "consentCustomerNotFound");
+    assert.ok(unknown.actions.every(({ label }) => !/동의|항목 확인/.test(label)));
+  }
 });
 
 test("50 has an operator preview without customer verification or approval controls", () => {

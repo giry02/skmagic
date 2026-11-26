@@ -1099,6 +1099,14 @@ test("school-fee exemption and deposit carry-over follow the contract and custom
   const carry = deposit.choose("가상계좌 입금 처리 확인");
   assert.equal(carry.screen.id, "depositCarry");
   assert.equal(deposit.choose("환불 문의").scenario.no, 47);
+  const duplicate = begin(39);
+  duplicate.choose("이중 결제·가상계좌 입금");
+  chooseAvailable(duplicate, "계약 확인", { "계약 또는 제품명": "SK-261125-044" });
+  approvePass(duplicate);
+  duplicate.choose("가상계좌 입금 처리 확인");
+  duplicate.choose("중복 입금 내역 확인");
+  const selected = duplicate.choose("2026년 11월 중복 입금 선택");
+  assert.ok(selected.messages.at(-1).items.some(({ title, detail }) => title === "중복 입금액" && detail === "29,900원"));
 });
 
 test("deposit usage period follows contract day and ordinary billing never implies a waiver", () => {
@@ -1112,6 +1120,10 @@ test("deposit usage period follows contract day and ordinary billing never impli
   chooseAvailable(billing, "면제·청구 금액 확인");
   chooseAvailable(billing, "계약 확인", { "계약 또는 제품명": "직수 정수기" });
   assert.equal(approvePass(billing).screen.id, "s4");
+  const closed = begin(39);
+  chooseAvailable(closed, "이번 달 납부 결과");
+  chooseAvailable(closed, "계약 확인", { "계약 또는 제품명": "SK-261125-042" });
+  assert.ok(approvePass(closed).messages.at(-1).items.some(({ title, detail }) => title === "계약 종료일" && detail === "2026년 10월 31일"));
 });
 
 test("contract withdrawal distinguishes closed, unpaid, card and account routes", () => {
@@ -1133,7 +1145,10 @@ test("contract withdrawal distinguishes closed, unpaid, card and account routes"
   const account = enter("052").chat;
   chooseAvailable(account, "해약철회 진행");
   chooseAvailable(account, "철회와 환불 조건 확인", { "해약취소 사유": "계속 이용" });
-  assert.equal(chooseAvailable(account, "환불 진행").screen.id, "refundOwnership");
+  assert.equal(chooseAvailable(account, "환불 진행").screen.id, "withdrawalRefundPeriod");
+  const refund = chooseAvailable(account, "2026년 11월 납부 건 선택");
+  assert.ok(refund.messages.at(-1).items.some(({ title, detail }) => title === "확인된 납부 금액" && detail === "87,500원"));
+  assert.equal(chooseAvailable(account, "환불 계좌 확인").screen.id, "refundOwnership");
   assert.equal(chooseAvailable(account, "계약자 본인 명의예요").screen.id, "refundAccount");
 });
 
