@@ -735,17 +735,9 @@
     });
     if (choices.childElementCount) controls.append(choices);
 
-    if (flow.screen?.kind === "internal-only" || workflow && flow.screen?.kind !== "closed") {
+    if (flow.screen?.kind === "internal-only" && flow.detail) {
       const extras = element("div", "workflow-tools");
-      if (flow.screen?.kind === "internal-only" && flow.detail) extras.append(element("p", "", flow.detail));
-      if (workflow && flow.screen?.kind !== "internal-only") {
-        const resume = button("AI에 이어서 질문하기");
-        resume.addEventListener("click", () => {
-          archiveWorkflow();
-          update({ focus: true });
-        });
-        extras.append(resume);
-      }
+      extras.append(element("p", "", flow.detail));
       controls.append(extras);
     }
   }
