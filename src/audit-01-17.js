@@ -57,7 +57,7 @@
   const resolved = (fallback, rules = []) => ({ resolve: { default: fallback, rules } });
   const today = new Intl.DateTimeFormat('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Seoul' }).format(new Date());
   const paymentDay = Number(today.slice(-2));
-  const penaltyDate = { label: '해약접수 예정일', type: 'date', sample: today, required: false };
+  const penaltyDate = { label: '해약접수 예정일', type: 'date', sample: today, required: false, skipLabel: '오늘 기준으로 조회' };
   const choosePayment = (registered, oneTime) => [['등록 결제수단', registered], ['일회성 납부수단', oneTime], ['나가기', '$finish']];
   const platformPayment = (list, overdueCycles) => {
     const needsRegistration = overdueCycles >= 3;
@@ -287,7 +287,8 @@
           items: [item('직수 정수기', 'WPU-1000 · 개별 계약'), item('비데', 'BID-1000 · 패키지 할인'), item('공기청정기', 'ACL-1000 · 크로스 패키지 할인'), item('매트리스', 'MT-1000 · 패키지 유형 중복')]
         },
         S05: {
-          message: '해약접수 예정일을 입력해 주세요. 입력하지 않으면 오늘을 기준으로 조회해요. 날짜는 오늘부터 한 달 이내로 선택할 수 있고 실제 해약접수일에 따라 위약금이 달라질 수 있어요.',
+          message: '해약접수 예정일을 입력해 주세요. 오늘부터 한 달 이내의 날짜를 보내면 위약금을 조회해요. 오늘 기준으로도 조회할 수 있고, 실제 해약접수일에 따라 금액이 달라질 수 있어요.',
+          lookupOnSubmit: true,
           items: [], fields: [penaltyDate], actions: [['위약금 조회', 'S06'], ['뒤로', 'S04']]
         },
         S06: { message: '선택하신 계약의 위약금과 상세 해약금을 확인해 주세요. 실제 해약접수일에 따라 금액이 달라질 수 있어요.',
@@ -888,7 +889,7 @@
           { label: '희망 배송일', placeholder: 'YYYY-MM-DD', type: 'date', sample: '2026-12-02' },
           { label: '일정 변경 사유', placeholder: '날짜를 바꾸려는 이유', required: false },
           { label: '배송 변경 메모', placeholder: '전달할 내용이 있으면 입력해 주세요', required: false }
-        ], [['예약 가능일자 확인', '$deliveryDateLookup'], ['뒤로', '$deliveryOrder']]),
+        ], [['예약 가능일자 확인', '$deliveryDateLookup'], ['뒤로', '$deliveryOrder']], { lookupOnSubmit: true }),
         noDeliveryDates: handoff('선택할 수 있는 배송일이 없어요. 상담사에게 배송 일정을 문의해 주세요.'),
         S05: {
           actions: [['배송 가능일 선택', '$date'], ['더보기', '$moreDates'], ['확인', '$commitDeliveryChange']]
@@ -991,7 +992,8 @@
   for (const { from, id, result, product, total, contract, penalty, effects } of packages) {
     contracts[from].actions[0][1] = id;
     contracts[id] = {
-      kind: 'input', message: `${product}의 해약접수 예정일을 입력해 주세요. 입력하지 않으면 오늘을 기준으로 조회해요. 실제 해약접수일에 따라 위약금이 달라질 수 있어요.`,
+      kind: 'input', lookupOnSubmit: true,
+      message: `${product}의 해약접수 예정일을 입력해 주세요. 오늘부터 한 달 이내의 날짜를 보내면 위약금을 조회해요. 오늘 기준으로도 조회할 수 있고, 실제 해약접수일에 따라 금액이 달라질 수 있어요.`,
       fields: contracts.S05.fields, actions: [['위약금 조회', result], ['뒤로', from]]
     };
     contracts[result] = {

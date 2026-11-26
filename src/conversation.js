@@ -309,7 +309,7 @@
   }
 
   function inputEcho(field, value) {
-    if (!value) return "건너뛰기";
+    if (!value) return field.skipLabel ?? "건너뛰기";
     const identifyingValue = /계약|주문/.test(field.label)
       && /(?:\d[\s-]*){7,}|^(?:CT|DL|ORD)[-\d]/i.test(value);
     return privateField(field) || identifyingValue ? field.label + " 입력" : value;
@@ -442,7 +442,7 @@
       section.append(notice);
     }
     if (field && !field.required) {
-      const skip = button("건너뛰기");
+      const skip = button(field.skipLabel ?? "건너뛰기");
       skip.addEventListener("click", () => captureInput(""));
       tools.append(skip);
     }
@@ -713,10 +713,16 @@
     return section;
   }
 
+  function singleFieldAction(actions) {
+    const submissions = actions.filter((action) => action.requiresFields);
+    return submissions.length === 1 && !submissions[0].disabled ? submissions[0] : null;
+  }
+
   function renderWorkflow(flow, picker) {
-    const actions = flow.actions ?? [];
+    const lookup = flow.screen?.lookupOnSubmit ? singleFieldAction(flow.actions) : null;
+    const actions = flow.actions.filter((action) => action !== lookup);
     const choices = element("div", "controls");
-    const visual = picker?.actions ?? actions.filter((action) => action.card);
+    const visual = picker?.actions.filter((action) => action !== lookup) ?? actions.filter((action) => action.card);
     const visualIds = new Set(visual.map(({ id }) => id));
     const plain = actions.filter(({ id }) => !visualIds.has(id));
     if (flow.screen?.id === "$auth") {
@@ -819,13 +825,14 @@
       update({ focus: true });
       return;
     }
-    const next = engine.getState().actions.filter((action) => action.requiresFields);
-    if (next.length === 1 && /^(확인|다음)$/.test(next[0].label)) {
-      applyWorkflowAction(next[0], true);
+    const flow = engine.getState();
+    const next = singleFieldAction(flow.actions);
+    if (next && (flow.screen?.lookupOnSubmit || /^(확인|다음)$/.test(next.label))) {
+      applyWorkflowAction(next, true);
       return;
     }
-    const instruction = next.length === 1
-      ? `입력을 마쳤어요. 위에서 ‘${next[0].label}’ 버튼을 선택해 주세요.`
+    const instruction = next
+      ? `입력을 마쳤어요. 위에서 ‘${next.label}’ 버튼을 선택해 주세요.`
       : "입력을 마쳤어요. 위에서 다음 단계를 선택해 주세요.";
     addInputMessage("bot", instruction);
     update({ focus: true });

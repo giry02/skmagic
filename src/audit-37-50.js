@@ -3,6 +3,7 @@
 
   const choice = (message, actions) => ({ kind: "choice", message, actions });
   const input = (message, fields, action, target) => ({ kind: "input", message, fields, actions: [[action, target]] });
+  const lookup = (message, fields, action, target) => ({ ...input(message, fields, action, target), lookupOnSubmit: true });
   const result = (message, items = [], actions = []) => ({ kind: "result", message, items, actions, demo: true });
   const handoff = (message, actions = [["상담 요청", "$handoff"]]) => ({ kind: "handoff", message, actions, demo: true });
   const detail = (title, detail) => ({ title, detail });
@@ -129,7 +130,7 @@
     },
     38: {
       screens: {
-        s2: input("배송받으실 분의 성함, 연락처, 주소를 차례로 입력해 주세요. 주문을 찾아볼게요.", recipient, "주문 조회", "orderLookup"),
+        s2: lookup("배송받으실 분의 성함, 연락처, 주소를 차례로 입력해 주세요. 주문을 찾아볼게요.", recipient, "주문 조회", "orderLookup"),
         orderLookup: resolved("orderNotFound", [orderIdentity]),
         orderSelect: {
           ...choice("취소를 요청할 주문을 선택해 주세요. 납품이 생성됐거나 출고된 주문은 설치 담당자가 확인해요.", [
@@ -447,7 +448,7 @@
         },
         installationVerifiedCustomer: resolved("installationCustomerMismatch", [{ target: "installationRegisteredAddress", match: "", all: true,
           fields: ["이름", "휴대폰 번호"], patterns: { "이름": "^김매직$", "휴대폰 번호": "^01000000009$" } }]),
-        installationRegisteredAddress: input("설치할 새 주소와 별도로, 현재 등록되어 있는 제품 사용 주소를 입력해 주세요.", [
+        installationRegisteredAddress: lookup("설치할 새 주소와 별도로, 현재 등록되어 있는 제품 사용 주소를 입력해 주세요.", [
           { label: "등록된 사용 주소", type: "text", placeholder: "제품을 사용하던 주소", sample: "서울 영등포구 문래동" }
         ], "등록 고객 조회", "installationCustomerRecord"),
         installationCustomerRecord: resolved("installationCustomerMismatch", [
@@ -622,7 +623,7 @@
           detail("발송 방법", "[발송 방법]"), detail("수신처", "[마스킹된 수신처]")
         ]),
         prepaidReceiptUnavailable: result("선납이 취소된 계약은 이 선납영수증을 발송할 수 없어요.", [], [["선납 문의", "$handoff"]]),
-        prepaidTaxInvoiceDate: input("세금계산서에 표시된 발행일을 입력해 주세요.", [
+        prepaidTaxInvoiceDate: lookup("세금계산서에 표시된 발행일을 입력해 주세요.", [
           { label: "세금계산서 발행일", type: "date", sample: "2026-11-25" }
         ], "세금계산서 조회", "prepaidTaxInvoiceState"),
         prepaidTaxInvoiceState: resolved("prepaidTaxInvoiceNotFound", [
@@ -656,7 +657,7 @@
           items: [],
           actions: [["설치 주문 취소 안내", "@38"], ["선납 환불 확인", "s2"]]
         },
-        s2: input("설치받으실 분의 성함, 연락처, 주소를 차례로 입력해 주세요. 주문을 찾아볼게요.", recipient, "대상 주문 조회", "refundOrder"),
+        s2: lookup("설치받으실 분의 성함, 연락처, 주소를 차례로 입력해 주세요. 주문을 찾아볼게요.", recipient, "대상 주문 조회", "refundOrder"),
         refundOrder: resolved("refundOrderNotFound", [
           refundOrderIdentity("virtualRefundOrder", "1234"), refundOrderIdentity("cardRefundOrder", "0004"),
           refundOrderIdentity("refundPendingOrder", "0011"), refundOrderIdentity("refundReasonOrder", "0012")
@@ -767,7 +768,7 @@
           ]),
           items: [detail("처리 상태", "계약자 명의 확인 필요")]
         },
-        s7: input("입금한 가상계좌번호와 입금자 이름, 입금일, 입금 금액을 입력해 주세요.", [
+        s7: lookup("입금한 가상계좌번호와 입금자 이름, 입금일, 입금 금액을 입력해 주세요.", [
           { ...account, label: "입금한 가상계좌번호" }, { label: "입금자 이름", type: "text", sample: "김매직" },
           { label: "입금일", type: "date", sample: "2026-11-25" },
           { label: "입금 금액", placeholder: "원 단위 금액 입력", type: "text", sample: "29900", inputMode: "numeric" }
@@ -841,7 +842,7 @@
           items: approvedCashReceipt,
           demo: true
         },
-        receiptTransactionLookup: input("현금영수증 발행일과 발행에 사용한 번호의 끝 네 자리를 입력해 주세요.", [
+        receiptTransactionLookup: lookup("현금영수증 발행일과 발행에 사용한 번호의 끝 네 자리를 입력해 주세요.", [
           { label: "현금영수증 발행일", type: "date", sample: "2026-11-25" },
           { label: "발행번호 끝 4자리", type: "password", placeholder: "숫자 4자리", sample: "1234", inputMode: "numeric" }
         ], "발행 내역 조회", "receiptTransactionMatch"),

@@ -4,6 +4,7 @@
   const choice = (message, actions) => ({ kind: 'choice', message, actions });
   const field = (label, placeholder, sample, type = 'text') => ({ label, placeholder, sample, type });
   const form = (message, fields, target, label = '확인') => ({ kind: 'input', message, fields, actions: [[label, target]] });
+  const lookup = (message, fields, target, label) => ({ ...form(message, fields, target, label), lookupOnSubmit: true });
   const auth = (message, success, failure) => ({
     ...choice(message, [['휴대폰 확인', '$auditSms']]),
     auth: { success, failure }
@@ -470,7 +471,7 @@
         filterRecoveryUnconfirmed: handoff('해당 주소의 필터 발송 건을 바로 확인하기 어려워요. 상담사가 회수 가능 여부를 확인해 드려요.'),
         filterIdentity: auth('필터는 계약자 또는 제품 사용자에게 안내할 수 있어요. 고객 정보를 확인해 주세요.', 'filterOwner', 's8'),
         filterOwner: resolved('s8', [knownCustomer('filterLookup')]),
-        filterLookup: form('필터 배송을 확인할 계약번호나 제품명과 제품 사용 주소를 입력해 주세요.', [contractField, 'address'], 'filterLookupStatus', '배송 조회'),
+        filterLookup: lookup('필터 배송을 확인할 계약번호나 제품명과 제품 사용 주소를 입력해 주세요.', [contractField, 'address'], 'filterLookupStatus', '배송 조회'),
         filterLookupStatus: resolved('s8', [matchIdentity('filterIssue', { [contractField.label]: filterContracts, '주소': addressMatch })]),
         filterIssue: choice('필터 배송에서 무엇을 확인할까요?', [
           ['다음 배송 예정일', 'filterSchedule'], ['배송 예정인데 아직 안 왔어요', 'filterDispatchStatus'],
@@ -566,7 +567,7 @@
           ['판매처에 상담 요청을 했어요', 's4'], ['아직 상담을 신청하지 않았어요', 's5']
         ]),
         subscriptionReview: { ...choice('이미 신청한 가입 상품은 신청자 본인 확인이 필요해요.', [['PASS 본인인증', 'subscriptionReviewLookup']]), auth: { failure: 'E6' } },
-        subscriptionReviewLookup: form('가입 신청번호나 신청하신 제품명을 입력해 주세요.', [
+        subscriptionReviewLookup: lookup('가입 신청번호나 신청하신 제품명을 입력해 주세요.', [
           field('가입 신청번호 또는 제품명', '예: 가입 신청번호 또는 직수 정수기', '직수 정수기')
         ], 'subscriptionReviewStatus', '가입 신청 조회'),
         subscriptionReviewStatus: resolved('subscriptionReviewNotFound', [
@@ -774,7 +775,7 @@
         ]),
         returnIdentity: auth('제품 회수 일정은 계약자 본인 확인 후 안내할 수 있어요.', 'returnOwner', 'returnNotFound'),
         returnOwner: resolved('returnNotFound', [knownCustomer('s2')]),
-        s2: { fields: [contractField], actions: [['회수 계약 조회', 'returnContractState']] },
+        s2: { lookupOnSubmit: true, fields: [contractField], actions: [['회수 계약 조회', 'returnContractState']] },
         s3: { actions: [['납부 방법 확인', '@4'], ['해약 정산 내역 확인', '@7'], ['다른 문의', '$menu']] },
         s5: { actions: [['회수일 변경', 'returnDateCheck'], ['방문 담당자에게 전달', 'returnNote'], ['일정만 확인', '$finish']] },
         s6: { ...choice('예약 여유가 있는 날짜 중에서 희망 회수일을 선택해 주세요.', [

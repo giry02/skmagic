@@ -12872,7 +12872,7 @@ window.SKIX_PARTNER_CARDS = [
   const resolved = (fallback, rules = []) => ({ resolve: { default: fallback, rules } });
   const today = new Intl.DateTimeFormat('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Seoul' }).format(new Date());
   const paymentDay = Number(today.slice(-2));
-  const penaltyDate = { label: '해약접수 예정일', type: 'date', sample: today, required: false };
+  const penaltyDate = { label: '해약접수 예정일', type: 'date', sample: today, required: false, skipLabel: '오늘 기준으로 조회' };
   const choosePayment = (registered, oneTime) => [['등록 결제수단', registered], ['일회성 납부수단', oneTime], ['나가기', '$finish']];
   const platformPayment = (list, overdueCycles) => {
     const needsRegistration = overdueCycles >= 3;
@@ -13102,7 +13102,8 @@ window.SKIX_PARTNER_CARDS = [
           items: [item('직수 정수기', 'WPU-1000 · 개별 계약'), item('비데', 'BID-1000 · 패키지 할인'), item('공기청정기', 'ACL-1000 · 크로스 패키지 할인'), item('매트리스', 'MT-1000 · 패키지 유형 중복')]
         },
         S05: {
-          message: '해약접수 예정일을 입력해 주세요. 입력하지 않으면 오늘을 기준으로 조회해요. 날짜는 오늘부터 한 달 이내로 선택할 수 있고 실제 해약접수일에 따라 위약금이 달라질 수 있어요.',
+          message: '해약접수 예정일을 입력해 주세요. 오늘부터 한 달 이내의 날짜를 보내면 위약금을 조회해요. 오늘 기준으로도 조회할 수 있고, 실제 해약접수일에 따라 금액이 달라질 수 있어요.',
+          lookupOnSubmit: true,
           items: [], fields: [penaltyDate], actions: [['위약금 조회', 'S06'], ['뒤로', 'S04']]
         },
         S06: { message: '선택하신 계약의 위약금과 상세 해약금을 확인해 주세요. 실제 해약접수일에 따라 금액이 달라질 수 있어요.',
@@ -13703,7 +13704,7 @@ window.SKIX_PARTNER_CARDS = [
           { label: '희망 배송일', placeholder: 'YYYY-MM-DD', type: 'date', sample: '2026-12-02' },
           { label: '일정 변경 사유', placeholder: '날짜를 바꾸려는 이유', required: false },
           { label: '배송 변경 메모', placeholder: '전달할 내용이 있으면 입력해 주세요', required: false }
-        ], [['예약 가능일자 확인', '$deliveryDateLookup'], ['뒤로', '$deliveryOrder']]),
+        ], [['예약 가능일자 확인', '$deliveryDateLookup'], ['뒤로', '$deliveryOrder']], { lookupOnSubmit: true }),
         noDeliveryDates: handoff('선택할 수 있는 배송일이 없어요. 상담사에게 배송 일정을 문의해 주세요.'),
         S05: {
           actions: [['배송 가능일 선택', '$date'], ['더보기', '$moreDates'], ['확인', '$commitDeliveryChange']]
@@ -13806,7 +13807,8 @@ window.SKIX_PARTNER_CARDS = [
   for (const { from, id, result, product, total, contract, penalty, effects } of packages) {
     contracts[from].actions[0][1] = id;
     contracts[id] = {
-      kind: 'input', message: `${product}의 해약접수 예정일을 입력해 주세요. 입력하지 않으면 오늘을 기준으로 조회해요. 실제 해약접수일에 따라 위약금이 달라질 수 있어요.`,
+      kind: 'input', lookupOnSubmit: true,
+      message: `${product}의 해약접수 예정일을 입력해 주세요. 오늘부터 한 달 이내의 날짜를 보내면 위약금을 조회해요. 오늘 기준으로도 조회할 수 있고, 실제 해약접수일에 따라 금액이 달라질 수 있어요.`,
       fields: contracts.S05.fields, actions: [['위약금 조회', result], ['뒤로', from]]
     };
     contracts[result] = {
@@ -13850,6 +13852,7 @@ window.SKIX_PARTNER_CARDS = [
   const choice = (message, actions) => ({ kind: 'choice', message, actions });
   const field = (label, placeholder, sample, type = 'text') => ({ label, placeholder, sample, type });
   const form = (message, fields, target, label = '확인') => ({ kind: 'input', message, fields, actions: [[label, target]] });
+  const lookup = (message, fields, target, label) => ({ ...form(message, fields, target, label), lookupOnSubmit: true });
   const auth = (message, success, failure) => ({
     ...choice(message, [['휴대폰 확인', '$auditSms']]),
     auth: { success, failure }
@@ -14316,7 +14319,7 @@ window.SKIX_PARTNER_CARDS = [
         filterRecoveryUnconfirmed: handoff('해당 주소의 필터 발송 건을 바로 확인하기 어려워요. 상담사가 회수 가능 여부를 확인해 드려요.'),
         filterIdentity: auth('필터는 계약자 또는 제품 사용자에게 안내할 수 있어요. 고객 정보를 확인해 주세요.', 'filterOwner', 's8'),
         filterOwner: resolved('s8', [knownCustomer('filterLookup')]),
-        filterLookup: form('필터 배송을 확인할 계약번호나 제품명과 제품 사용 주소를 입력해 주세요.', [contractField, 'address'], 'filterLookupStatus', '배송 조회'),
+        filterLookup: lookup('필터 배송을 확인할 계약번호나 제품명과 제품 사용 주소를 입력해 주세요.', [contractField, 'address'], 'filterLookupStatus', '배송 조회'),
         filterLookupStatus: resolved('s8', [matchIdentity('filterIssue', { [contractField.label]: filterContracts, '주소': addressMatch })]),
         filterIssue: choice('필터 배송에서 무엇을 확인할까요?', [
           ['다음 배송 예정일', 'filterSchedule'], ['배송 예정인데 아직 안 왔어요', 'filterDispatchStatus'],
@@ -14412,7 +14415,7 @@ window.SKIX_PARTNER_CARDS = [
           ['판매처에 상담 요청을 했어요', 's4'], ['아직 상담을 신청하지 않았어요', 's5']
         ]),
         subscriptionReview: { ...choice('이미 신청한 가입 상품은 신청자 본인 확인이 필요해요.', [['PASS 본인인증', 'subscriptionReviewLookup']]), auth: { failure: 'E6' } },
-        subscriptionReviewLookup: form('가입 신청번호나 신청하신 제품명을 입력해 주세요.', [
+        subscriptionReviewLookup: lookup('가입 신청번호나 신청하신 제품명을 입력해 주세요.', [
           field('가입 신청번호 또는 제품명', '예: 가입 신청번호 또는 직수 정수기', '직수 정수기')
         ], 'subscriptionReviewStatus', '가입 신청 조회'),
         subscriptionReviewStatus: resolved('subscriptionReviewNotFound', [
@@ -14620,7 +14623,7 @@ window.SKIX_PARTNER_CARDS = [
         ]),
         returnIdentity: auth('제품 회수 일정은 계약자 본인 확인 후 안내할 수 있어요.', 'returnOwner', 'returnNotFound'),
         returnOwner: resolved('returnNotFound', [knownCustomer('s2')]),
-        s2: { fields: [contractField], actions: [['회수 계약 조회', 'returnContractState']] },
+        s2: { lookupOnSubmit: true, fields: [contractField], actions: [['회수 계약 조회', 'returnContractState']] },
         s3: { actions: [['납부 방법 확인', '@4'], ['해약 정산 내역 확인', '@7'], ['다른 문의', '$menu']] },
         s5: { actions: [['회수일 변경', 'returnDateCheck'], ['방문 담당자에게 전달', 'returnNote'], ['일정만 확인', '$finish']] },
         s6: { ...choice('예약 여유가 있는 날짜 중에서 희망 회수일을 선택해 주세요.', [
@@ -14652,6 +14655,7 @@ window.SKIX_PARTNER_CARDS = [
 
   const choice = (message, actions) => ({ kind: "choice", message, actions });
   const input = (message, fields, action, target) => ({ kind: "input", message, fields, actions: [[action, target]] });
+  const lookup = (message, fields, action, target) => ({ ...input(message, fields, action, target), lookupOnSubmit: true });
   const result = (message, items = [], actions = []) => ({ kind: "result", message, items, actions, demo: true });
   const handoff = (message, actions = [["상담 요청", "$handoff"]]) => ({ kind: "handoff", message, actions, demo: true });
   const detail = (title, detail) => ({ title, detail });
@@ -14778,7 +14782,7 @@ window.SKIX_PARTNER_CARDS = [
     },
     38: {
       screens: {
-        s2: input("배송받으실 분의 성함, 연락처, 주소를 차례로 입력해 주세요. 주문을 찾아볼게요.", recipient, "주문 조회", "orderLookup"),
+        s2: lookup("배송받으실 분의 성함, 연락처, 주소를 차례로 입력해 주세요. 주문을 찾아볼게요.", recipient, "주문 조회", "orderLookup"),
         orderLookup: resolved("orderNotFound", [orderIdentity]),
         orderSelect: {
           ...choice("취소를 요청할 주문을 선택해 주세요. 납품이 생성됐거나 출고된 주문은 설치 담당자가 확인해요.", [
@@ -15096,7 +15100,7 @@ window.SKIX_PARTNER_CARDS = [
         },
         installationVerifiedCustomer: resolved("installationCustomerMismatch", [{ target: "installationRegisteredAddress", match: "", all: true,
           fields: ["이름", "휴대폰 번호"], patterns: { "이름": "^김매직$", "휴대폰 번호": "^01000000009$" } }]),
-        installationRegisteredAddress: input("설치할 새 주소와 별도로, 현재 등록되어 있는 제품 사용 주소를 입력해 주세요.", [
+        installationRegisteredAddress: lookup("설치할 새 주소와 별도로, 현재 등록되어 있는 제품 사용 주소를 입력해 주세요.", [
           { label: "등록된 사용 주소", type: "text", placeholder: "제품을 사용하던 주소", sample: "서울 영등포구 문래동" }
         ], "등록 고객 조회", "installationCustomerRecord"),
         installationCustomerRecord: resolved("installationCustomerMismatch", [
@@ -15271,7 +15275,7 @@ window.SKIX_PARTNER_CARDS = [
           detail("발송 방법", "[발송 방법]"), detail("수신처", "[마스킹된 수신처]")
         ]),
         prepaidReceiptUnavailable: result("선납이 취소된 계약은 이 선납영수증을 발송할 수 없어요.", [], [["선납 문의", "$handoff"]]),
-        prepaidTaxInvoiceDate: input("세금계산서에 표시된 발행일을 입력해 주세요.", [
+        prepaidTaxInvoiceDate: lookup("세금계산서에 표시된 발행일을 입력해 주세요.", [
           { label: "세금계산서 발행일", type: "date", sample: "2026-11-25" }
         ], "세금계산서 조회", "prepaidTaxInvoiceState"),
         prepaidTaxInvoiceState: resolved("prepaidTaxInvoiceNotFound", [
@@ -15305,7 +15309,7 @@ window.SKIX_PARTNER_CARDS = [
           items: [],
           actions: [["설치 주문 취소 안내", "@38"], ["선납 환불 확인", "s2"]]
         },
-        s2: input("설치받으실 분의 성함, 연락처, 주소를 차례로 입력해 주세요. 주문을 찾아볼게요.", recipient, "대상 주문 조회", "refundOrder"),
+        s2: lookup("설치받으실 분의 성함, 연락처, 주소를 차례로 입력해 주세요. 주문을 찾아볼게요.", recipient, "대상 주문 조회", "refundOrder"),
         refundOrder: resolved("refundOrderNotFound", [
           refundOrderIdentity("virtualRefundOrder", "1234"), refundOrderIdentity("cardRefundOrder", "0004"),
           refundOrderIdentity("refundPendingOrder", "0011"), refundOrderIdentity("refundReasonOrder", "0012")
@@ -15416,7 +15420,7 @@ window.SKIX_PARTNER_CARDS = [
           ]),
           items: [detail("처리 상태", "계약자 명의 확인 필요")]
         },
-        s7: input("입금한 가상계좌번호와 입금자 이름, 입금일, 입금 금액을 입력해 주세요.", [
+        s7: lookup("입금한 가상계좌번호와 입금자 이름, 입금일, 입금 금액을 입력해 주세요.", [
           { ...account, label: "입금한 가상계좌번호" }, { label: "입금자 이름", type: "text", sample: "김매직" },
           { label: "입금일", type: "date", sample: "2026-11-25" },
           { label: "입금 금액", placeholder: "원 단위 금액 입력", type: "text", sample: "29900", inputMode: "numeric" }
@@ -15490,7 +15494,7 @@ window.SKIX_PARTNER_CARDS = [
           items: approvedCashReceipt,
           demo: true
         },
-        receiptTransactionLookup: input("현금영수증 발행일과 발행에 사용한 번호의 끝 네 자리를 입력해 주세요.", [
+        receiptTransactionLookup: lookup("현금영수증 발행일과 발행에 사용한 번호의 끝 네 자리를 입력해 주세요.", [
           { label: "현금영수증 발행일", type: "date", sample: "2026-11-25" },
           { label: "발행번호 끝 4자리", type: "password", placeholder: "숫자 4자리", sample: "1234", inputMode: "numeric" }
         ], "발행 내역 조회", "receiptTransactionMatch"),
@@ -18769,7 +18773,7 @@ window.SKIX_PARTNER_CARDS = [
   }
 
   function inputEcho(field, value) {
-    if (!value) return "건너뛰기";
+    if (!value) return field.skipLabel ?? "건너뛰기";
     const identifyingValue = /계약|주문/.test(field.label)
       && /(?:\d[\s-]*){7,}|^(?:CT|DL|ORD)[-\d]/i.test(value);
     return privateField(field) || identifyingValue ? field.label + " 입력" : value;
@@ -18902,7 +18906,7 @@ window.SKIX_PARTNER_CARDS = [
       section.append(notice);
     }
     if (field && !field.required) {
-      const skip = button("건너뛰기");
+      const skip = button(field.skipLabel ?? "건너뛰기");
       skip.addEventListener("click", () => captureInput(""));
       tools.append(skip);
     }
@@ -19173,10 +19177,16 @@ window.SKIX_PARTNER_CARDS = [
     return section;
   }
 
+  function singleFieldAction(actions) {
+    const submissions = actions.filter((action) => action.requiresFields);
+    return submissions.length === 1 && !submissions[0].disabled ? submissions[0] : null;
+  }
+
   function renderWorkflow(flow, picker) {
-    const actions = flow.actions ?? [];
+    const lookup = flow.screen?.lookupOnSubmit ? singleFieldAction(flow.actions) : null;
+    const actions = flow.actions.filter((action) => action !== lookup);
     const choices = element("div", "controls");
-    const visual = picker?.actions ?? actions.filter((action) => action.card);
+    const visual = picker?.actions.filter((action) => action !== lookup) ?? actions.filter((action) => action.card);
     const visualIds = new Set(visual.map(({ id }) => id));
     const plain = actions.filter(({ id }) => !visualIds.has(id));
     if (flow.screen?.id === "$auth") {
@@ -19279,13 +19289,14 @@ window.SKIX_PARTNER_CARDS = [
       update({ focus: true });
       return;
     }
-    const next = engine.getState().actions.filter((action) => action.requiresFields);
-    if (next.length === 1 && /^(확인|다음)$/.test(next[0].label)) {
-      applyWorkflowAction(next[0], true);
+    const flow = engine.getState();
+    const next = singleFieldAction(flow.actions);
+    if (next && (flow.screen?.lookupOnSubmit || /^(확인|다음)$/.test(next.label))) {
+      applyWorkflowAction(next, true);
       return;
     }
-    const instruction = next.length === 1
-      ? `입력을 마쳤어요. 위에서 ‘${next[0].label}’ 버튼을 선택해 주세요.`
+    const instruction = next
+      ? `입력을 마쳤어요. 위에서 ‘${next.label}’ 버튼을 선택해 주세요.`
       : "입력을 마쳤어요. 위에서 다음 단계를 선택해 주세요.";
     addInputMessage("bot", instruction);
     update({ focus: true });
