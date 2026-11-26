@@ -18,6 +18,38 @@ function begin(scenario) {
   return chat;
 }
 
+test("chat skips approved intermediate buttons and waits for sending, payments and changes", () => {
+  const quote = begin(7).showDemoScreen("S05");
+  assert.equal(quote.inputSubmitActionId, quote.actions.find(({ label }) => label === "위약금 조회").id);
+
+  const availability = begin(8).showDemoScreen("S04");
+  const addressSearch = availability.actions.find(({ label }) => label === "주소 검색");
+  assert.ok(addressSearch.requiresFields);
+  assert.equal(availability.inputSubmitActionId, availability.actions.find(({ label }) => label === "예약 가능일자 확인").id);
+
+  const addressDraft = begin(8).showDemoScreen("customMoveDate");
+  assert.equal(addressDraft.inputSubmitActionId, addressDraft.actions.find(({ label }) => label === "다음").id);
+
+  const codeEntry = begin(17).showDemoScreen("phoneConfirm");
+  assert.equal(codeEntry.inputSubmitActionId, codeEntry.actions.find(({ label }) => label === "확인").id);
+
+  const deliveryDay = begin(37).showDemoScreen("s6");
+  assert.equal(deliveryDay.inputSubmitActionId, deliveryDay.actions.find(({ label }) => label === "이 날짜로 계속").id);
+
+  for (const state of [
+    begin(3).showDemoScreen("S05"),
+    begin(14).showDemoScreen("S03"),
+    begin(17).showDemoScreen("S06"),
+    begin(17).showDemoScreen("S04"),
+    begin(28).showDemoScreen("s4"),
+    begin(44).showDemoScreen("s6"),
+    begin(45).showDemoScreen("prepaidVirtual")
+  ]) {
+    assert.ok(state.actions.some(({ requiresFields }) => requiresFields));
+    assert.equal(state.inputSubmitActionId, null);
+  }
+});
+
 function requestPhoneCode(chat, phone) {
   chat.choose("동의하고 계속");
   return chat.choose("인증번호 받기", { 이름: "김매직", "휴대폰 번호": phone });
@@ -713,7 +745,7 @@ test("delivery changes follow the original address, order update, and installer 
   verifyPhone(created, "010-0000-0006");
   chooseAvailable(created, "직수 정수기 주문 선택");
   chooseAvailable(created, "배송주소 수정");
-  const updated = chooseAvailable(created, "확인", { "배송 주소": " 서울  종로구   청계천로 85 " });
+  const updated = chooseAvailable(created, "배송주소 변경 요청", { "배송 주소": " 서울  종로구   청계천로 85 " });
   assert.equal(updated.screen.id, "S07");
   assert.deepEqual(Array.from(created.context.deliveryEvents), [
     "IF_AICC_R040", "IF_AICC_R037", "IF_AICC_P004", "IF_AICC_P021", "S07", "IF_AICC_P014",
@@ -736,7 +768,7 @@ test("delivery changes follow the original address, order update, and installer 
   verifyPhone(installer);
   chooseAvailable(installer, "직수 정수기 주문 선택");
   chooseAvailable(installer, "설치마스터 전달 요청");
-  const noted = chooseAvailable(installer, "확인", { "전달 요청 사항": "방문 전에 연락해 주세요" });
+  const noted = chooseAvailable(installer, "전달 요청", { "전달 요청 사항": "방문 전에 연락해 주세요" });
   assert.equal(noted.screen.id, "S08");
   assert.match(noted.messages.at(-1).text, /요청하신 사항은 설치 예정일 설치마스터가 확인할 수 있습니다\./);
   assert.equal(noted.messages.at(-1).items.find(({ title }) => title === "요청사항")?.detail, "방문 전에 연락해 주세요");

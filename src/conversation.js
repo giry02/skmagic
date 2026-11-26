@@ -714,15 +714,14 @@
   }
 
   function singleFieldAction(actions) {
-    const submissions = actions.filter((action) => action.requiresFields);
+    const submissions = actions.filter((action) => action.requiresFields && action.label !== "주소 검색");
     return submissions.length === 1 && !submissions[0].disabled ? submissions[0] : null;
   }
 
   function renderWorkflow(flow, picker) {
-    const lookup = flow.screen?.lookupOnSubmit ? singleFieldAction(flow.actions) : null;
-    const actions = flow.actions.filter((action) => action !== lookup);
+    const actions = flow.actions.filter((action) => action.id !== flow.inputSubmitActionId);
     const choices = element("div", "controls");
-    const visual = picker?.actions.filter((action) => action !== lookup) ?? actions.filter((action) => action.card);
+    const visual = picker?.actions.filter((action) => action.id !== flow.inputSubmitActionId) ?? actions.filter((action) => action.card);
     const visualIds = new Set(visual.map(({ id }) => id));
     const plain = actions.filter(({ id }) => !visualIds.has(id));
     if (flow.screen?.id === "$auth") {
@@ -826,11 +825,12 @@
       return;
     }
     const flow = engine.getState();
-    const next = singleFieldAction(flow.actions);
-    if (next && (flow.screen?.lookupOnSubmit || /^(확인|다음)$/.test(next.label))) {
-      applyWorkflowAction(next, true);
+    const automatic = flow.actions.find((action) => action.id === flow.inputSubmitActionId);
+    if (automatic) {
+      applyWorkflowAction(automatic, true);
       return;
     }
+    const next = singleFieldAction(flow.actions);
     const instruction = next
       ? `입력을 마쳤어요. 위에서 ‘${next.label}’ 버튼을 선택해 주세요.`
       : "입력을 마쳤어요. 위에서 다음 단계를 선택해 주세요.";

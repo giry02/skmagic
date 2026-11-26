@@ -513,13 +513,22 @@
     }
 
     getState() {
+      const actions = this.actionList();
+      // Address search is an intermediate helper. It remains available during input.
+      const submissions = this.fields.some((field) => !field.readonly)
+        ? actions.filter((action) => action.requiresFields && action.target !== '$address') : [];
+      const [submission] = submissions;
+      const advancesOnInput = this.screen?.lookupOnSubmit || this.screen?.advanceOnSubmit
+        || ['$verifyOtp', '$auditVerifyOtp'].includes(submission?.target);
+      const inputSubmitActionId = submissions.length === 1 && !submission.disabled && advancesOnInput ? submission.id : null;
       return {
         scenario: this.scenario,
         screen: this.screen,
         selection: this.activeSelection(),
         selectedDate: this.selectedScheduleDate(),
         messages: [...this.messages],
-        actions: this.actionList().map(({ target, ...action }) => action),
+        actions: actions.map(({ target, ...action }) => action),
+        inputSubmitActionId,
         fields: this.fields.map((field) => ({ ...field })),
         verification: this.context.otpCode && this.#pendingIdentity?.code === this.context.otpCode
           && this.fields.some((field) => field.label === '인증번호')
@@ -749,8 +758,8 @@
       this.sayScreen(properties);
     }
 
-    synthetic(text, { id = '$synthetic', kind = 'choice', condition = '', actions = [], fields = [], items = [], demo = true } = {}) {
-      this.show({ id, kind, condition, message: text, explicitActions: actions, explicitFields: fields, items, demo });
+    synthetic(text, { id = '$synthetic', kind = 'choice', condition = '', actions = [], fields = [], items = [], demo = true, lookupOnSubmit, advanceOnSubmit } = {}) {
+      this.show({ id, kind, condition, message: text, explicitActions: actions, explicitFields: fields, items, demo, lookupOnSubmit, advanceOnSubmit });
     }
 
     buildFields(screen) {
@@ -2464,7 +2473,7 @@
           this.sayBot('주소를 확인했어요. 입력하신 주소가 맞으면 계속 진행해 주세요.');
           break;
         case '$otherProduct':
-          this.form('다른 제품의 모델명이나 제품명을 입력해 주세요.', ['product'], 'S04');
+          this.form('다른 제품의 모델명이나 제품명을 입력해 주세요.', ['product'], 'S04', '확인', { advanceOnSubmit: true });
           break;
         case '$cardBenefits':
           this.synthetic('이용 실적을 충족하면 구독료 청구 할인이 적용될 수 있어요. 카드별 혜택과 이용 조건을 확인해 주세요.', {
@@ -2484,7 +2493,7 @@
           break;
         case '$transferPerson':
         case '$transferBusiness':
-          this.form('새 계약자의 정보를 입력해 주세요.', ['name', 'phone'], target === '$transferPerson' ? 'S08' : 'S07', '다음');
+          this.form('새 계약자의 정보를 입력한 뒤 제출해 주세요.', ['name', 'phone'], target === '$transferPerson' ? 'S08' : 'S07', '명의변경 신청');
           break;
         case '$identifyServiceProduct': {
           const name = values['제품명 또는 모델명'];
@@ -2663,7 +2672,7 @@
           this.execute(this.serviceRegistrationEntry());
           break;
         case '$contactIdentity':
-          this.form('연락을 받으신 분의 정보를 입력해 주세요.', ['name', 'phone'], 's5');
+          this.form('연락을 받으신 분의 정보를 입력해 주세요.', ['name', 'phone'], 's5', '확인', { advanceOnSubmit: true });
           break;
         case '$alternateContact':
           this.synthetic('별도로 등록할 연락처가 있으신가요?', {
@@ -2677,7 +2686,7 @@
           this.form('신청할 문서와 조회 기간을 입력해 주세요.', [
             fromLabel('문서 종류', '예: 청구서, 수납내역서', 'text', '청구서'),
             fromLabel('조회 기간', '예: 2026년 11월', 'text', '2026년 11월')
-          ], 's4');
+          ], 's4', '확인', { lookupOnSubmit: true });
           break;
         case '$recurring':
           this.synthetic('청구서와 수납내역서는 정기 발송을 신청할 수 있어요. 받으실 방법을 선택해 주세요.', {
@@ -2750,7 +2759,7 @@
           this.form('통합할 계약과 대표 계약을 입력해 주세요.', [
             fromLabel('통합할 계약', '예: 정수기, 공기청정기', 'text', '직수 정수기, 공기청정기'),
             fromLabel('대표 계약', '예: 직수 정수기', 'text', '직수 정수기')
-          ], 's5');
+          ], 's5', '확인', { advanceOnSubmit: true });
           break;
         case '$splitAll':
           this.synthetic('대표 계약에 묶인 계약을 모두 나누시겠어요?', {
@@ -2851,8 +2860,8 @@
       }
     }
 
-    form(message, fields, target, label = '확인') {
-      this.synthetic(message, { kind: 'input', fields, actions: [[label, target]] });
+    form(message, fields, target, label = '확인', submitOptions = {}) {
+      this.synthetic(message, { kind: 'input', fields, actions: [[label, target]], ...submitOptions });
     }
 
     delivery(label) {

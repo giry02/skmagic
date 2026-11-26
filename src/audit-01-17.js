@@ -398,6 +398,7 @@
         S04: {
           message: addressPrompt,
           fields: ['address', visitPhone],
+          lookupOnSubmit: true,
           actions: [['주소 검색', '$address'], ['예약 가능일자 확인', 'moveAddressCheck']]
         },
         moveAddressCheck: { resolve: { default: 'moveAddressPass', rules: [
@@ -413,7 +414,7 @@
         movePassFailed: handoff('새 방문 주소를 확인하지 못했어요.', [
           ['PASS 본인인증 다시 시도', 'moveAddressOwner'], ['상담사 연결', '$handoff']
         ]),
-        customMoveProduct: field('접수하실 제품명이나 모델명을 입력해 주세요.', ['product'], [['다음', '$checkMoveServiceProduct']]),
+        customMoveProduct: field('접수하실 제품명이나 모델명을 입력해 주세요.', ['product'], [['다음', '$checkMoveServiceProduct']], { lookupOnSubmit: true }),
         ...(!isSplit && {
           priorReinstallProduct: choice('앞서 설치 환경을 확인한 제품으로 재설치를 접수할까요?', [
             ['앞서 확인한 제품 선택', '$selectPriorReinstallProduct'], ['다른 제품', 'customMoveProduct']
@@ -422,8 +423,8 @@
         customMoveStatus: choice('이사 또는 제품 이동은 어느 단계인가요?', [
           ['이사 예정', 'customMoveDate'], ['이사·이동 완료', 'customMoveAddress'], ['기타 · 공사 등', 'customMoveAddress']
         ]),
-        customMoveDate: field('이사 예정일을 입력해 주세요.', [moveDate('이사 예정일', '2026-11-30')], [['다음', 'customMoveAddress'], ['뒤로', 'customMoveStatus']]),
-        customMoveAddress: field(addressPrompt, ['address', visitPhone], [['주소 검색', '$address'], ['예약 가능일자 확인', 'customAddressCheck']]),
+        customMoveDate: field('이사 예정일을 입력해 주세요.', [moveDate('이사 예정일', '2026-11-30')], [['다음', 'customMoveAddress'], ['뒤로', 'customMoveStatus']], { advanceOnSubmit: true }),
+        customMoveAddress: field(addressPrompt, ['address', visitPhone], [['주소 검색', '$address'], ['예약 가능일자 확인', 'customAddressCheck']], { lookupOnSubmit: true }),
         customAddressCheck: { resolve: { default: isSplit ? 'S05' : '$checkCustomReinstallEquipment', rules: [
           { ...unsupportedAddress, target: 'customAddressUnavailable' }
         ] } },
@@ -440,7 +441,7 @@
           ], [item('등록 주소', '서울 영등포구 문래동')])
           : choice('재설치할 새 주소와 희망일을 확인해 주세요.', [['주소 입력', 'S04']]),
         ...(isSplit && {
-          registeredAddress: field('등록된 주소로 방문할 때 연락받으실 번호를 입력해 주세요.', [visitPhone], [['예약 가능일자 확인', 'registeredMoveCheck']]),
+          registeredAddress: field('등록된 주소로 방문할 때 연락받으실 번호를 입력해 주세요.', [visitPhone], [['예약 가능일자 확인', 'registeredMoveCheck']], { lookupOnSubmit: true }),
           registeredMoveCheck: { resolve: { default: 'S05', rules: [{ ...duplicateVisit, target: 'registeredMoveDuplicate' }] } },
           registeredMoveDuplicate: choice('같은 제품과 주소로 이미 접수한 방문이 있어요. 접수 내역을 보거나 새로 접수할 수 있어요.', [
             ['접수내역 보기', '@13'], ['새로 접수하기', 'S05'], ['상담사 연결', '$handoff']
@@ -453,10 +454,10 @@
         ]),
         pairMoveDate: field('이사 예정일을 입력해 주세요. 분리는 예정일 전날까지, 재설치는 예정일 다음 날부터 가능해요.', [
           moveDate('이사 예정일', '2026-11-30')
-        ], [['다음', 'pairSplitAddress'], ['뒤로', 'pairMoveStatus']]),
+        ], [['다음', 'pairSplitAddress'], ['뒤로', 'pairMoveStatus']], { advanceOnSubmit: true }),
         pairSplitAddress: field('먼저 분리할 제품과 방문 주소, 당일 연락받을 번호를 입력해 주세요.', [
           'product', 'address', visitPhone
-        ], [['주소 검색', '$address'], ['예약 가능일자 확인', '$checkMoveServiceProduct'], ['뒤로', 'pairMoveStatus']]),
+        ], [['주소 검색', '$address'], ['예약 가능일자 확인', '$checkMoveServiceProduct'], ['뒤로', 'pairMoveStatus']], { lookupOnSubmit: true }),
         pairSplitCheck: { resolve: { default: 'pairSplitSchedule', rules: [
           { ...unsupportedAddress, target: 'pairSplitUnavailable' }, { ...duplicateVisit, target: 'pairDuplicate' }
         ] } },
@@ -470,7 +471,7 @@
         },
         pairInstallAddress: field('이사 후 재설치할 주소와 방문 정보를 입력해 주세요. 분리 접수 주소와 별도로 확인해요.', [
           'address', visitPhone
-        ], [['주소 검색', '$address'], ['예약 가능일자 확인', 'pairInstallCheck'], ['뒤로', 'pairSplitSchedule']]),
+        ], [['주소 검색', '$address'], ['예약 가능일자 확인', 'pairInstallCheck'], ['뒤로', 'pairSplitSchedule']], { lookupOnSubmit: true }),
         pairInstallCheck: { resolve: { default: 'pairPass', rules: [
           { ...unsupportedAddress, target: 'pairInstallUnavailable' },
           { fields: ['휴대폰 번호'], match: '^010-?0000-?0000$', target: 'pairValveCheck' }
@@ -543,7 +544,7 @@
           item('미납금(당월 미포함)', '0원'), item('당월 요금', '납부 완료')]),
         transferContractNumber: field('명의변경을 확인할 계약번호를 입력해 주세요.', [
           { label: '계약번호', placeholder: '계약번호 입력', sample: 'CT-250601-005' }
-        ], [['계약 확인', 'transferContractLookup'], ['뒤로', 'S03']]),
+        ], [['계약 확인', 'transferContractLookup'], ['뒤로', 'S03']], { lookupOnSubmit: true }),
         transferContractLookup: { resolve: { default: 'transferContractUnavailable', rules: [
           { target: 'transferContractDetails', fields: ['계약번호'], match: '^CT-250601-001$' },
           { target: '$viewTransferAir', fields: ['계약번호'], match: '^CT-250601-002$' },
@@ -581,9 +582,9 @@
           ['상담사 연결', '$handoff'], ['뒤로', 'S03']
         ]),
         transfereePersonal: field('새 계약자의 정보를 입력해 주세요. 만 19세 미만은 명의변경이 제한돼요.',
-          ['name', 'phone', birthdate], [['확인', 'transfereeConsent'], ['뒤로', 'S06']], { secure: true }),
+          ['name', 'phone', birthdate], [['확인', 'transfereeConsent'], ['뒤로', 'S06']], { secure: true, advanceOnSubmit: true }),
         transfereeBusiness: field('새 개인사업자의 정보를 입력해 주세요. 휴업·폐업 상태일 때는 명의변경이 제한돼요.',
-          ['name', 'phone', businessRegistrationNumber], [['확인', 'transfereeConsent'], ['뒤로', 'S06']], { secure: true }),
+          ['name', 'phone', businessRegistrationNumber], [['확인', 'transfereeConsent'], ['뒤로', 'S06']], { secure: true, advanceOnSubmit: true }),
         transfereeConsent: choice('명의변경 신청을 위해 새 계약자 정보의 수집 및 이용 동의가 필요해요.', [
           ['동의하고 신청하기', 'S08'], ['동의하지 않음', 'transfereeDeclined']
         ]),
@@ -604,7 +605,7 @@
         ], [item('직수 정수기 명의변경 신청', 'NC-261125-001 · WPU-1000 · 신청 접수')]),
         transferStatusNumber: field('확인할 명의변경 접수번호를 입력해 주세요.', [
           { label: '명의변경 접수번호', placeholder: '접수번호 입력', sample: 'NC-261125-001' }
-        ], [['접수 확인', 'transferStatusLookup'], ['뒤로', 'transferStatusList']]),
+        ], [['접수 확인', 'transferStatusLookup'], ['뒤로', 'transferStatusList']], { lookupOnSubmit: true }),
         transferStatusLookup: { resolve: { default: 'transferStatusUnavailable', rules: [
           { target: '$viewTransferApplication', fields: ['명의변경 접수번호'], match: '^NC-261125-001$' },
           { target: 'transferUnderReview', fields: ['명의변경 접수번호'], match: '^NC-261125-002$' }
@@ -627,7 +628,7 @@
         ]),
         transferCancelNumber: field('확인할 명의변경 접수번호를 입력해 주세요.', [
           { label: '명의변경 접수번호', placeholder: '접수번호 입력', sample: 'NC-261125-099' }
-        ], [['접수 확인', 'transferCancelLookup'], ['뒤로', 'transferCancelCheck']]),
+        ], [['접수 확인', 'transferCancelLookup'], ['뒤로', 'transferCancelCheck']], { lookupOnSubmit: true }),
         transferCancelLookup: {
           resolve: { default: 'transferNoRequest', rules: [
             { target: '$reviewTransferCancellation', fields: ['명의변경 접수번호'], match: '^NC-261125-001$' },
@@ -666,11 +667,11 @@
         },
         unlistedProduct: field('제품군과 모델명을 입력해 주세요. 확인이 어려우면 제품을 다시 찾거나 상담에서 확인할 수 있어요.', ['product'], [
           ['제품 확인', '$identifyServiceProduct'], ['뒤로', 'S01']
-        ]),
+        ], { lookupOnSubmit: true }),
         serviceDiagnosticModel: field('제품 라벨의 모델명을 입력해 주세요. 확인 후 증상 선택을 계속할 수 있어요.', [
           { label: '모델명', placeholder: '제품 모델명 입력', sample: 'BID-1000' }
-        ], [['모델명 확인', 'S02'], ['뒤로', 'S02']]),
-        customSymptom: field('어떤 증상인지 알려 주세요.', ['symptom'], [['증상 확인', '$symptom'], ['뒤로', 'S02']]),
+        ], [['모델명 확인', 'S02'], ['뒤로', 'S02']], { lookupOnSubmit: true }),
+        customSymptom: field('어떤 증상인지 알려 주세요.', ['symptom'], [['증상 확인', '$symptom'], ['뒤로', 'S02']], { lookupOnSubmit: true }),
         callback: field('전화 상담을 받을 연락처를 입력해 주세요.', ['phone'], [
           ['예약 요청', 'callbackResult'], ['뒤로', 'S07']
         ]),
@@ -688,11 +689,11 @@
         ]),
         unlistedProduct: field('서비스를 받을 제품명이나 모델명을 입력해 주세요.', ['product'], [
           ['제품 확인', '$identifyServiceProduct'], ['뒤로', 'S01']
-        ]),
-        customSymptom: field('접수할 증상을 알려 주세요.', ['symptom'], [['증상 확인', '$symptom'], ['뒤로', 'serviceSymptom']]),
+        ], { lookupOnSubmit: true }),
+        customSymptom: field('접수할 증상을 알려 주세요.', ['symptom'], [['증상 확인', '$symptom'], ['뒤로', 'serviceSymptom']], { lookupOnSubmit: true }),
         serviceModel: field('제품 라벨에서 모델명을 확인해 입력해 주세요.', [
           { label: '모델명', placeholder: '제품 모델명 입력', sample: 'WPU-1000' }
-        ], [['다음', 'S02'], ['뒤로', 'serviceSymptom']]),
+        ], [['다음', 'S02'], ['뒤로', 'serviceSymptom']], { advanceOnSubmit: true }),
         serviceSafety: handoff('긴급한 증상으로 확인돼요. 빠른 조치를 위해 상담사에게 연결해 드릴까요? 상담 운영시간 외에는 연결이 어려울 수 있어요.', [
           ['상담사 연결', '$handoff'], ['서비스 접수', '$continueServiceRegistration'], ['증상 다시 선택', 'serviceSymptom']
         ]),
@@ -707,7 +708,7 @@
           message: '같은 제품과 증상으로 이미 접수한 방문이 있어요. 기존 접수 내역을 확인하거나 새로 접수할 수 있어요.',
           actions: [['접수내역 보기', '@13'], ['새로 접수하기', 'serviceCases'], ['상담사 연결', '$handoff']]
         },
-        S04: { fields: ['address', visitPhone], actions: [['주소 검색', '$address'], ['예약 가능일자 확인', 'serviceAddressCheck']] },
+        S04: { fields: ['address', visitPhone], lookupOnSubmit: true, actions: [['주소 검색', '$address'], ['예약 가능일자 확인', 'serviceAddressCheck']] },
         serviceAddressCheck: { resolve: { default: 'serviceAvailability', rules: [{ ...unsupportedAddress, target: 'S08' }] } },
         serviceAvailability: { resolve: { default: 'S05', rules: [
           { target: 'serviceNoAppointments', fields: ['휴대폰 번호'], match: '^010-?0000-?0008$' }
@@ -753,10 +754,10 @@
         ]),
         registeredServiceAddress: field('등록 주소로 방문할 때 연락받을 전화번호를 입력해 주세요.', [visitPhone], [
           ['예약 가능일자 확인', 'serviceAvailability'], ['뒤로', 'serviceCases']
-        ]),
+        ], { lookupOnSubmit: true }),
         subscriptionAddress: field('구독 제품이 설치된 새 주소와 방문 당일 연락받을 번호를 입력해 주세요. 새 주소는 PASS 확인이 필요해요.', ['address', visitPhone], [
           ['예약 가능일자 확인', 'subscriptionAddressCheck'], ['뒤로', 'serviceCases']
-        ]),
+        ], { lookupOnSubmit: true }),
         subscriptionAddressCheck: { resolve: { default: 'regAddrPass', rules: [{ ...unsupportedAddress, target: 'subscriptionAddressUnavailable' }] } },
         subscriptionAddressUnavailable: notice('입력하신 주소로는 서비스를 접수하기 어려워요.', [
           ['주소 다시 입력', 'subscriptionAddress'], ['상담사 연결', '$handoff']
@@ -792,7 +793,7 @@
         S02: { message: '변경할 항목을 선택해 주세요.', actions: [
           ['방문주소', '$changeVisitAddress'], ['방문예정일', 'moveDateForChange'], ['접수 증상', '$editSymptom'], ['방문 연락처', '$editPhone']
         ] },
-        S03: { actions: [['주소 검색', '$address'], ['확인', 'visitAddressCheck'], ['나가기', 'S02']] },
+        S03: { actions: [['주소 검색', '$address'], ['방문주소 변경 요청', 'visitAddressCheck'], ['나가기', 'S02']] },
         visitAddressCheck: { resolve: { default: '$visitAddressSchedule', rules: [{ ...unsupportedAddress, target: 'S08' }] } },
         S04: { actions: [...changedDates, ['변경 요청', '$commitVisitChange']] },
         S05: field('서비스 당일에 연락받으실 전화번호를 입력해 주세요.', [
@@ -802,9 +803,9 @@
         S10: { actions: [['접수취소', '@15'], ['접수내용 변경', '$visitChange'], ['접수 내역 확인', '@13'], ...close] },
         moveDateForChange: field('이사와 관련된 방문이면 이사 예정일을 입력해 주세요.', [
           { label: '이사 예정일', placeholder: 'YYYY-MM-DD', type: 'date', sample: '2026-11-30', required: false }
-        ], [['다음', 'S04'], ['뒤로', 'S02']]),
+        ], [['다음', 'S04'], ['뒤로', 'S02']], { lookupOnSubmit: true }),
         editSymptomPicker: choice('변경할 접수 증상의 분류를 선택해 주세요.', []),
-        customSymptom: field('변경할 증상을 입력해 주세요.', ['symptom'], [['증상 확인', '$symptom'], ['뒤로', '$symptom']]),
+        customSymptom: field('변경할 증상을 입력해 주세요.', ['symptom'], [['증상 확인', '$symptom'], ['뒤로', '$symptom']], { lookupOnSubmit: true }),
         editSymptomConfirm: choice('선택한 증상으로 변경할까요?', [['변경 요청', '$commitVisitChange'], ['다시 선택', '$symptom']]),
         missingCustomer: noMatch('phoneInput')
       }
@@ -878,7 +879,7 @@
         ]),
         S04: field('새 배송 주소를 입력해 주세요.', [
           { label: '배송 주소', placeholder: '도로명 또는 지번과 상세주소', sample: '서울 영등포구 문래동' }
-        ], [['주소 검색', '$address'], ['확인', '$checkDeliveryAddress'], ['나가기', 'S03']]),
+        ], [['주소 검색', '$address'], ['배송주소 변경 요청', '$checkDeliveryAddress'], ['나가기', 'S03']]),
         deliveryAddressCheck: { resolve: { default: '$deliveryAddressSchedule', rules: [
           { ...unsupportedAddress, fields: ['배송 주소'], target: 'S09' }
         ] } },
@@ -896,7 +897,7 @@
         },
         S06: field('설치마스터에게 전달할 내용을 입력해 주세요. 요청한 내용은 설치 예정일에 확인할 수 있어요.', [
           { label: '전달 요청 사항', placeholder: '전달 요청 사항을 입력해 주세요', sample: '방문 전에 연락해 주세요.' }
-        ], [['확인', '$commitDeliveryMemo'], ['뒤로', '$deliveryOrder']]),
+        ], [['전달 요청', '$commitDeliveryMemo'], ['뒤로', '$deliveryOrder']]),
         S07: { actions: close },
         S08: { message: '요청하신 사항은 설치 예정일 설치마스터가 확인할 수 있습니다. 추가로 문의하실 내용이 있으신가요?', actions: close },
         subscriptionOrder: choice('구독 주문의 배송주소는 구독 주문처에 변경을 요청해 주세요. 배송일 문의나 설치 요청 전달을 계속할 수 있어요.', [
@@ -952,6 +953,7 @@
     };
     screens.moveDateInput = {
       kind: 'input',
+      advanceOnSubmit: true,
       message: no === 8 ? '이사 예정일을 입력해 주세요. 그 전날까지 분리 방문이 가능해요.'
         : '이사 예정일을 입력해 주세요. 재설치 방문은 이사 예정일 다음 날부터 확인할 수 있어요.',
       fields: [date('이사 예정일', '2026-11-30')], actions: [['다음', 'addressOptions'], ['뒤로', 'moveStatus']]

@@ -110,7 +110,7 @@
           message: "당월 증명서 발송을 시작하는 날짜가 아직 오지 않았어요. 전월분을 받으시겠어요?",
           actions: [["전월분 받기", "documentAuthority"], ["다음에 요청하기", "$finish"]]
         },
-        s3: { message: "서류를 받을 계약을 확인해 주세요.", fields: contract, items: [], actions: [["계약 확인", "documentLookup"]] },
+        s3: { message: "서류를 받을 계약을 확인해 주세요.", fields: contract, items: [], actions: [["계약 확인", "documentLookup"]], lookupOnSubmit: true },
         documentLookup: resolved("s4", [knownProduct("s5"), contractCase("s5", "048")]),
         documentAuthority: choice("개인과 개인사업자 계약은 계약자 본인이 서류를 요청할 수 있어요.", [
           ["계약자 본인", "documentAuth"], ["계약자 아님", "s4"]
@@ -118,6 +118,7 @@
         documentAuth: byPass("s3", "s4"),
         s4: { actions: [["다시 확인", "documentAuthority"], ["상담 요청 안내", "$handoff"], ["여기서 마치기", "$finish"]] },
         s6: {
+          advanceOnSubmit: true,
           fields: [{
             label: "정기 발송일", placeholder: "12~28일 중 하루 또는 말일", type: "text", sample: "15일",
             options: [...Array.from({ length: 17 }, (_, i) => `${i + 12}일`), "매월 말일"]
@@ -159,7 +160,7 @@
           items: [],
           actions: [["설치 담당자 확인이 필요한 사유 입력", "dispatchReason"], ["주문 다시 선택", "orderSelect"]]
         },
-        dispatchReason: input("설치 담당자가 확인할 취소 사유를 입력해 주세요.", cancellation, "취소 사유 확인", "orderHandoff"),
+        dispatchReason: { ...input("설치 담당자가 확인할 취소 사유를 입력해 주세요.", cancellation, "취소 사유 확인", "orderHandoff"), advanceOnSubmit: true },
         orderHandoff: {
           ...handoff("취소 사유를 확인했어요. 설치 담당자에게 취소 가능 여부를 문의해 주세요.", [["취소 상담 안내", "$handoff"], ["주문 다시 선택", "orderSelect"], ["다른 문의", "$menu"]]),
           items: [cancellationPending]
@@ -168,7 +169,7 @@
     },
     39: {
       screens: {
-        s2: { fields: contract, actions: [["계약 확인", "paymentContractLookup"]] },
+        s2: { fields: contract, actions: [["계약 확인", "paymentContractLookup"]], lookupOnSubmit: true },
         paymentContractLookup: resolved("s3", [knownProduct("reuse006Pass"), {
           target: "reuse006Pass", fields: ["계약 또는 제품명"], match: "^SK-261125-(?:039|04[0-57])$"
         }]),
@@ -217,7 +218,7 @@
     },
     40: {
       screens: {
-        s2: { fields: contract, actions: [["계약 확인", "withdrawalLookup"]] },
+        s2: { fields: contract, actions: [["계약 확인", "withdrawalLookup"]], lookupOnSubmit: true },
         withdrawalLookup: resolved("s3", [knownProduct("authWithdrawal"), {
           target: "authWithdrawal", fields: ["계약 또는 제품명"], match: "^SK-261125-(?:042|05[1-4])$"
         }]),
@@ -238,7 +239,7 @@
         accountWithdrawal: choice("해약금을 계좌로 납부했어요. 해약 신청을 철회하시겠어요?", [
           ["해약철회 진행", "withdrawalAccountReason"], ["해약 신청 유지", "$finish"]
         ]),
-        withdrawalAccountReason: input("해약 신청을 철회하는 이유를 입력해 주세요.", withdrawal, "철회와 환불 조건 확인", "s7"),
+        withdrawalAccountReason: { ...input("해약 신청을 철회하는 이유를 입력해 주세요.", withdrawal, "철회와 환불 조건 확인", "s7"), advanceOnSubmit: true },
         s7: { actions: [["환불 진행", "withdrawalRefundPeriod"], ["진행하지 않기", "$finish"]] },
         withdrawalRefundPeriod: {
           ...choice("철회할 계약에 납부한 해약 정산금이에요. 확인할 납부 월을 선택해 주세요.", [
@@ -268,7 +269,7 @@
         s1: {
           kind: "choice", fields: [], actions: [["제품 유형으로 찾기", "providerChoices"], ["모델명 입력", "providerModel"]]
         },
-        providerModel: input("서비스를 받을 제품의 모델명이나 제품명을 입력해 주세요.", ["product"], "모델명 확인", "providerLookup"),
+        providerModel: lookup("서비스를 받을 제품의 모델명이나 제품명을 입력해 주세요.", ["product"], "모델명 확인", "providerLookup"),
         providerLookup: resolved("providerChoices", [
           { target: "s7", fields: ["제품명 또는 모델명"], match: "EONB[ -]?450" },
           { target: "s5", fields: ["제품명 또는 모델명"], match: "필립스|philips|에스프레소" },
@@ -309,10 +310,10 @@
     42: {
       screens: {
         s1: { actions: [["연장 여부 확인", "membershipLookup"], ["자동연장 거부", "extensionLookup"], ["멤버십 해약 문의", "terminationLookup"], ["교체 구독 상담", "replacementLookup"]] },
-        membershipLookup: input("확인할 멤버십 계약을 입력해 주세요.", contract, "연장 상태 확인", "renewalAuth"),
-        extensionLookup: input("자동연장을 거부할 멤버십 계약을 입력해 주세요.", contract, "대상 계약 확인", "optOutAuth"),
-        terminationLookup: input("해약을 문의할 멤버십 계약을 입력해 주세요.", contract, "대상 계약 확인", "terminationAuth"),
-        replacementLookup: input("교체 구독을 문의할 멤버십 계약을 입력해 주세요.", contract, "대상 계약 확인", "replacementAuth"),
+        membershipLookup: lookup("확인할 멤버십 계약을 입력해 주세요.", contract, "연장 상태 확인", "renewalAuth"),
+        extensionLookup: lookup("자동연장을 거부할 멤버십 계약을 입력해 주세요.", contract, "대상 계약 확인", "optOutAuth"),
+        terminationLookup: lookup("해약을 문의할 멤버십 계약을 입력해 주세요.", contract, "대상 계약 확인", "terminationAuth"),
+        replacementLookup: lookup("교체 구독을 문의할 멤버십 계약을 입력해 주세요.", contract, "대상 계약 확인", "replacementAuth"),
         renewalAuth: byPass("renewalLookup", "s2"),
         optOutAuth: byPass("extensionEligibility", "s2"),
         terminationAuth: byPass("terminationEligibility", "s2"),
@@ -348,6 +349,7 @@
           detail("만료 예정월", "2026년 12월"), detail("자동연장", "제외")
         ]),
         s6: {
+          advanceOnSubmit: true,
           ...input("멤버십 해약 희망일과 해약 사유를 입력해 주세요. 해약일에 따라 정산액이 달라질 수 있어요.", [
             { label: "해약 희망일", type: "date", placeholder: "YYYY-MM-DD" },
             { label: "해약 사유", type: "text", placeholder: "해약을 원하시는 이유", sample: "서비스 이용 계획 변경" }
@@ -368,9 +370,9 @@
           ["혜택 종류·발송일", "giftLookup"], ["사은품 변경", "giftChangeLookup"],
           ["불량 또는 판매처 문의", "giftSupportLookup"], ["주문하지 않은 택배", "s6"]
         ] },
-        giftLookup: input("사은품 혜택을 확인할 계약을 입력해 주세요.", contract, "계약 확인", "giftAuth"),
-        giftChangeLookup: input("변경하려는 사은품의 계약을 입력해 주세요.", contract, "계약 확인", "giftChangeAuth"),
-        giftSupportLookup: input("문의하실 사은품의 계약을 입력해 주세요.", contract, "계약 확인", "giftSupportAuth"),
+        giftLookup: lookup("사은품 혜택을 확인할 계약을 입력해 주세요.", contract, "계약 확인", "giftAuth"),
+        giftChangeLookup: lookup("변경하려는 사은품의 계약을 입력해 주세요.", contract, "계약 확인", "giftChangeAuth"),
+        giftSupportLookup: lookup("문의하실 사은품의 계약을 입력해 주세요.", contract, "계약 확인", "giftSupportAuth"),
         giftAuth: byPass("giftCases", "s2"),
         giftChangeAuth: byPass("giftChangeCases", "s2"),
         giftSupportAuth: byPass("giftSupportCases", "s2"),
@@ -417,16 +419,16 @@
         s1: { actions: [["설치 가능 여부", "s2"], ["타공 크기·호스", "s2"], ["재설치 방문", "s2"]] },
         s2: {
           fields: ["product", { label: "설치 장소", placeholder: "예: 주방 싱크대 옆", type: "text", sample: "주방 싱크대 옆" }],
-          actions: [["설치 환경 확인", "$installationResult"]]
+          actions: [["설치 환경 확인", "$installationResult"]], lookupOnSubmit: true
         },
         s5: {
           message: "서비스매니저가 방문해 설치 가능 여부를 확인해요. 현장에서 설치가 어렵다고 판단되어 접수를 취소하셔도 출장료가 발생할 수 있어요.",
           actions: [["재설치 방문 접수", "s6"], ["이사 후 설치 환경 확인", "installationMoveDate"],
             ["보유 제품으로 재설치 접수", "@9"], ["안내만 받기", "$finish"]]
         },
-        installationMoveDate: input("이사 예정일을 입력해 주세요. 이사일 다음 영업일부터 현장 방문을 요청할 수 있어요.", [
+        installationMoveDate: { ...input("이사 예정일을 입력해 주세요. 이사일 다음 영업일부터 현장 방문을 요청할 수 있어요.", [
           { label: "이사 예정일", type: "date", placeholder: "YYYY-MM-DD" }
-        ], "이사 예정일 확인", "s6"),
+        ], "이사 예정일 확인", "s6"), advanceOnSubmit: true },
         s3: {
           message: "모델에 따라 급수·배수 호스와 타공 규격이 달라요. 설치 환경을 확인한 뒤 필요한 규격을 안내해 드려요.",
           actions: [["설치 가능 여부 확인", "s4"], ["상담사 연결", "$handoff"]]
@@ -501,7 +503,7 @@
         s1: { actions: [
           ["선납 금액·할인 확인", "prepaidLookup"], ["선납 견적서·영수증", "prepaidFilesLookup"], ["선납 취소 문의", "s8"]
         ] },
-        prepaidLookup: input("선납 조건을 확인할 계약을 입력해 주세요.", contract, "대상 계약 확인", "prepaidCases"),
+        prepaidLookup: lookup("선납 조건을 확인할 계약을 입력해 주세요.", contract, "대상 계약 확인", "prepaidCases"),
         prepaidCases: byPass("prepaidEligibility", "s2"),
         prepaidEligibility: resolved("s2", [contractCase("specialPrepaid", "045"), knownProduct("prepaidTerms")]),
         prepaidTerms: {
@@ -514,7 +516,7 @@
         },
         ...prepaidQuotes,
         specialPrepaid: {
-          ...input("이 계약에는 기존 할인이 적용되어 있어요. 원하는 선납 개월 수를 입력해 주세요. 실제 납부 가능 기간은 남은 계약 회차를 확인해 안내해요.", [
+          ...lookup("이 계약에는 기존 할인이 적용되어 있어요. 원하는 선납 개월 수를 입력해 주세요. 실제 납부 가능 기간은 남은 계약 회차를 확인해 안내해요.", [
             { label: "선납 개월 수", type: "text", placeholder: "원하는 개월 수", sample: "12" }
           ], "선납 금액 확인", "freeMonthsQuote"),
           items: [detail("월 구독료", "29,900원"), detail("추가 할인율", "0%")]
@@ -550,6 +552,7 @@
           items: [detail("등록 카드", "신한카드 · ••••-••••-••••-1234")]
         },
         prepaidNewCard: {
+          advanceOnSubmit: true,
           ...input("선납에 사용할 카드번호, 유효기간, 할부기간을 차례로 입력해 주세요.", [
             { label: "카드번호", type: "password", sample: "0000000000001234" },
             { label: "유효기간", type: "password", placeholder: "MM/YY", sample: "12/30" },
@@ -568,6 +571,7 @@
           items: [detail("등록 계좌", "KB국민은행 · ••••-••••-1234")]
         },
         prepaidNewAccount: {
+          advanceOnSubmit: true,
           ...input("이체할 은행과 계약자 명의 계좌번호를 입력해 주세요.", [bank, account], "계좌 확인", "prepaidTransferSign"),
           secure: true
         },
@@ -596,7 +600,7 @@
         prepaidVirtualSent: result("가상계좌 확인서 발송 요청을 확인했어요.", [
           detail("발송 방법", "[발송 방법]"), detail("수신처", "[마스킹된 수신처]")
         ]),
-        prepaidFilesLookup: input("선납 서류를 확인할 계약을 입력해 주세요.", contract, "선납 상태 확인", "prepaidDocumentsAuth"),
+        prepaidFilesLookup: lookup("선납 서류를 확인할 계약을 입력해 주세요.", contract, "선납 상태 확인", "prepaidDocumentsAuth"),
         prepaidDocumentsAuth: byPass("prepaidDocumentState", "s2"),
         prepaidDocumentState: resolved("s2", [
           ...["058", "059", "063"].map((code) => contractCase("prepaidDocuments", code)), knownProduct("prepaidDocuments")
@@ -703,10 +707,10 @@
           ["환불 일정·계좌 확인", "refundHistoryLookup"], ["제휴카드로 다시 결제", "retryPaymentLookup"],
           ["교체·전환·명의변경", "refundReasonLookup"], ["가상계좌 오입금", "wrongDepositLookup"]
         ] },
-        refundHistoryLookup: input("환불 이력을 볼 계약을 입력해 주세요.", contract, "계약 확인", "refundHistoryAuth"),
-        retryPaymentLookup: input("다시 결제할 계약을 입력해 주세요.", contract, "계약 확인", "retryPaymentAuth"),
-        refundReasonLookup: input("환불 사유와 납부를 확인할 계약을 입력해 주세요.", contract, "계약 확인", "refundReasonAuth"),
-        wrongDepositLookup: input("오입금 관련 계약을 입력해 주세요.", contract, "계약 확인", "wrongDepositAuth"),
+        refundHistoryLookup: lookup("환불 이력을 볼 계약을 입력해 주세요.", contract, "계약 확인", "refundHistoryAuth"),
+        retryPaymentLookup: lookup("다시 결제할 계약을 입력해 주세요.", contract, "계약 확인", "retryPaymentAuth"),
+        refundReasonLookup: lookup("환불 사유와 납부를 확인할 계약을 입력해 주세요.", contract, "계약 확인", "refundReasonAuth"),
+        wrongDepositLookup: lookup("오입금 관련 계약을 입력해 주세요.", contract, "계약 확인", "wrongDepositAuth"),
         refundHistoryAuth: byPass("refundHistoryState", "s2"),
         refundHistoryState: resolved("s2", [contractCase("refundRequested", "047"), contractCase("refundComplete", "048"), knownProduct("s3")]),
         refundRequested: result("환불을 요청한 상태예요. 승인 여부가 확인되면 지급 일정을 안내할 수 있어요.", [
@@ -761,7 +765,7 @@
         ], [["2026년 11월 출금 건 선택", "s6"], ["다른 출금 내역 확인 요청", "$handoff"]]),
         transferRefundReview: handoff("명의변경 후 출금된 금액은 양수인이 이번 달 요금을 납부했는지 확인한 뒤 환불을 안내해 드려요."),
         refundHistorySelection: handoff("환불을 문의할 출금 월과 금액을 확인해야 해요. 상담사가 납부 내역을 조회한 뒤 맞는 건으로 도와드려요."),
-        s6: input("환불 은행과 계약자 명의 계좌를 입력해 주세요.", [bank, account], "환불 정보 확인", "refundAccountReview"),
+        s6: { ...input("환불 은행과 계약자 명의 계좌를 입력해 주세요.", [bank, account], "환불 정보 확인", "refundAccountReview"), advanceOnSubmit: true },
         refundAccountReview: {
           ...handoff("환불 정보를 확인했어요. 계약자와 예금주가 일치하는지 확인한 뒤 접수를 진행해요.", [
             ["상담 요청", "$handoff"], ["다른 문의", "$menu"]
@@ -788,8 +792,8 @@
           ["발행 여부 확인", "receiptLookup"], ["영수증 받기", "receiptLookup"],
           ["새로 발행 신청", "receiptLookup"], ["전월분 소급 발행", "retroactiveLookup"], ["발행번호 안내", "receiptNumberLookup"]
         ] },
-        receiptLookup: input("현금영수증을 확인할 계약을 입력해 주세요.", contract, "계약 확인", "receiptAuth"),
-        retroactiveLookup: input("전월 현금영수증을 확인할 계약을 입력해 주세요.", contract, "계약 확인", "retroactiveAuth"),
+        receiptLookup: lookup("현금영수증을 확인할 계약을 입력해 주세요.", contract, "계약 확인", "receiptAuth"),
+        retroactiveLookup: lookup("전월 현금영수증을 확인할 계약을 입력해 주세요.", contract, "계약 확인", "retroactiveAuth"),
         receiptAuth: byPass("receiptCases", "s2"),
         retroactiveAuth: byPass("retroactiveEligibility", "s2"),
         receiptCases: resolved("s2", [
@@ -810,7 +814,7 @@
           ]),
           kind: "exception"
         },
-        receiptNumberLookup: input("현금영수증 발행번호를 확인할 계약을 입력해 주세요.", contract, "계약 확인", "receiptNumberAuth"),
+        receiptNumberLookup: lookup("현금영수증 발행번호를 확인할 계약을 입력해 주세요.", contract, "계약 확인", "receiptNumberAuth"),
         receiptNumberAuth: byPass("receiptNumberCases", "s2"),
         receiptNumberCases: resolved("s2", [knownProduct("receiptNumberFixed"),
           contractCase("s2", "000"), contractCase("taxReceiptConflict", "049"), contractCase("s3", "051"),

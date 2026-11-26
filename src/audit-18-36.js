@@ -16,11 +16,11 @@
   const dateFrom = field('시작일', 'YYYY-MM-DD', '2026-11-01', 'date');
   const dateTo = field('종료일', 'YYYY-MM-DD', '2026-11-25', 'date');
   const periodForm = (message, target, fields = [dateFrom, dateTo]) => ({
-    ...form(message, fields, target), validate: { dateOrder: [[dateFrom.label, dateTo.label, true]] }
+    ...lookup(message, fields, target), validate: { dateOrder: [[dateFrom.label, dateTo.label, true]] }
   });
   const contractField = field('계약 또는 제품명', '예: 직수 정수기 계약', '직수 정수기');
   const lookupScope = '개인과 개인사업자 계약은 계약자 본인이 조회할 수 있어요.';
-  const lookupContract = (message, target) => form(message, [contractField], target, '계약 확인');
+  const lookupContract = (message, target) => lookup(message, [contractField], target, '계약 확인');
   const resolved = (fallback, rules = []) => ({ resolve: { default: fallback, rules } });
   const contractCase = (target, code, fields = [contractField.label]) => ({ target, fields, match: '^SK-' + code + '$' });
   const waterDocumentContract = '(?:직수\\s*정수기(?:\\s*계약)?|정수기|WPU-1000|CT-250601-001)';
@@ -58,7 +58,7 @@
   const giroEmailContract = 'SK-261125-124';
   const knownCustomer = (target) => matchIdentity(target, { 이름: userMatch, '휴대폰 번호': ownerPhoneMatch });
   const filterContracts = '^(?:직수\\s*정수기(?:\\s*계약)?|정수기|WPU-1000|CT-250601-001|SK-261125-029)$';
-  const careRequest = (message) => form(message, ['description'], 'careRequested', '요청 내용 확인');
+  const careRequest = (message) => ({ ...form(message, ['description'], 'careRequested', '요청 내용 확인'), advanceOnSubmit: true });
 
   Object.assign(window.SKIX_FLOW_OVERLAYS ??= {}, {
     18: {
@@ -73,7 +73,7 @@
         serviceContact: choice('받으신 AS 연락에서 무엇을 확인하실까요?', [
           ['AS 접수 확인', '@13'], ['AS 방문 접수', '@12'], ['제 것이 아닌 연락', 's3']
         ]),
-        s3: form('연락을 받으신 휴대폰 번호와 안내 내용을 입력해 주세요. 안내에 인증번호가 있다면 그 번호는 빼고 적어 주세요.', ['phone', 'description'], 'contactLookup'),
+        s3: lookup('연락을 받으신 휴대폰 번호와 안내 내용을 입력해 주세요. 안내에 인증번호가 있다면 그 번호는 빼고 적어 주세요.', ['phone', 'description'], 'contactLookup'),
         contactLookup: resolved('s6', [matchIdentity('s4', {
           '휴대폰 번호': '^0100000(?:1234|0002)$', '요청 내용': '(?:배송|설치|방문|점검|접수|일정|납부|지로|구독|계약|해약|필터|알림|문자)'
         })]),
@@ -147,7 +147,7 @@
         s1: { actions: [['휴대폰 확인', '$auditSms']], auth: { success: 'terminationOwner', failure: 's5' } },
         terminationOwner: resolved('s5', [matchIdentity('s2', { 이름: userMatch, '휴대폰 번호': ownerPhoneMatch })]),
         s2: { actions: [['계약 선택하기', 'terminationContracts']] },
-        s3: { message: '해약 신청 전에는 문의내역서를 받을 수 있어요. 해약 유형과 사유, 희망 회수일을 입력해 주세요.', actions: [['해약 사유와 회수일 확인', 'terminationInquiryFormat']], fields: [
+        s3: { advanceOnSubmit: true, message: '해약 신청 전에는 문의내역서를 받을 수 있어요. 해약 유형과 사유, 희망 회수일을 입력해 주세요.', actions: [['해약 사유와 회수일 확인', 'terminationInquiryFormat']], fields: [
           field('해약 유형', '해약 유형 입력', '구독 해약'), field('해약 사유', '해약 사유 입력', '제품 이용 종료'),
           field('희망 회수일', 'YYYY-MM-DD', '2026-11-30', 'date')
         ] },
@@ -155,7 +155,7 @@
         s6: { message: documentRequestMessage, demo: true, items: [
           { title: '발송 문서', detail: '해약 위약금 산정내역서' }, { title: '출력 구분', detail: '[출력 구분]' }, { title: '수신처', detail: '[마스킹된 수신처]' }
         ] },
-        terminationContracts: form('조회할 계약 또는 제품을 입력해 주세요. 여러 계약은 쉼표로 나눠 적을 수 있어요.', [
+        terminationContracts: lookup('조회할 계약 또는 제품을 입력해 주세요. 여러 계약은 쉼표로 나눠 적을 수 있어요.', [
           field('조회할 계약', '예: 직수 정수기, 공기청정기', '직수 정수기')
         ], 'terminationStatus'),
         terminationStatus: resolved('terminationContractUnknown', [
@@ -207,7 +207,7 @@
     22: {
       screens: {
         s1: { actions: [['계약 제품', 'serviceIdentity'], ['일반 서비스', 's2']] },
-        s2: form('서비스를 신청하실 때 사용한 휴대폰 번호, 성함, 주소를 입력해 주세요.', ['phone', 'name', 'address'], 'serviceRecordLookup'),
+        s2: lookup('서비스를 신청하실 때 사용한 휴대폰 번호, 성함, 주소를 입력해 주세요.', ['phone', 'name', 'address'], 'serviceRecordLookup'),
         s3: { message: '조회하실 서비스 종류를 선택해 주세요.', actions: [['일반 AS', 'servicePeriod'], ['재설치', 'servicePeriod'], ['분리', 'servicePeriod'], ['필터 서비스', 'servicePeriod']] },
         s4: { delivery: { target: 's6', useRegisteredNumber: false } },
         s6: { message: documentRequestMessage, demo: true, items: [{ title: '발송 문서', detail: '서비스처리내역확인서' }, { title: '서비스 종류', detail: '[서비스 종류]' },
@@ -240,7 +240,7 @@
         ]),
         receiptAuth: auth('카드 결제 이력 조회를 위해 휴대폰으로 본인을 확인해 주세요.', 'receiptOwner', 's6'),
         receiptOwner: resolved('s6', [matchIdentity('receiptContractGate', { 이름: userMatch, '휴대폰 번호': ownerPhoneMatch })]),
-        receiptPeriod: form('카드로 결제하신 달을 입력해 주세요.', [
+        receiptPeriod: lookup('카드로 결제하신 달을 입력해 주세요.', [
           field('결제 월', 'YYYY-MM', '2026-11')
         ], 'receiptLookupStatus'),
         receiptLookupStatus: resolved('s5', [
@@ -322,7 +322,7 @@
         ]),
         giroEvidenceReview: result('고지서 변경과 함께 확인할 증빙 발행 요청 범위를 확인했어요.', [['상담 문의하기', '$handoff'], ['다시 선택', 'giroEvidence']]),
         giroMergeContracts: {
-          ...form('한 장으로 받을 계약과 대표 계약을 입력해 주세요. 계약은 두 건부터 선택할 수 있어요.', [
+          ...lookup('한 장으로 받을 계약과 대표 계약을 입력해 주세요. 계약은 두 건부터 선택할 수 있어요.', [
             field('첫 번째 계약', '예: 직수 정수기', '직수 정수기'),
             field('두 번째 계약', '예: 공기청정기', '공기청정기'),
             { ...field('추가할 계약', '세 번째 계약이 있으면 선택해 주세요.', ''), required: false, options: ['직수 정수기', '공기청정기', '비데'] },
@@ -335,8 +335,8 @@
         giroSplitChoice: choice('직수 정수기를 대표로 공기청정기와 함께 발행하는 지로 고지서가 있어요. 어떻게 나누어 받으시겠어요?', [
           ['대표 계약의 묶음 전체 풀기', 'giroSplitAll'], ['일부 계약만 분리', 'giroSplitSome']
         ]),
-        giroSplitAll: form('묶음을 풀 대표 계약을 입력해 주세요.', [field('대표 계약', '예: 직수 정수기', '직수 정수기')], 'giroSplitAllCheck'),
-        giroSplitSome: form('나누어 받을 계약을 입력해 주세요.', [field('분리할 계약', '예: 공기청정기', '공기청정기')], 'giroSplitSomeCheck'),
+        giroSplitAll: lookup('묶음을 풀 대표 계약을 입력해 주세요.', [field('대표 계약', '예: 직수 정수기', '직수 정수기')], 'giroSplitAllCheck'),
+        giroSplitSome: lookup('나누어 받을 계약을 입력해 주세요.', [field('분리할 계약', '예: 공기청정기', '공기청정기')], 'giroSplitSomeCheck'),
         giroSplitAllCheck: resolved('giroGroupUnconfirmed', [{ target: 's5', fields: ['대표 계약'], match: '^' + waterDocumentContract + '$' }]),
         giroSplitSomeCheck: resolved('giroGroupUnconfirmed', [{ target: 's5', fields: ['분리할 계약'], match: '^' + airDocumentContract + '$' }])
       }
@@ -351,7 +351,7 @@
         s4: { actions: [['결제정보 변경', '@3'], ['계약 다시 선택', 'mergeContracts']] },
         s7: { items: [{ title: '대표 계약', detail: '[대표 계약]' }, { title: '증빙 발행', detail: '[증빙 발행]' }], message: '대표 계약의 납부정보를 기준으로 통합 요청을 확인했어요.' },
         mergeContracts: {
-          ...form('합칠 계약 두 건과 그중 대표 계약을 입력해 주세요.', [
+          ...lookup('합칠 계약 두 건과 그중 대표 계약을 입력해 주세요.', [
           field('첫 번째 계약', '예: 직수 정수기', '직수 정수기'),
           field('두 번째 계약', '예: 공기청정기', '공기청정기'),
           field('대표 계약', '위 두 계약 중 하나', '직수 정수기')
@@ -376,7 +376,7 @@
         mergeExistingScope: { ...choice('입력하신 계약만 새 묶음에 넣어요. 기존 묶음에 남는 계약의 납부 방식이 불확실하면 상담사에게 확인해 주세요.', [
           ['기존 묶음을 풀고 통합하기', 's5'], ['기존 묶음 상담', '$handoff'], ['계약 다시 선택', 's2']
         ]), items: [{ title: '새 묶음 대상', detail: '[통합 대상 계약]' }, { title: '대표 계약', detail: '[대표 계약]' }] },
-        mergeAdditionalContracts: form('함께 납부할 계약번호나 제품명을 쉼표로 구분해서 입력한 뒤 대표 계약을 알려 주세요.', [
+        mergeAdditionalContracts: lookup('함께 납부할 계약번호나 제품명을 쉼표로 구분해서 입력한 뒤 대표 계약을 알려 주세요.', [
           field('통합할 계약', '예: 직수 정수기, 공기청정기, 비데', '직수 정수기, 공기청정기, 비데'),
           field('대표 계약', '입력하신 계약 중 한 건', '직수 정수기')
         ], 'mergeAdditionalReview', '계약 확인'),
@@ -450,7 +450,7 @@
         emailSaved: result('세금계산서 수신 이메일 변경 내용을 확인했어요.', [
           ['이미 발행한 계산서도 받기', 'customerInvoicePeriod'], ['다른 항목 변경', 's1'], ['여기서 마치기', '$finish']
         ]),
-        customerInvoicePeriod: form('이미 발행된 세금계산서를 다시 받으실 발행 월을 알려 주세요.', [
+        customerInvoicePeriod: lookup('이미 발행된 세금계산서를 다시 받으실 발행 월을 알려 주세요.', [
           field('발행 월', 'YYYY-MM', '2026-11')
         ], 's8', '재발송 대상 확인')
       }
@@ -462,7 +462,7 @@
         s3: { actions: [['택배사 확인', '$carrier'], ['이미 택배사에 문의했어요', 'filterUndeliveredReview']] },
         s4: { actions: [['기존 주소로 재발송', 's5'], ['배송지 변경', 'filterChangedAddress']] },
         s5: { message: '필터 재발송 요청 내용을 확인했어요.', items: [{ title: '받으실 주소', detail: '[필터 배송 주소]' }], actions: [['다른 문의', '$menu']] },
-        s6: form('다른 분의 필터 택배가 도착한 주소와 회수 연락을 받을 번호를 입력해 주세요.', ['address', 'phone'], 'thirdPartyFilterLookup', '회수 요청 확인'),
+        s6: lookup('다른 분의 필터 택배가 도착한 주소와 회수 연락을 받을 번호를 입력해 주세요.', ['address', 'phone'], 'thirdPartyFilterLookup', '회수 요청 확인'),
         s7: { message: '잘못 받아보신 필터의 회수 요청 내용을 확인했어요. 회수 담당자에게 문의할 수 있어요.', actions: [['회수 담당자 상담', '$handoff'], ['여기서 마치기', '$finish']] },
         s8: { actions: [['다시 확인하기', 'filterIdentity'], ['다른 문의', '$menu']] },
         thirdPartyFilterLookup: resolved('filterRecoveryUnconfirmed', [
@@ -510,7 +510,7 @@
         ]),
         careVerify: auth('안심OK 방문 정보를 보호하기 위해 휴대폰을 확인해 주세요.', 'careOwner', 's7'),
         careOwner: resolved('s7', [knownCustomer('careLookup')]),
-        careLookup: form('확인할 계약번호나 제품명과 제품을 사용하시는 주소를 차례로 입력해 주세요.', [contractField, 'address'], 'careStatus', '계약 확인'),
+        careLookup: lookup('확인할 계약번호나 제품명과 제품을 사용하시는 주소를 차례로 입력해 주세요.', [contractField, 'address'], 'careStatus', '계약 확인'),
         s2: { actions: [
           ['방문 날짜 변경', 'careReschedule'], ['방문일보다 먼저 점검받기', 'careEarlier'],
           ['방문 담당자 연락 요청', 's5'], ['연락처 변경', 's6'], ['주소 변경', 'careAddress'],
@@ -557,10 +557,11 @@
       screens: {
         s1: { actions: [['신규 가입', 's2'], ['기존 제품 교체', 's3'], ['신청한 가입 상품 재확인', 'subscriptionReview'], ['제품 관리 방법·멤버십', 'subscriptionCare'], ['제휴카드 혜택', '@6']] },
         s2: {
+          lookupOnSubmit: true,
           fields: ['product', { ...field('희망 조건', '희망 기능, 의무사용기간, 방문주기 등', '방문관리, 5년 의무 사용'), required: false }],
           actions: [['희망 제품 확인', 'applicationStatus']]
         },
-        s3: { fields: ['product'], actions: [['교체 제품 확인', 'replacementStatus']] },
+        s3: { lookupOnSubmit: true, fields: ['product'], actions: [['교체 제품 확인', 'replacementStatus']] },
         s4: { message: '이미 상담을 신청하신 건은 접수한 판매처에서 이어서 확인할 수 있어요.', actions: [['안내받은 판매처에 문의', 'sellerFollowup'], ['여기서 마치기', '$finish']] },
         s5: { message: '제품과 관리 조건에 맞는 구독료는 가입 상담에서 확인할 수 있어요. 가입 상담 안내를 받으시겠어요?' },
         applicationStatus: choice('같은 제품의 가입 상담을 판매처에 신청하신 적이 있나요?', [
@@ -594,7 +595,7 @@
         ]),
         replacementIdentity: auth('보유 제품으로 확인하려면 제품을 사용하시는 분의 휴대폰을 확인해 주세요.', 'replacementOwner', 'replacementUnverified'),
         replacementOwner: resolved('replacementUnverified', [knownCustomer('replacementContract')]),
-        replacementContract: form('교체할 계약이나 제품과 현재 사용 주소를 알려 주세요.', [contractField, 'address'], 'replacementLookup', '보유 제품 확인'),
+        replacementContract: lookup('교체할 계약이나 제품과 현재 사용 주소를 알려 주세요.', [contractField, 'address'], 'replacementLookup', '보유 제품 확인'),
         replacementLookup: resolved('replacementUnverified', [
           matchIdentity('replacementKnownProduct', { [contractField.label]: '^' + waterDocumentContract + '$', 주소: addressMatch })
         ]),
@@ -612,7 +613,7 @@
     },
     32: {
       screens: {
-        s2: { actions: [['제품 제조번호 확인', 'membershipEligibility'], ['제조번호 확인 위치', 'membershipSerialGuide']], fields: [
+        s2: { lookupOnSubmit: true, actions: [['제품 제조번호 확인', 'membershipEligibility'], ['제조번호 확인 위치', 'membershipSerialGuide']], fields: [
           field('제품 제조번호', '예: SKIX-2026-0123', 'SKIX-2026-0123')
         ] },
         s5: { message: '이 제품의 멤버십 비용 항목을 안내해 드릴게요. 실제 금액은 제품별 적용 요금과 계약 상태를 확인한 뒤 안내받을 수 있어요.', items: [
@@ -651,7 +652,7 @@
           ['구독 가입 상담 후 연락을 기다리고 있어요', 's3'], ['주문 심사·해피콜을 못 받았어요', 's3'],
           ['이전에 통화한 담당자와 연결', 's3'], ['모바일 구독확인서를 전화상담으로 변경', 's2']
         ] },
-        s3: { fields: ['phone', 'name'], actions: [['연락한 담당자 확인', 'callbackLookup']] },
+        s3: { lookupOnSubmit: true, fields: ['phone', 'name'], actions: [['연락한 담당자 확인', 'callbackLookup']] },
         s5: { message: '이 번호로 최근 상담한 기록을 확인했어요. 같은 번호로 재연락을 요청할까요?', items: [
           { title: '확인한 연락처', detail: '[마스킹된 번호]' }, { title: '확인된 연락', detail: '최근 상담 통화' },
           { title: '재연락 창구', detail: '기존 상담 담당 창구' }
@@ -669,6 +670,8 @@
     34: {
       screens: {
         s1: auth('방문 전 연락을 요청할 서비스 접수를 확인할게요. 먼저 휴대폰을 확인해 주세요.', 'visitLookup', 'visitUnverified'),
+        s2: { lookupOnSubmit: true },
+        s3: { lookupOnSubmit: true },
         visitLookup: resolved('visitNotFound', [phoneCase('visitUnverified', '0000'),
           matchIdentity('visitMultipleCustomers', { 이름: userMatch, '휴대폰 번호': '^010-?0000-?0002$' }),
           matchIdentity('$visitResults', { 이름: userMatch, '휴대폰 번호': '^010-?0000-?(?:0001|0007|0008|0009|0011|1234)$' })]),
@@ -679,7 +682,7 @@
         visitMultipleCustomers: choice('같은 연락처로 확인되는 고객이 여러 분이에요. 서비스를 받으실 분의 성함과 방문 주소를 추가로 확인해 주세요.', [
           ['성함과 주소로 다시 확인', 'visitResolveCustomer'], ['상담사 연결', '$handoff'], ...deferred
         ]),
-        visitResolveCustomer: form('서비스를 받으실 분의 성함과 제품 사용 주소를 알려 주세요.', ['name', 'address'], 'visitResolvedCustomer', '접수 확인'),
+        visitResolveCustomer: lookup('서비스를 받으실 분의 성함과 제품 사용 주소를 알려 주세요.', ['name', 'address'], 'visitResolvedCustomer', '접수 확인'),
         visitResolvedCustomer: resolved('visitUnverified', [
           matchIdentity('$visitSingleCustomer', { 이름: userMatch, '휴대폰 번호': '^010-?0000-?0002$', 주소: addressMatch })
         ]),
@@ -687,7 +690,7 @@
           ['계속하기', 's5'], ['다른 접수 선택', '$visitResults'], ['AS 접수 내역 확인', '@13']
         ]),
         s5: { actions: [['사전 연락 요청', 'visitCallbackNote'], ['일정 안내로 충분해요', 's7']] },
-        visitCallbackNote: form('방문 전에 연락받기 편한 시간이나 담당 매니저가 알아야 할 사항을 입력해 주세요.', [{ ...field('요청 사항', '연락을 받기 편한 시간', '오전 9시 전에 연락 부탁드려요'), required: false }], 's6', '요청 내용 확인'),
+        visitCallbackNote: { ...form('방문 전에 연락받기 편한 시간이나 담당 매니저가 알아야 할 사항을 입력해 주세요.', [{ ...field('요청 사항', '연락을 받기 편한 시간', '오전 9시 전에 연락 부탁드려요'), required: false }], 's6', '요청 내용 확인'), advanceOnSubmit: true },
         s6: { message: '방문 전 연락 요청 내용을 확인했어요. 연락 시간은 담당 사업장과 방문 매니저가 확인하는 사항이에요.', actions: [['상담 요청 안내', '$handoff'], ...deferred] },
         visitNotFound: exception('확인할 수 있는 방문 접수가 없어요. 접수 내역 또는 다시 방문 신청을 확인할 수 있어요.', [
           ['휴대폰 다시 확인', 's1'], ['AS 접수 내역 확인', '@13'], ['새 방문 접수', '@12'], ['다른 문의', '$menu']
@@ -697,7 +700,7 @@
     35: {
       screens: {
         s1: { actions: [['이전설치', 's2'], ['필터 교체', 's2'], ['AS 점검', 'serviceAsProduct'], ['등록 제품 비용 확인', 'serviceOwnedIdentity']] },
-        s2: { fields: ['product'], actions: [['제품 확인', 'serviceSaleType']] },
+        s2: { lookupOnSubmit: true, fields: ['product'], actions: [['제품 확인', 'serviceSaleType']] },
         s3: { message: '기존 서비스 기준표에 나온 가정용 구독 정수기의 이전설치 비용 예시예요. 실제 금액은 계약 상태와 최신 기준, 설치 환경을 확인한 뒤 안내할 수 있어요. 제품 운반은 별도로 준비해 주세요.', items: [
           { title: '기준표 구분', detail: '가정용 정수기 단독 설치 · 참고 금액' }, { title: '분리 기본비', detail: '28,000원' }, { title: '재설치 기본비', detail: '38,000원' }
         ], addActions: [['서비스 비용 적용 기준 보기', 'servicePricing'], ['조리수 밸브 비용 조건', 'serviceValvePricing']] },
@@ -711,7 +714,7 @@
           ['하자보수기간 내 AS', 'serviceWarranty'], ['하자보수기간 종료 또는 고객 과실', 'servicePaid'],
           ['이전설치·필터 교체 또는 보증을 모르겠어요', 'serviceCostUnconfirmed']
         ]),
-        serviceAsProduct: form('점검 비용을 확인할 제품명이나 모델명을 입력해 주세요.', ['product'], 'serviceAsSaleType', '제품 확인'),
+        serviceAsProduct: lookup('점검 비용을 확인할 제품명이나 모델명을 입력해 주세요.', ['product'], 'serviceAsSaleType', '제품 확인'),
         serviceAsSaleType: choice('이 제품을 어떻게 이용하고 계신가요?', [
           ['구독 이용 중', 'serviceActiveCoverage'], ['구독 만료 또는 고객 과실', 'servicePaid'],
           ['일시불 구매', 'serviceSingleCriteria'], ['멤버십·계약 상태를 확인하고 싶어요', 's5']
@@ -736,13 +739,13 @@
         serviceOwnedIdentity: auth('등록 제품에 적용되는 비용을 확인하려면 먼저 계약자나 제품 사용자의 휴대폰을 확인해 주세요.', 'serviceOwnedUser', 'serviceOwnedUnverified'),
         serviceOwnedUser: resolved('serviceOwnedUnverified', [knownCustomer('serviceOwnedLookup'),
           matchIdentity('serviceOwnedMultiple', { 이름: userMatch, '휴대폰 번호': '^010-?0000-?0002$' })]),
-        serviceOwnedMultiple: { ...form('같은 연락처에 등록된 고객이 여러 분이에요. 제품을 사용하시는 분의 성함과 주소를 다시 알려 주세요.', [
+        serviceOwnedMultiple: { ...lookup('같은 연락처에 등록된 고객이 여러 분이에요. 제품을 사용하시는 분의 성함과 주소를 다시 알려 주세요.', [
           'name', 'address', 'product'
         ], 'serviceOwnedMultipleMatch', '등록 제품 확인') },
         serviceOwnedMultipleMatch: resolved('serviceOwnedUnverified', [
           matchIdentity('serviceOwnedKind', { 이름: userMatch, '휴대폰 번호': '^010-?0000-?0002$', '제품명 또는 모델명': '^(직수\\s*정수기|정수기|WPU-1000)$', 주소: addressMatch })
         ]),
-        serviceOwnedLookup: form('제품명이나 모델명과 제품을 사용하는 주소를 입력해 주세요.', ['product', 'address'], 'serviceOwnedMatch', '등록 제품 확인'),
+        serviceOwnedLookup: lookup('제품명이나 모델명과 제품을 사용하는 주소를 입력해 주세요.', ['product', 'address'], 'serviceOwnedMatch', '등록 제품 확인'),
         serviceOwnedMatch: resolved('serviceOwnedUnverified', [
           matchIdentity('serviceOwnedKind', { '제품명 또는 모델명': '^(직수\\s*정수기|정수기|WPU-1000)$', 주소: addressMatch })
         ]),
@@ -795,7 +798,7 @@
         returnUnavailable: handoff('선택할 수 있는 회수 일정이 확인되지 않아요. 방문 담당자에게 요청을 전달할 수 있어요.', [
           ['방문 담당자에게 전달', 'returnNote'], ['현재 일정 유지', 's5']
         ]),
-        returnNote: form('방문 담당자에게 확인할 내용을 입력해 주세요.', ['description'], 's8', '요청 내용 확인')
+        returnNote: { ...form('방문 담당자에게 확인할 내용을 입력해 주세요.', ['description'], 's8', '요청 내용 확인'), advanceOnSubmit: true }
       }
     }
   });
