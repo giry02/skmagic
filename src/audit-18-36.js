@@ -4,6 +4,9 @@
   const choice = (message, actions) => ({ kind: 'choice', message, actions });
   const field = (label, placeholder, sample, type = 'text') => ({ label, placeholder, sample, type });
   const form = (message, fields, target, label = '확인') => ({ kind: 'input', message, fields, actions: [[label, target]] });
+  const customerForm = (message, fields, target, label, back = 's1') => ({
+    ...form(message, fields, target, label), actions: [[label, target], ['뒤로', back]]
+  });
   const lookup = (message, fields, target, label) => ({ ...form(message, fields, target, label), lookupOnSubmit: true });
   const auth = (message, success, failure) => ({
     ...choice(message, [['휴대폰 확인', '$auditSms']]),
@@ -414,36 +417,38 @@
       screens: {
         customerIdentity: auth(lookupScope + ' 정보를 변경할 고객을 확인해 주세요.', 'customerLookup', 's3'),
         customerLookup: resolved('s3', [knownCustomer('s1')]),
-        s1: { actions: [['계약자 휴대폰', 's2'], ['주소·사용자 정보', 'customerAddressUser'], ['계약자 유선전화', 'customerLandline'],
+        s1: { message: '현재 등록된 고객정보를 확인하고 변경할 항목을 선택해 주세요.',
+          actions: [['계약자 휴대폰', 's2'], ['주소·사용자 정보', 'customerAddressUser'], ['계약자 유선전화', 'customerLandline'],
           ['계산서 수신 이메일', 's4'], ['개명·대표자·상호', 'customerEvidence'], ['계약 명의변경', '@10'], ['납부정보 변경', '@3']] },
+        s2: customerForm('변경할 계약자 휴대폰 번호를 입력해 주세요. 새 번호는 PASS로 확인해요.', ['phone'], 's7', 'PASS 본인인증'),
         s3: { actions: [['다시 확인하기', 'customerIdentity'], ['상담사 연결', '$handoff']] },
-        s4: { actions: [['수신 이메일 변경', 'emailSaved']], fields: ['email'] },
+        s4: customerForm('새 세금계산서 수신 이메일 주소를 입력해 주세요.', ['email'], 'emailSaved', '수신 이메일 변경'),
         s7: { message: '계약자 연락처 변경 내용을 확인했어요.', items: [], addActions: [['다른 항목 변경', 's1']] },
         s8: { kind: 'result', message: '기존 발행분은 등록 이메일을 바꾼 뒤에도 별도로 확인해야 해요. 대상 월과 새 수신처를 확인한 뒤 상담을 요청해 주세요.',
           actions: [['세금계산서 기존 발행 건 상담', '$handoff'], ['여기서 마치기', '$finish']] },
         customerAddressUser: choice('어떤 정보를 변경하실까요?', [
-          ['계약자 주소', 'customerContractAddress'], ['제품 사용 주소', 'customerAddress'], ['사용자 이름·연락처', 'customerUser']
+          ['계약자 주소', 'customerContractAddress'], ['제품 사용 주소', 'customerAddress'], ['사용자 이름·연락처', 'customerUser'], ['뒤로', 's1']
         ]),
-        customerContractAddress: form('변경할 계약자 주소를 입력해 주세요.', ['address'], 'contractAddressSaved', '주소 변경'),
+        customerContractAddress: customerForm('변경할 계약자 주소를 입력해 주세요.', ['address'], 'contractAddressSaved', '주소 변경', 'customerAddressUser'),
         contractAddressSaved: result('계약자 주소 변경 내용을 확인했어요.', [['다른 항목 변경', 's1'], ['여기서 마치기', '$finish']]),
-        customerAddress: form('바꿀 제품 사용 주소를 입력해 주세요.', ['address'], 'addressSaved', '주소 변경'),
+        customerAddress: customerForm('바꿀 제품 사용 주소를 입력해 주세요.', ['address'], 'addressSaved', '주소 변경', 'customerAddressUser'),
         addressSaved: result('제품 사용 주소를 변경했어요. 제품 이동이 필요하면 재설치 상담을 같이 진행할 수 있어요.', [
           ['제품도 옮겨 설치하기', 's6'], ['안심OK 방문 일정 확인', '@30'], ['다른 항목 변경', 's1'], ['여기서 마치기', '$finish']
         ]),
         customerUser: choice('제품 사용자의 어떤 정보를 변경하실까요?', [
-          ['이름만 변경', 'customerUserName'], ['연락처만 변경', 'customerUserPhone'], ['이름과 연락처 변경', 'customerUserBoth']
+          ['이름만 변경', 'customerUserName'], ['연락처만 변경', 'customerUserPhone'], ['이름과 연락처 변경', 'customerUserBoth'], ['뒤로', 'customerAddressUser']
         ]),
-        customerUserName: form('바꿀 사용자 이름을 입력해 주세요.', ['name'], 'userNameSaved', '사용자 이름 변경'),
-        customerUserPhone: form('바꿀 사용자 휴대폰 번호를 입력해 주세요.', ['phone'], 'userPhoneSaved', '사용자 연락처 변경'),
-        customerUserBoth: form('바꿀 사용자 이름과 휴대폰 번호를 입력해 주세요.', ['name', 'phone'], 'userSaved', '사용자 정보 변경'),
+        customerUserName: customerForm('바꿀 사용자 이름을 입력해 주세요.', ['name'], 'userNameSaved', '사용자 이름 변경', 'customerUser'),
+        customerUserPhone: customerForm('바꿀 사용자 휴대폰 번호를 입력해 주세요.', ['phone'], 'userPhoneSaved', '사용자 연락처 변경', 'customerUser'),
+        customerUserBoth: customerForm('바꿀 사용자 이름과 휴대폰 번호를 입력해 주세요.', ['name', 'phone'], 'userSaved', '사용자 정보 변경', 'customerUser'),
         userNameSaved: result('사용자 이름 변경 내용을 확인했어요.', [['다른 항목 변경', 's1'], ['여기서 마치기', '$finish']]),
         userPhoneSaved: result('사용자 연락처 변경 내용을 확인했어요.', [['다른 항목 변경', 's1'], ['여기서 마치기', '$finish']]),
         userSaved: result('사용자 이름과 연락처 변경 내용을 확인했어요.', [['다른 항목 변경', 's1'], ['여기서 마치기', '$finish']]),
-        customerLandline: form('바꿀 계약자 전화번호를 입력해 주세요.', [
+        customerLandline: customerForm('바꿀 계약자 전화번호를 입력해 주세요.', [
           field('유선 전화번호', '예: 02-0000-1234', '02-0000-1234', 'tel')
         ], 's7', '전화번호 변경'),
         customerEvidence: choice('확인이 필요한 변경 유형을 선택해 주세요.', [
-          ['계약자 개명', 'renameEvidence'], ['대표자 변경', 'representativeEvidence'], ['상호 변경', 's5']
+          ['계약자 개명', 'renameEvidence'], ['대표자 변경', 'representativeEvidence'], ['상호 변경', 's5'], ['뒤로', 's1']
         ]),
         renameEvidence: handoff('계약자 개명은 신분증 사본 또는 최근 3개월 내 발급된 개명 전후가 기재된 주민등록초본과 본인 확인이 필요해요. 상담사가 제출 경로를 안내할 수 있어요.'),
         representativeEvidence: handoff('개인사업자 대표자 변경에는 본인 확인이 필요해요. 상담사가 확인 절차를 안내할 수 있어요.'),

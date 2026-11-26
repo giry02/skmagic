@@ -91,6 +91,54 @@ test('28 links the chosen invoice month to the newly entered masked email', () =
   assert.doesNotMatch(JSON.stringify(requested.messages), /recipient@example\.com/);
 });
 
+test('28 displays masked current information only after identity matches and refreshes confirmed edits', () => {
+  const unknown = verify(begin(28), '010-0000-9831');
+  assert.equal(unknown.screen.id, 's3');
+  assert.doesNotMatch(JSON.stringify(unknown.messages), /등록된 고객정보|m••@example\.com/);
+
+  const chat = begin(28);
+  assert.doesNotMatch(JSON.stringify(chat.getState().messages), /등록된 고객정보|m••@example\.com/);
+  const profile = verify(chat);
+  assert.equal(profile.messages.at(-1).recordGroups[0].title, '등록된 고객정보');
+  assert.equal(Object.keys(stateItems(profile)).length, 8);
+  assert.equal(stateItems(profile)['계약자 주소'], '서울 동작구 •••');
+  assert.equal(stateItems(profile)['제품 사용 주소'], '서울 영등포구 •••');
+
+  const email = choose(chat, '계산서 수신 이메일');
+  assert.equal(email.messages.at(-1).recordGroups[0].title, '현재 등록 정보');
+  assert.equal(stateItems(email)['세금계산서 수신 이메일'], 'm••@example.com');
+  const saved = choose(chat, '수신 이메일 변경', { '이메일 주소': 'recipient@example.com' });
+  const [before, after] = saved.messages.at(-1).recordGroups;
+  assert.equal(before.title, '변경 전');
+  assert.equal(before.items[0].detail, 'm••@example.com');
+  assert.equal(after.title, '변경 후');
+  assert.equal(after.items[0].detail, 'r••@example.com');
+  assert.doesNotMatch(JSON.stringify(saved.messages), /recipient@example\.com/);
+  assert.equal(stateItems(choose(chat, '다른 항목 변경'))['세금계산서 수신 이메일'], 'r••@example.com');
+  chat.reset({ preserveIdentity: true });
+  assert.equal(stateItems(chat.start(28))['세금계산서 수신 이메일'], 'r••@example.com');
+
+  chat.reset();
+  assert.doesNotMatch(JSON.stringify(chat.start(28).messages), /등록된 고객정보/);
+  assert.equal(stateItems(verify(chat))['세금계산서 수신 이메일'], 'm••@example.com');
+});
+
+test('28 leaves the saved phone unchanged until the new number PASS succeeds', () => {
+  const chat = begin(28);
+  verify(chat);
+  assert.equal(stateItems(choose(chat, '계약자 휴대폰'))['계약자 휴대폰 번호'], '010-••••-1234');
+  const newPhone = { '휴대폰 번호': '010-0000-9876' };
+  assert.equal(choose(chat, 'PASS 본인인증', newPhone).screen.id, '$auth');
+  assert.equal(choose(chat, '취소').screen.id, 's2');
+  assert.equal(stateItems(choose(chat, '뒤로'))['계약자 휴대폰 번호'], '010-••••-1234');
+  choose(chat, '계약자 휴대폰');
+  assert.equal(choose(chat, 'PASS 본인인증', newPhone).screen.id, '$auth');
+  const saved = choose(chat, '본인인증 확인');
+  assert.equal(stateItems(saved)['계약자 휴대폰 번호'], '010-••••-9876');
+  assert.doesNotMatch(JSON.stringify(saved.messages), /010-0000-9876/);
+  assert.equal(stateItems(choose(chat, '다른 항목 변경'))['계약자 휴대폰 번호'], '010-••••-9876');
+});
+
 test('29 matches both the contract and service address and distinguishes filter delivery needs', () => {
   const prepare = () => {
     const chat = begin(29);

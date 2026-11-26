@@ -315,6 +315,41 @@
     return district ? `${district} •••` : '상세 주소 비공개';
   }
 
+  const initialCustomerProfile = {
+    '계약자 이름': '김○○',
+    '계약자 휴대폰 번호': '010-••••-1234',
+    '계약자 유선 전화번호': '02-••••-2710',
+    '계약자 주소': '서울 동작구 •••',
+    '제품 사용 주소': '서울 영등포구 •••',
+    '사용자 이름': '이○○',
+    '사용자 휴대폰 번호': '010-••••-5678',
+    '세금계산서 수신 이메일': 'm••@example.com'
+  };
+  const customerEditScreens = {
+    s2: { result: 's7', fields: { '계약자 휴대폰 번호': '휴대폰 번호' } },
+    s4: { result: 'emailSaved', fields: { '세금계산서 수신 이메일': '이메일 주소' } },
+    customerContractAddress: { result: 'contractAddressSaved', fields: { '계약자 주소': '주소' } },
+    customerAddress: { result: 'addressSaved', fields: { '제품 사용 주소': '주소' } },
+    customerUserName: { result: 'userNameSaved', fields: { '사용자 이름': '이름' } },
+    customerUserPhone: { result: 'userPhoneSaved', fields: { '사용자 휴대폰 번호': '휴대폰 번호' } },
+    customerUserBoth: { result: 'userSaved', fields: { '사용자 이름': '이름', '사용자 휴대폰 번호': '휴대폰 번호' } },
+    customerLandline: { result: 's7', fields: { '계약자 유선 전화번호': '유선 전화번호' } }
+  };
+  const customerProfileSections = {
+    s1: Object.keys(initialCustomerProfile),
+    customerAddressUser: ['계약자 주소', '제품 사용 주소', '사용자 이름', '사용자 휴대폰 번호'],
+    customerUser: ['사용자 이름', '사용자 휴대폰 번호'],
+    customerEvidence: ['계약자 이름'],
+    passRetry: ['계약자 휴대폰 번호']
+  };
+
+  function maskCustomerField(title, value) {
+    if (title.endsWith('주소')) return customerAddressDistrict(value);
+    if (title.endsWith('이름')) return Array.from(value)[0] + '○○';
+    if (title.endsWith('이메일')) return value.replace(/^(.).*?@/u, '$1••@');
+    return value.replace(/\D/g, '').length >= 9 ? maskNumber(value) : '번호 비공개';
+  }
+
   function prepaidRefundContractDisplay(value) {
     if (/^(?:직수정수기(?:계약)?|wpu1000)$/.test(normalize(value))) return '직수 정수기 · WPU-1000';
     if (/^SK-261125-\d{3}$/i.test(value)) return paymentContractDisplay(value.toUpperCase());
@@ -465,6 +500,7 @@
     #consentSettings = {};
     #membershipOptOut = false;
     #transferPayment = {};
+    #customerProfile;
     static inboundReviewReply(message) {
       const text = normalize(String(message ?? ''));
       if (!/(?:구독|렌탈|계약).{0,25}심사|심사.{0,12}(?:구독|렌탈|계약)/u.test(text)) return '';
@@ -495,6 +531,7 @@
         this.#consentSettings = {};
         this.#membershipOptOut = false;
         this.#transferPayment = {};
+        this.#customerProfile = { ...initialCustomerProfile };
       }
       this.history = [];
       this.messages = [{ role: 'bot', text: welcome }];
@@ -842,13 +879,7 @@
       if (no === 17 && screen.id === 'S08' && this.context.deliveryNote) {
         message.items = [{ title: '요청사항', detail: this.context.deliveryNote }];
       }
-      if (no === 28 && screen.kind === 'result' && this.context.customerChange) {
-        message.items = [...this.context.customerChange];
-        if (screen.id === 's8' && this.context.customerInvoicePeriod) {
-          message.items.unshift({ title: '확인할 발행 월', detail: this.context.customerInvoicePeriod });
-          message.items.push({ title: '발송 구분', detail: '기존 발행분 재발송 · 담당 확인 필요' });
-        }
-      }
+      if (no === 28) this.showCustomerProfile(message, screen.id);
       if (no === 32 && screen.id === 'membershipPrintedSerial' && this.context.membershipSerialCodes) {
         const { year, month } = this.context.membershipSerialCodes;
         message.items = [{ title: '생산연도 코드', detail: year }, { title: '생산월 코드', detail: month }];
@@ -1760,6 +1791,7 @@
       } else if (method) {
         this.openAuth(method, action.target);
       } else {
+        if (this.scenario.no === 28) this.saveCustomerChange(this.screen.id, action.target);
         this.execute(action.target, action.label, values);
       }
       return this.getState();
@@ -2027,18 +2059,18 @@
         }
       }
       if (no === 28) {
-        if (screen === 's1') this.context.customerChange = undefined;
+        if (screen === 's1') {
+          this.context.customerDraft = undefined;
+          this.context.customerChange = undefined;
+        }
         if (screen === 'customerInvoicePeriod') this.context.customerInvoicePeriod = values['발행 월'];
-        if (['s2', 's4', 'customerContractAddress', 'customerAddress', 'customerUserName', 'customerUserPhone', 'customerUserBoth', 'customerLandline'].includes(screen)) {
-          const phone = values['휴대폰 번호'] || values['유선 전화번호'];
-          const email = values['이메일 주소'];
-          const phoneLabel = screen === 's2' ? '계약자 휴대폰 번호' : screen === 'customerLandline' ? '계약자 유선 전화번호' : '사용자 휴대폰 번호';
-          this.context.customerChange = [
-            values.주소 && { title: screen === 'customerContractAddress' ? '계약자 주소' : '제품 사용 주소', detail: customerAddressDistrict(values.주소) },
-            values.이름 && { title: '사용자 이름', detail: Array.from(values.이름)[0] + '○○' },
-            phone && { title: phoneLabel, detail: phone.replace(/\D/g, '').length >= 9 ? maskNumber(phone) : '번호 비공개' },
-            email && { title: '세금계산서 수신 이메일', detail: email.replace(/^(.).*?@/u, '$1••@') }
-          ].filter(Boolean);
+        const edit = customerEditScreens[screen];
+        if (edit && this.context.phoneVerified && this.isKnownSessionOwner()) {
+          const entries = Object.entries(edit.fields);
+          if (entries.every(([, field]) => values[field])) {
+            this.context.customerDraft = { source: screen, profile: Object.fromEntries(entries.map(([title, field]) =>
+              [title, maskCustomerField(title, values[field])])) };
+          }
         }
       }
       if (no === 37) {
@@ -2167,6 +2199,44 @@
       }
     }
 
+    showCustomerProfile(message, id) {
+      if (!this.context.phoneVerified || !this.isKnownSessionOwner()) return;
+      const collect = (titles, profile) => titles.map((title) => ({ title, detail: profile[title] }));
+      const titles = customerProfileSections[id] ?? Object.keys(customerEditScreens[id]?.fields ?? {});
+      const change = this.context.customerChange;
+      if (titles.length) {
+        message.items = collect(titles, this.#customerProfile);
+        message.recordGroups = [{ title: id === 's1' ? '등록된 고객정보' : '현재 등록 정보', items: message.items, compact: true }];
+      } else if (change?.result === id) {
+        message.items = change.after;
+        message.recordGroups = [
+          { title: '변경 전', items: change.before, compact: true },
+          { title: '변경 후', items: change.after, compact: true }
+        ];
+      } else if (id === 's8' && this.context.customerInvoicePeriod) {
+        message.items = [
+          { title: '확인할 발행 월', detail: this.context.customerInvoicePeriod },
+          ...collect(['세금계산서 수신 이메일'], this.#customerProfile),
+          { title: '발송 구분', detail: '기존 발행분 재발송 · 담당 확인 필요' }
+        ];
+      }
+    }
+
+    saveCustomerChange(source, target) {
+      const draft = this.context.customerDraft;
+      const editSource = source === 'passRetry' ? 's2' : source;
+      if (!draft || draft.source !== editSource || customerEditScreens[editSource]?.result !== target
+        || !this.context.phoneVerified || !this.isKnownSessionOwner()) return;
+      const entries = Object.entries(draft.profile);
+      this.context.customerChange = {
+        result: target,
+        before: entries.map(([title]) => ({ title, detail: this.#customerProfile[title] })),
+        after: entries.map(([title, detail]) => ({ title, detail }))
+      };
+      this.#customerProfile = { ...this.#customerProfile, ...draft.profile };
+      this.context.customerDraft = undefined;
+    }
+
     completePass({ method, target, source, failure }) {
       const no = this.scenario.no;
       if (method === 'PASS 본인인증' && this.isReusablePass(source)) {
@@ -2191,6 +2261,7 @@
         this.applyVerifiedIdentity();
         if (target === billingLookupTarget(no)) this.context.billingVerified = true;
       }
+      if (no === 28) this.saveCustomerChange(source, target);
       if (no === 4 && target === 'chargeContract' && this.context.carePaymentReturn) {
         this.context.product = carePaymentProduct;
         this.execute('paymentScope');

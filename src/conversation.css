@@ -514,6 +514,15 @@ button.catalog-group:hover, .catalog-group[aria-expanded="true"] { background: v
 .result-records .result-card + .result-card { border-top: 1px solid var(--line); }
 .result-records .result-card :is(h3, h4, p) { font-variant-numeric: tabular-nums; }
 .result-record-title { padding: 10px 13px; border-bottom: 1px solid var(--line); background: var(--accent-soft); font-size: 14px; }
+.result-records-compact .result-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 13px;
+}
+.result-records-compact .result-card h4 { margin: 0; }
+.result-records-compact .result-card p { text-align: right; }
 .card-detail-links { display: flex; flex-wrap: wrap; gap: 7px; }
 .card-detail-link {
   display: inline-flex;

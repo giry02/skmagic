@@ -219,9 +219,10 @@
     return img;
   }
 
-  function renderResultCards(items, title) {
+  function renderResultCards(items, title, compact = false) {
     const hasArtwork = items.some(({ mediaKey }) => Boolean(mediaKey));
     const group = element(title ? "section" : "div", hasArtwork ? "result-cards" : "result-cards result-records");
+    if (compact) group.classList.add("result-records-compact");
     if (title) {
       group.setAttribute("aria-label", title);
       group.append(element("h3", "result-record-title", title));
@@ -260,7 +261,7 @@
       content.append(bubble);
     }
     if (message.recordGroups?.length) {
-      for (const { title, items } of message.recordGroups) content.append(renderResultCards(items, title));
+      for (const { title, items, compact } of message.recordGroups) content.append(renderResultCards(items, title, compact));
     } else if (message.items?.length) content.append(renderResultCards(message.items));
     const details = (message.links ?? []).filter((link) => cardDetails.has(link.href));
     if (details.length) {
