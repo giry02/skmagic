@@ -24,6 +24,7 @@
   const timeoutMs = 100_000;
   const modeLabel = byId("mode-label");
   const composeNote = byId("compose-note");
+  composeNote.firstElementChild.href = localFile ? localServer : location.href;
   const catalog = byId("catalog");
   const catalogList = byId("catalog-list");
   const catalogSearch = byId("catalog-search");
@@ -345,12 +346,7 @@
     modeLabel.textContent = names[detected];
     modeLabel.dataset.mode = detected;
     modeLabel.title = detected === "live" ? [connection.provider, connection.model].filter(Boolean).join(" · ") : "";
-    composeNote.textContent = "시연 환경 · 입력 내용은 실제 업무에 반영되지 않습니다.";
-    if (demoMode) {
-      const open = element("a", "", "AI 상담으로 열기");
-      open.href = localFile ? localServer : location.href;
-      composeNote.append(document.createTextNode(" "), open);
-    }
+    composeNote.hidden = !demoMode;
   }
 
   function renderStatus() {
