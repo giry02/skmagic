@@ -779,6 +779,16 @@ a.choice-card { color: inherit; text-decoration: none; }
   }
   .catalog-icon-button:hover { background: var(--paper); }
   .catalog-icon-button .icon { width: 18px; height: 18px; }
+  .catalog-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    width: auto;
+    padding-inline: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
   .catalog-backdrop {
     z-index: 2;
     position: absolute;
@@ -836,13 +846,17 @@ a.choice-card { color: inherit; text-decoration: none; }
   .message-form { padding-left: 13px; }
 }
 
+@media (max-width: 380px) {
+  .brand-divider, .brand h1 { display: none; }
+}
+
 @media (max-width: 340px) {
   .app-header { gap: 6px; padding-inline: 10px; }
   .brand, .header-actions { gap: 6px; }
   .brand-logo { width: 57px; height: 30px; }
   .brand h1 { font-size: 13px; }
   .mode-label { font-size: 10px; }
-  .catalog-toggle, .new-chat { width: 33px; }
+  .new-chat { width: 33px; }
 }
 
 @media (max-height: 520px) {
@@ -883,6 +897,7 @@ noscript { position: fixed; inset: 73px 0 auto; padding: 10px; background: var(-
       <div class="brand">
         <button class="catalog-icon-button catalog-toggle" id="catalog-toggle" type="button" aria-label="상담 메뉴 열기" aria-expanded="false" aria-controls="catalog">
           <svg class="icon" aria-hidden="true"><use href="#i-menu"></use></svg>
+          <span>상담 메뉴</span>
         </button>
         <img class="brand-logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGsAAAA2CAYAAADAr2clAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoV2luZG93cykiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6NTZDMzdFNzM2MjE2MTFFODlFRjU5QTczNzVBNDQzNUIiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6NTZDMzdFNzQ2MjE2MTFFODlFRjU5QTczNzVBNDQzNUIiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo1NkMzN0U3MTYyMTYxMUU4OUVGNTlBNzM3NUE0NDM1QiIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo1NkMzN0U3MjYyMTYxMUU4OUVGNTlBNzM3NUE0NDM1QiIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/Pgze+R8AAAoySURBVHja7FwNcBXVFd6Ex08hMVCKTsFSqMQiZawVDDoqUkwRNG2hFqgCU/+q/dGOOlXGUkCLqGhVqBMV0580IjryK2rtUERBqYodEypaJFQRsDFBsCFpSklD+n2Tb+F6c9++35iXsGfmzL63e/fet+fbe853zt59WV4bSf3M/NOweQ36LvTP0NXQl3IWVDZ6oSQlWW0I1lBs/m7trob+DvogQNsTmj9zwMrF5kCUw5xdZdBbQ9AyACwBVovNcQFNDkLvhd4O0A6GcARLdhv3H2vW9IDOgpYD2M+HcLQvWLvjaPN486Gs8bWlnz39gxNGXQfNDmFxS6SdwZoPkEg4VkBHaN84ADZtQPVrB0J4MscNvn7gsT73Y7vBAIpSBF0PwPqF8GQOWCXNjVk3YHui49iIELDMAmsr9NyA48OhzwGwXiFMnw5Yu2IwweYY53OGLQNgXUKo2ndmFUA3xdHHBOgtIVRtnBTHSIzfqX20zwSvKWtHHDfNYeh3oRXQvWCK9SFYbQPWW9gMi3L4AlD3HwiIINkO7Q79or7vh74N/Rv0ZTJKAPjPEKzUwfoTQYlyeA3AWkjmF9DFv6A/hi6NMdRfoSuhZQDugzBmpT8xvih3Yu0WbP8d4P4mQ8fEMc5I6B0kNSAka6DnhWCll2R0ye7dNMRreeblkuuhL0GnJHhN34S+CMA2Qs8NwUoPWL4rbnLsXwx39oAqGr2THJtAEbDfQLNCsFID61Djrm5kgydb+1mCuk6fZ6Qw9sfQ+7LzmubkXbb/asTPSzoyWJFPYYygxLi0YX3OeGx7GvvoEi/GrGrEbOiLzxcmMR7zt6d7Fda9EDmx8RK50i+J8JyPzU9yFlT+NwQr/pn1KoDig8cXjX11dHsAap++T4V2tc4rgT4J/Ujfe8mN1nUddKiq55j6/vh8FgGH/hb6Gev8K6FDAdokALY3pO7BiTGZ38K6VXlPHK7tUqzcieWkPgQHQD3rn4eZ9Qo2Zxpd3Q93RgDugZ4qkJq1JWjHJ3BNrE2OBmAfhzPrk/Jr6AAlsKsMA0Wl1wAq3wKK8nvoEuhpafhNLBT/SHQ/BMsXgDM7idOm2Tu6Dzu4O01AvaXZ+VgYs9IjG+TifLdW36OgoXeKfTI+/gr6R9xAzV4Hk4zOPeAKF2HzU32tQbw6x2upEyYijGcsQ90DgF4PqXvbyWwxwhOge0VC4pUGxbh7AdJ7naGCEYlyR/Oh39fF1LhYk1S6BlpOym0vZkH7bl7ryno92u2I0v/JVm7ly9s455D/heOg7a34+BB0J3RgHNdEUFn54KrffV4nkohlxHN0oUFB/H9otxqGnGzs6y8g7ZgzxgEUk9K1juoJq+rTHeNx9RMB2wz9asDvqvRaFoyWAaT/eJ1QIoYRyb7+oJwn1jl1Scag/gLFBoqx5ErcAK2CPmcazmNutUq03ZZXxOyeAkiHvU4sERlxqPx7PGsdCNRdSQAVUeXhePsQ9NsAJWj59DyQiwIlwp5Y4hqRhk3eMSL+zJrlKOuw6vAIdJuqD5wVNOhSGHZ7EmMtgJ5t7aO7+hb6qwo6kUDWe/k3avxHRRre6YgGr5+Zn4NNv2RIjw/WBMexq2Ck5Wmi4JOwudFx6DKM8Uac3VzDeNmRSQOAKlC8zsPnJbiWhJ4oZIvJ9XUcq00TUHy4WOo4dBuAejKBKkh1J2B3lxIofZ6uWRY/WKLKrscFxTD0sBSBYsV7hdd6ddMyguUde2KuNdmMmy+hVVo+K/uL4xgLqVtg8IehA5P8ccUGKfClXO6v+VhDCuCsUfpxsfLYxMtNAIMP+J4NaNeofGc+jLzbMYMGYfOeo4JgJ74fQs9AH23ytiPcCm++QbquXfb7yzjeV9WQqqBHI2jXTQUBxvQP43mMorEHqMrCFVnVyT7gRF95InQN6ufgEbBk8PnY/DxGP2Rvt8DYi+IAyyWFOPf5NAFzH2eovALXHv7Qa3nk4b/MwPg2Bxf6INqeJzY6yqD+T5FE+XFQxmZp6wol82bBgCuwbkPbVY7fQVB/odlilsMOyyZ8LDQf51aiLYsOz+j4y9hXZPVVpL4KDGyalEsuzjboMen75TESXsaghQDngSRtfG0aF67UyTgXQUnj5xhAeSJNxTBAqWLFKMujTISabPdMJeyFjjIcXddK9DXZMu5Yr2Wh6VVe67olbXsS9PvQrxjsO0+aY/XF3/+0fqdpI+a+BHlqtpXPlCpWLVJOE2T0WKto93mtXzyYqDsnHWIyw1zFQi4GJR02/yWAxqpXIj9Fyb8vY2Ck0xVPOEOvht4OHS3gv6y87giDNYxLd7rSIE9bNbMLNU55Al6i0CJc6zRTuZ/LEG6mF4k4ElD+/cH1AINuY6YM0NUxxs+sO9OWrXIBs2zKjr7LMc4zKYJlFpPpWi+AwZt08dtUwjoya3DMB3CZ/qPja/pOsN4QYCXWGB+h7bXe0RVWp+B7d8WiGwwa/ip0rFmTRLtpxhixxAw/fCA6w/W8LRJQNagSaGR0/MMRm8aPwrGuXIUU8CPmei1r90ZbLmgJzi1IshLikj0+UBI70a5y3Ei+IW13NFweYLjISJYjFBCs8ca+2ckWjzFeD+/oe2oE6KZoD0ZjrhuEQSvlHlySF+NcGpBLwfY6zlsNwHLbiCLHKugedjFAxbc3WYsU2SDRiLZOZEDAzZGI9DMmDVlqVWCeBaOdBL1cxdZoxMJF5/fHATbf7pjuiF+nQMsyaKXsXMU3yvuMy9BvBORDDcbnVJYbmPQ+V6w0sDbIoPo9/mAY7wnVr95X8KQLc73M9jyACLqDmw3A1qLfOxzxyycc8zKkFOTLFbjD1xuzztWeLNAvFkxWapCM0OtUy+XS00yIlvOyNjhSQHlKBGcqYO/Q9F6ojmy5M1a1yXHnbnTVCPEbijIALPPd5SEGUEOsdt21LTOvAe2mQhP2EopPjxu7StDPSMtFk7X25sy6O4kL+yVmy8YYbZbb8UsPOCu8TxaOeYFLRTi2tSNYmzTTKUykJ4kFj3bE22pdHxltkQCkR7ob572r76cmMPadoupfgPKfdjajH75vxlXHfNY4mG2ydYe8GWenXIdxKYw6N0a7h9FmtSN+7fHcLxrkinAc145g3azr8xNRsr3zlSKsM9oNNmYESUiJ4fIHipScZc3UWLOrRjnVFuMGPkMucbD2jYsoES6FoZhv8A3FEaqvfU4/Yr/A5H8GrojyRJf7nlN5ZTnavBBAOPh3CTNMV2MI6fSGOK+xwkgkK1zu1fp9pvBG2mnkSJ7KQaTr18hQFN7diwXYFFUp/mEYmSSDb6dwLeJ3NJt6qix3tmYKxV8EtNP4XTstwLYrQee7ZeN0LvvfpZtlXYd/ZylTBYZn3B/r34QAoyLVPsM/tWoboPK9o0sYahIIM4ESCU2bEijdlPY0qrRWozAy12CN86zqSghWOwnrgzcFHGdBvDhdg4VgpSZLRSguVEWGDHCfZhlXBK9N52D/F2AAxwR4AijfUcEAAAAASUVORK5CYII=" alt="SK매직" width="88" height="45">
         <span class="brand-divider" aria-hidden="true"></span>
@@ -921,7 +936,7 @@ noscript { position: fixed; inset: 73px 0 auto; padding: 10px; background: var(-
                 <svg class="icon"><use href="#i-chat"></use></svg>
               </span>
               <h2 id="welcome-title" tabindex="-1">무엇을 도와드릴까요?</h2>
-              <p>SK매직 제품이나 이용 중 궁금한 점을 편하게 물어보세요.</p>
+              <p>왼쪽 상담 메뉴에서 업무를 선택하거나 궁금한 내용을 입력해 주세요.</p>
             </section>
             <div class="chat-log" id="chat-log" role="log" aria-label="대화" aria-live="polite" aria-relevant="additions text"></div>
             <div id="chat-controls"></div>
@@ -18580,6 +18595,7 @@ window.SKIX_PARTNER_CARDS = [
     drawerOpen = Boolean(mobileCatalog.matches && open);
     app.classList.toggle("catalog-open", drawerOpen);
     catalogToggle.setAttribute("aria-expanded", String(drawerOpen));
+    catalogToggle.setAttribute("aria-label", drawerOpen ? "상담 메뉴 접기" : "상담 메뉴 열기");
     catalogBackdrop.hidden = !drawerOpen;
     catalog.inert = mobileCatalog.matches && !drawerOpen;
     chatPanel.inert = drawerOpen;
@@ -19467,17 +19483,18 @@ window.SKIX_PARTNER_CARDS = [
   });
   byId("new-chat").addEventListener("click", () => {
     clearConversation();
-    setDrawer(false, false);
     openPhases.clear();
     catalogSearch.value = "";
     catalogList.scrollTop = 0;
     renderCatalog();
-    update({ focus: true });
+    setDrawer(mobileCatalog.matches, false);
+    update({ focus: !drawerOpen });
   });
-  catalogToggle.addEventListener("click", () => setDrawer(true));
+
+  catalogToggle.addEventListener("click", () => setDrawer(!drawerOpen));
   catalogClose.addEventListener("click", () => setDrawer(false));
   catalogBackdrop.addEventListener("click", () => setDrawer(false));
-  mobileCatalog.addEventListener("change", () => setDrawer(false, false));
+  mobileCatalog.addEventListener("change", () => setDrawer(app.classList.contains("is-empty"), false));
   catalogAll.addEventListener("click", () => {
     const collapse = !catalogSearch.value.trim() && openPhases.size === catalogPhases.length;
     openPhases.clear();
@@ -19530,8 +19547,8 @@ window.SKIX_PARTNER_CARDS = [
     }
   });
 
-  setDrawer(false);
   renderCatalog();
+  setDrawer(mobileCatalog.matches, false);
   update();
   refreshConnection();
 })();

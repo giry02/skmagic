@@ -163,6 +163,7 @@
     drawerOpen = Boolean(mobileCatalog.matches && open);
     app.classList.toggle("catalog-open", drawerOpen);
     catalogToggle.setAttribute("aria-expanded", String(drawerOpen));
+    catalogToggle.setAttribute("aria-label", drawerOpen ? "상담 메뉴 접기" : "상담 메뉴 열기");
     catalogBackdrop.hidden = !drawerOpen;
     catalog.inert = mobileCatalog.matches && !drawerOpen;
     chatPanel.inert = drawerOpen;
@@ -1050,17 +1051,18 @@
   });
   byId("new-chat").addEventListener("click", () => {
     clearConversation();
-    setDrawer(false, false);
     openPhases.clear();
     catalogSearch.value = "";
     catalogList.scrollTop = 0;
     renderCatalog();
-    update({ focus: true });
+    setDrawer(mobileCatalog.matches, false);
+    update({ focus: !drawerOpen });
   });
-  catalogToggle.addEventListener("click", () => setDrawer(true));
+
+  catalogToggle.addEventListener("click", () => setDrawer(!drawerOpen));
   catalogClose.addEventListener("click", () => setDrawer(false));
   catalogBackdrop.addEventListener("click", () => setDrawer(false));
-  mobileCatalog.addEventListener("change", () => setDrawer(false, false));
+  mobileCatalog.addEventListener("change", () => setDrawer(app.classList.contains("is-empty"), false));
   catalogAll.addEventListener("click", () => {
     const collapse = !catalogSearch.value.trim() && openPhases.size === catalogPhases.length;
     openPhases.clear();
@@ -1113,8 +1115,8 @@
     }
   });
 
-  setDrawer(false);
   renderCatalog();
+  setDrawer(mobileCatalog.matches, false);
   update();
   refreshConnection();
 })();
