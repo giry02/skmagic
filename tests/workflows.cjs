@@ -606,11 +606,20 @@ test("fault diagnosis opens symptom choices after product selection and continue
   const dates = chat.choose("예약 가능일자 확인", { [address.label]: "010-0000-1234" });
   const candidate = dates.actions.find(({ label }) => /\d+월\s*\d+일\s*\([월화수목금토일]\) 선택/u.test(label));
   assert.ok(candidate, "expected an available visit date");
-  chat.choose(candidate.id);
+  assert.equal(dates.bookingReview.length, 0);
+  const selected = chat.choose(candidate.id);
+  const review = Object.fromEntries(selected.bookingReview.map(({ title, detail }) => [title, detail]));
+  assert.match(review.제품, /직수 정수기/);
+  assert.equal(review.증상, "물이 나오지 않아요");
+  assert.match(review.연락처, /010-••••-1234/);
+  assert.equal(review["방문 일정"], candidate.label.replace(/ 선택$/, ""));
+  assert.match(review["방문 주소"], /문래동/);
   const booking = chat.choose("접수 요청");
   assert.equal(booking.screen.id, "S06");
   const details = booking.messages.at(-1).items;
-  assert.match(details.find(({ title }) => title === "접수 제품")?.detail, /직수 정수기/);
+  const bookedProducts = details.filter(({ title }) => /^접수\s*제품$/u.test(title));
+  assert.equal(bookedProducts.length, 1);
+  assert.match(bookedProducts[0].detail, /직수 정수기/);
   assert.equal(details.find(({ title }) => title === "접수 증상")?.detail, "물이 나오지 않아요");
 });
 

@@ -580,6 +580,7 @@
         screen: this.screen,
         selection: this.activeSelection(),
         selectedDate: this.selectedScheduleDate(),
+        bookingReview: this.serviceBookingReview(),
         messages: [...this.messages],
         actions: actions.map(({ target, ...action }) => action),
         inputSubmitActionId,
@@ -920,8 +921,13 @@
         ];
       }
       if (no === 12 && screen.id === 'S06' && this.context.serviceProduct && this.context.serviceSymptom) {
-        message.items = [...items, { title: '접수 제품', detail: this.serviceProductLabel() },
-          { title: '접수 증상', detail: this.context.serviceSymptom }];
+        message.items = [...items];
+        if (!items.some(({ title }) => /^접수\s*제품$/.test(title))) {
+          message.items.push({ title: '접수 제품', detail: this.serviceProductLabel() });
+        }
+        if (!items.some(({ title }) => /^접수\s*증상$/.test(title))) {
+          message.items.push({ title: '접수 증상', detail: this.context.serviceSymptom });
+        }
       }
       if ([8, 9].includes(no)) {
         if (this.context.movePackage && ['S04', 'pairInstallAddress'].includes(screen.id)) {
@@ -1541,6 +1547,17 @@
       return key ? (this.context[key] ? dateLabel(this.context[key]) : '') : this.context.date || '';
     }
 
+    serviceBookingReview() {
+      if (this.scenario?.no !== 12 || this.screen?.id !== 'S05' || !this.context.date) return [];
+      return [
+        { title: '제품', detail: this.serviceProductLabel() },
+        { title: '증상', detail: this.context.serviceSymptom },
+        { title: '연락처', detail: this.context.visitPhone || this.context.maskedPhone },
+        { title: '방문 일정', detail: this.context.date },
+        { title: '방문 주소', detail: this.context.visitAddress },
+      ].filter(({ detail }) => detail);
+    }
+
     saveScheduleDate(label, stage = this.screen.bookingStage) {
       const date = label.replace(/ 선택$/, '');
       const key = pairedDateKeys[stage];
@@ -2037,6 +2054,7 @@
         }
         const phone = values['서비스 당일 연락받으실 휴대폰 번호'];
         if (phone) this.context.visitPhone = maskNumber(phone);
+        if (no === 12 && screen === 'registeredServiceAddress' && phone) this.context.visitAddress = demoAddress;
         if (screen === 'pairSplitAddress' && phone) {
           this.context.splitVisitPhone = maskNumber(phone);
           this.context.splitDate = undefined;
@@ -2617,7 +2635,7 @@
         }
         case '$chatHandoffReview':
           this.synthetic('채팅 상담 연결 요청을 확인했어요. 실제 상담사 연결은 운영 환경에서 진행돼요.', {
-            kind: 'result', actions: [['다른 문의', '$menu'], ['상담 종료', '$finish']]
+            id: '$chatHandoffReview', kind: 'result', actions: [['다른 문의', '$menu'], ['상담 종료', '$finish']]
           });
           break;
         case '$callbackIntake':
@@ -2625,7 +2643,7 @@
           break;
         case '$callbackReview':
           this.synthetic('전화 상담 요청 내용을 확인했어요. 실제 예약 등록은 운영 환경에서 진행돼요.', {
-            kind: 'result', actions: [['다른 문의', '$menu'], ['상담 종료', '$finish']]
+            id: '$callbackReview', kind: 'result', actions: [['다른 문의', '$menu'], ['상담 종료', '$finish']]
           });
           break;
         case '$authSuccess': {

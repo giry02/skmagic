@@ -7,6 +7,9 @@
   const log = byId("chat-log");
   const controls = byId("chat-controls");
   const status = byId("chat-status");
+  const assistantStatus = byId("assistant-status");
+  const chatTime = new Intl.DateTimeFormat("ko-KR", { hour: "numeric", minute: "2-digit", hour12: true });
+  const messageTimes = new WeakMap();
   const form = byId("message-form");
   const input = byId("message-input");
   const secureInput = byId("secure-input");
@@ -20,11 +23,7 @@
   cardDetails.add(partnerBenefitsUrl);
   cardDetails.add("https://www.skmagic.com/event/cardbenefit");
   const localFile = location.protocol === "file:";
-  const localServer = "http://127.0.0.1:4328/";
   const timeoutMs = 100_000;
-  const modeLabel = byId("mode-label");
-  const composeNote = byId("compose-note");
-  composeNote.firstElementChild.href = localFile ? localServer : location.href;
   const catalog = byId("catalog");
   const catalogList = byId("catalog-list");
   const catalogPhaseButtons = byId("catalog-phases");
@@ -58,6 +57,13 @@
     address: "truck", date: "calendar", channel: "chat", document: "file", term: "file", consent: "lock",
     payment: "wallet", reason: "file",
   };
+  const productIcons = [
+    ["정수기", "water-purifier"],
+    ["공기청정기", "air-purifier"],
+    ["비데", "bidet"],
+    ["식기세척기", "dishwasher"],
+    ["전자레인지", "microwave"],
+  ];
   const defaultCatalogPhase = catalogPhases[0].id;
   const openPhases = new Set([defaultCatalogPhase]);
   let drawerOpen = false;
@@ -69,9 +75,7 @@
   let workflow = false;
   let lastScenario = null;
   let activeRequest = null;
-  let pendingStatus = null;
   let failedRequest = null;
-  let connection = { state: localFile ? "demo" : "checking", provider: "", model: "" };
   let renderedKeys = [];
   let inputProgress = null;
   let inputMessages = [];
@@ -222,7 +226,7 @@
   function renderResultCards(items, title, compact = false) {
     const hasArtwork = items.some(({ mediaKey }) => Boolean(mediaKey));
     const group = element(title ? "section" : "div", hasArtwork ? "result-cards" : "result-cards result-records");
-    if (compact) group.classList.add("result-records-compact");
+    if (!hasArtwork && (compact || items.length > 1)) group.classList.add("result-records-compact");
     if (title) {
       group.setAttribute("aria-label", title);
       group.append(element("h3", "result-record-title", title));
@@ -241,13 +245,17 @@
     return group;
   }
 
+  function messageTime(message) {
+    if (!messageTimes.has(message)) messageTimes.set(message, new Date());
+    return messageTimes.get(message);
+  }
+
   function renderTurn(message) {
     const user = message.role === "user";
     const turn = element("div", user ? "turn user" : "turn bot");
     if (!user) {
       const avatar = element("span", "bot-avatar");
       avatar.setAttribute("aria-hidden", "true");
-      avatar.append(icon("chat"));
       turn.append(avatar);
     }
     const content = element("div", "turn-content");
@@ -259,6 +267,10 @@
       if (message.source === "api") friendlyText(bubble, message.text);
       else bubble.textContent = message.text;
       content.append(bubble);
+      const sentAt = message.sentAt || messageTime(message);
+      const time = element("time", "turn-time", chatTime.format(sentAt));
+      time.dateTime = sentAt.toISOString();
+      content.append(time);
     }
     if (message.recordGroups?.length) {
       for (const { title, items, compact } of message.recordGroups) content.append(renderResultCards(items, title, compact));
@@ -285,7 +297,10 @@
     const firstVisible = workflow && rows[0]?.role === "user" ? 1 : 0;
     const visible = [];
     for (let index = firstVisible; index <= rows.length; index += 1) {
-      if (index > firstVisible) visible.push({ ...rows[index - 1], source: "demo" });
+      if (index > firstVisible) {
+        const message = rows[index - 1];
+        visible.push({ ...message, source: "demo", sentAt: messageTime(message) });
+      }
       for (const item of inputMessages) {
         if (item.after === index) visible.push(item.message);
       }
@@ -363,15 +378,6 @@
     renderedKeys = keys;
   }
 
-  function markMode() {
-    const detected = demoMode ? "demo" : connection.state;
-    const names = { demo: "안내형 상담", live: "AI 연결됨", checking: "연결 확인 중", offline: "AI 연결 대기" };
-    modeLabel.textContent = names[detected];
-    modeLabel.dataset.mode = detected;
-    modeLabel.title = detected === "live" ? [connection.provider, connection.model].filter(Boolean).join(" · ") : "";
-    composeNote.hidden = !demoMode;
-  }
-
   function renderStatus() {
     status.replaceChildren();
     status.hidden = !activeRequest && !failedRequest;
@@ -381,7 +387,7 @@
       const dots = element("span", "typing");
       dots.setAttribute("aria-hidden", "true");
       dots.append(element("span"), element("span"), element("span"));
-      status.append(dots, element("span", "", "답변을 작성하고 있어요"));
+      status.append(dots, element("span", "", "답변을 준비하고 있어요."));
     }
     if (failedRequest) {
       const retry = button("다시 시도");
@@ -476,7 +482,8 @@
     const card = action.card;
     const partner = card?.kind === "partner";
     const option = partner ? element("a", "action")
-      : button(card ? "" : action.label, action.variant === "primary" && !card ? "action primary" : "action");
+      : button(card ? "" : action.label, "action");
+    if (!card && action.primary) option.classList.add("primary");
     if (partner) {
       option.href = partnerBenefitsUrl + (card.id ? "#:~:text=" + encodeURIComponent(card.title) : "");
       option.target = "_blank";
@@ -490,11 +497,14 @@
     option.classList.add("choice-card");
     option.dataset.cardKind = card.kind;
     option.setAttribute("aria-label", action.label);
-    if (card.kind === "reason") option.setAttribute("aria-pressed", String(action.variant === "selected"));
+    const selected = action.variant === "selected";
+    if (card.kind === "reason" || selected) option.setAttribute("aria-pressed", String(selected));
     if (card.kind !== "date" && (card.kind !== "symptom" || card.icon)) {
       const image = cardImage(card.mediaKey);
       const mark = image || element("span", "choice-card-icon");
-      if (!image) {
+      if (card.kind === "product") {
+        mark.dataset.productIcon = productIcons.find(([family]) => (card.title || action.label).includes(family))?.[1] || "other-product";
+      } else if (!image) {
         const symbols = { transfer: "transfer", virtual: "wallet", "payment-record": "file" };
         const symbol = card.icon === "tools" ? "tool" : card.icon;
         mark.append(icon(symbol || pickerIcons[card.kind] || symbols[card.kind] || "card"));
@@ -514,10 +524,10 @@
     }
     if (card.phone) caption.append(element("span", "choice-card-phone", `${card.phoneLabel || "카드사 문의"} ${card.phone}`));
     option.append(caption);
-    if (card.kind !== "partner" && card.kind !== "date") {
-      const arrow = icon("chevron");
-      arrow.classList.add("choice-card-arrow");
-      option.append(arrow);
+    if (selected || card.kind !== "partner" && card.kind !== "date") {
+      const mark = icon(selected ? "check" : "chevron");
+      mark.classList.add("choice-card-arrow");
+      option.append(mark);
     }
     return option;
   }
@@ -532,8 +542,8 @@
       const toolbar = element("div", "partner-toolbar");
       toolbar.append(element("span", "", `제휴카드 ${actions.length}개`));
       const arrows = element("div", "partner-arrows");
-      const prev = button("", "catalog-icon-button carousel-arrow previous");
-      const next = button("", "catalog-icon-button carousel-arrow");
+      const prev = button("", "carousel-arrow previous");
+      const next = button("", "carousel-arrow");
       prev.setAttribute("aria-label", "이전 제휴카드");
       next.setAttribute("aria-label", "다음 제휴카드");
       prev.append(icon("chevron"));
@@ -608,10 +618,12 @@
         : screen.id === "pairInstallSchedule" ? "재설치 방문일 선택"
         : monthly ? "정기 발송일 선택" : flow.scenario.no === 17 ? "배송일 선택"
         : flow.scenario.no === 36 ? "회수일 선택" : "방문일 선택";
-      return picker("date", title, dates, ({ label }) => {
+      const datePicker = picker("date", title, dates, ({ label }) => {
         const parsed = dateChoice.exec(label);
         return { kind: "date", title: parsed?.[1] || label, detail: parsed ? parsed[2] + "요일" : "" };
-      }, currentDate ? `선택한 날짜 · ${currentDate}` : "");
+      });
+      datePicker.selection.selectedDate = currentDate;
+      return datePicker;
     }
 
     const channels = actions.filter(({ label }) => deliveryChoice.test(label));
@@ -690,6 +702,11 @@
     if (selection.detail) copy.append(element("p", "", selection.detail));
     header.append(copy);
     section.append(header);
+    if (selection.selectedDate) {
+      const date = element("p", "selected-date");
+      date.append(element("span", "", `선택한 날짜 · ${selection.selectedDate}`), icon("check"));
+      section.append(date);
+    }
 
     if (symptom) {
       const progress = element("ol", "symptom-progress");
@@ -740,9 +757,16 @@
     if (inputTools.childElementCount) choices.append(inputTools);
     if (picker) choices.append(renderWorkflowPicker(visual, picker.selection));
     else if (visual.length) choices.append(renderCardOptions(visual, flow.selection));
+    if (flow.bookingReview?.length) {
+      choices.append(renderResultCards(flow.bookingReview, "A/S 방문 예약 정보", true));
+    }
     if (plain.length) {
       const list = element("div", "action-list");
-      for (const action of plain) list.append(actionButton(action));
+      const isResult = ["result", "closed"].includes(flow.screen?.kind);
+      const primary = plain.find(({ label, requiresFields }) => (!isResult || requiresFields)
+        && /^(?:다음|계속|확인)(?: 단계)?$|(?:요청|접수|예약|납부|결제|발송|발급|변경|저장|인증 확인|전자서명 확인)$/u.test(label)
+        && !/조회|다른|다시|내역|방법|없이|나중|유지|보기/u.test(label));
+      for (const action of plain) list.append(actionButton({ ...action, primary: action === primary }));
       choices.append(list);
     }
     choices.addEventListener("click", (event) => {
@@ -848,6 +872,11 @@
 
   function update({ focus = false, scroll = true } = {}) {
     const flow = demoMode || workflow ? engine.getState() : null;
+    const headerStatus = {
+      "$chatHandoffReview": "상담 연결 요청 확인",
+      "$callbackReview": "전화 상담 요청 확인",
+    }[flow?.screen?.id] || "온라인 · 챗봇 상담";
+    if (assistantStatus.textContent !== headerStatus) assistantStatus.textContent = headerStatus;
     if (flow?.verification?.code !== revealedCode) revealedCode = null;
     syncInputProgress(flow);
     const messages = getRows();
@@ -863,7 +892,6 @@
     renderLog(messages);
     renderControls(flow, picker);
     renderStatus();
-    markMode();
     syncCatalogSelection(flow);
 
     const field = pendingField();
@@ -958,30 +986,6 @@
     else engine.reset();
   }
 
-  async function refreshConnection() {
-    if (demoMode) return;
-    const controller = new AbortController();
-    pendingStatus?.abort();
-    pendingStatus = controller;
-    const timer = setTimeout(() => controller.abort(), 4500);
-    try {
-      const response = await fetch("/api/status", { signal: controller.signal, cache: "no-store" });
-      if (!response.ok) throw new Error("연결을 확인하지 못했어요.");
-      const service = await response.json();
-      if (pendingStatus === controller && (service.available || connection.state !== "live")) {
-        connection = { ...service, state: service.available ? "live" : "offline" };
-      }
-    } catch {
-      if (pendingStatus === controller && connection.state !== "live") connection.state = "offline";
-    } finally {
-      clearTimeout(timer);
-      if (pendingStatus === controller) {
-        pendingStatus = null;
-        markMode();
-      }
-    }
-  }
-
   function errorMessage(data) {
     return typeof data?.error === "string" && /[가-힣]/.test(data.error) && data.error.length <= 160
       ? data.error
@@ -1017,7 +1021,6 @@
       if (activeRequest !== request) return;
       if (!response.ok || typeof data?.reply !== "string" || !data.reply.trim()) {
         failedRequest = { message, error: errorMessage(data) };
-        if (response.status === 503) connection.state = "offline";
       } else {
         const reply = data.reply.trim();
         liveRows.push({ role: "bot", text: reply, source: "api" });
@@ -1026,7 +1029,6 @@
         const suggested = scenarios.get(Number(data.scenarioId));
         offer = suggested?.screens[0]?.kind === "internal-only" ? null : suggested ?? null;
         lastScenario = offer?.no ?? lastScenario;
-        connection = { ...connection, state: "live", provider: data.provider || connection.provider };
       }
     } catch (error) {
       if (activeRequest !== request) return;
@@ -1036,7 +1038,6 @@
           ? "응답 시간이 길어지고 있어요. 다시 시도해 주세요."
           : "AI에 연결하지 못했어요. 다시 시도해 주세요."
       };
-      if (error.name !== "AbortError") connection.state = "offline";
     } finally {
       clearTimeout(request.timer);
       if (activeRequest === request) {
@@ -1158,5 +1159,4 @@
   renderCatalog();
   setDrawer(mobileCatalog.matches, false);
   update();
-  refreshConnection();
 })();

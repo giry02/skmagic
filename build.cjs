@@ -15,7 +15,10 @@ function replaceOnce(html, token, value) {
 }
 
 let html = read("conversation.html");
-const css = read("conversation.css");
+const css = read("conversation.css").replace(/url\("concept-c\/([a-z-]+\.png)"\)/g, (_, file) => {
+  const image = fs.readFileSync(path.join(sourceDir, "concept-c", file)).toString("base64");
+  return `url("data:image/png;base64,${image}")`;
+});
 if (/<\/style\b/i.test(css)) throw new Error("Unexpected closing style tag");
 html = replaceOnce(html, '  <link rel="stylesheet" href="conversation.css">', `  <style>\n${css.trimEnd()}\n  </style>`);
 for (const file of scripts) {
