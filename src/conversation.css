@@ -75,6 +75,7 @@ p, h1, h2, h3 { margin: 0; }
   --chat-width: 736px;
   --avatar-width: 24px;
   --turn-gap: 10px;
+  --turn-indent: calc(var(--avatar-width) + var(--turn-gap));
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -473,7 +474,7 @@ button.catalog-group:hover, .catalog-group[aria-expanded="true"] { background: v
   display: grid;
   gap: 8px;
   min-width: 0;
-  max-width: min(620px, 100% - var(--avatar-width) - var(--turn-gap));
+  max-width: min(620px, 100% - var(--turn-indent));
 }
 .turn.user .turn-content { max-width: min(550px, 90%); }
 .bubble {
@@ -501,9 +502,10 @@ button.catalog-group:hover, .catalog-group[aria-expanded="true"] { background: v
   gap: 0;
 }
 .turn.bot .result-records {
-  width: calc(100% + var(--avatar-width) + var(--turn-gap));
-  margin-inline-start: calc(-1 * (var(--avatar-width) + var(--turn-gap)));
+  width: calc(100% + var(--turn-indent));
+  margin-inline-start: calc(-1 * var(--turn-indent));
 }
+.app[data-phase-one] .turn.bot .result-records { width: 100%; margin-inline-start: 0; }
 .result-records .result-card { border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
 .result-records .result-card :is(h3, h4, p) { font-variant-numeric: tabular-nums; }
 .result-record-title {
@@ -546,6 +548,10 @@ button.catalog-group:hover, .catalog-group[aria-expanded="true"] { background: v
 .controls, .workflow-tools, .chat-status {
   width: min(554px, 100%);
   margin: 13px 0 0;
+}
+.app[data-phase-one] #chat-controls > :is(.controls, .workflow-tools) {
+  width: calc(min(554px, 100%) - var(--turn-indent));
+  margin-inline-start: var(--turn-indent);
 }
 .controls:empty { display: none; }
 .workflow-tools { margin-top: 12px; }
