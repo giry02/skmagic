@@ -622,6 +622,19 @@ button.catalog-group:hover, .catalog-group[aria-expanded="true"] { background: v
 @media (max-width: 320px) {
   .app[data-phase-one] .action-list--navigation > .action { gap: 6px; padding-inline: 8px; }
 }
+@media (max-width: 360px) {
+  .app:not([data-phase-one]) #chat-controls > .controls {
+    --extra-control-space: clamp(0px, calc(90px - 25vw), 14px);
+    width: calc(100% + 2 * var(--extra-control-space));
+    margin-inline: calc(-1 * var(--extra-control-space));
+  }
+  .app:not([data-phase-one]) .action-list > .action {
+    max-width: 100%;
+    padding-inline: 8px;
+    font-size: clamp(12px, 4.1vw, 14px);
+  }
+  .app:not([data-phase-one]) .action.choice-card { gap: 6px; padding-inline: 8px; }
+}
 .choice-cards { display: grid; min-width: 0; }
 :is(.card-picker, .result-records) + .action-list { margin-top: 9px; }
 .action.choice-card {
