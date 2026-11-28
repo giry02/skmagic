@@ -6,7 +6,9 @@ const { existsSync } = require("node:fs");
 const { spawn } = require("node:child_process");
 
 const pagePath = path.join(__dirname, "index.html");
-const port = 4328;
+const phaseOnePath = path.join(__dirname, "phase-1.html");
+const port = Number(process.env.SKMAGIC_PORT || 4328);
+if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("Invalid SKMAGIC_PORT.");
 const model = process.env.SKMAGIC_OLLAMA_MODEL || "qwen3:4b-instruct-2507-q4_K_M";
 const ollama = new URL(process.env.SKMAGIC_OLLAMA_URL || "http://127.0.0.1:11434/");
 if (ollama.protocol !== "http:" || !["127.0.0.1", "localhost", "[::1]"].includes(ollama.hostname)
@@ -294,9 +296,9 @@ const server = http.createServer(async (request, response) => {
   if (!allowedHosts.has(host) || (origin && origin !== `http://${host}`)) {
     return json(response, 403, { error: "로컬 브라우저에서 접속해 주세요." });
   }
-  if (request.method === "GET" && ["/", "/index.html"].includes(request.url)) {
+  if (request.method === "GET" && ["/", "/index.html", "/phase-1.html"].includes(request.url)) {
     try {
-      const page = await fs.readFile(pagePath);
+      const page = await fs.readFile(request.url === "/phase-1.html" ? phaseOnePath : pagePath);
       response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
       response.end(page);
     } catch {

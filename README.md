@@ -19,11 +19,13 @@ node server.cjs
 
 Ollama는 기본 주소 `http://127.0.0.1:11434/`에서 실행해야 합니다. 다른 로컬 주소나 설치된 모델을 사용할 때는 `SKMAGIC_OLLAMA_URL`과 `SKMAGIC_OLLAMA_MODEL`로 지정합니다. `index.html`을 파일로 열면 예시 상담을 오프라인으로 실행할 수 있습니다.
 
+1차 전용판은 [phase-1.html](phase-1.html)을 파일로 열거나 서버의 `/phase-1.html`로 접속합니다. 01~17번만 메뉴와 검색에 표시하며 자연어도 1차 범위에서 실행합니다. 입금 내역, 방문 전 연락, 서비스 대행업체는 해당 1차 업무 안에서 이어집니다. 기존 서버와 나란히 실행할 때는 `SKMAGIC_PORT`로 포트를 지정합니다.
+
 인증, 납부, 발송 및 상담사 연결은 예시 데이터를 사용하는 시연입니다. 실제 안내 조건은 제휴카드 상세 링크의 카드사 페이지에서 확인할 수 있습니다.
 
 ## 화면과 상담 흐름 수정
 
-화면과 상담 로직은 `src/`에서 수정합니다. `node build.cjs`를 실행하면 배포용 `index.html`이 갱신됩니다.
+화면과 상담 로직은 `src/`에서 수정합니다. `node build.cjs`는 전체판 `index.html`을, `node build.cjs --phase-one`은 1차 전용판 `phase-1.html`을 갱신합니다.
 
 고객 범위, 인증 및 업무 조회의 회귀 검사는 `node --test tests/workflows.cjs`로 실행합니다.
 

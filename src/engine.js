@@ -531,8 +531,9 @@
       return entity ? '현재 이 상담은 개인과 개인사업자 고객만 이용할 수 있어요.' : '';
     }
 
-    constructor(scenarios = []) {
+    constructor(scenarios = [], { publicScenarios = scenarios } = {}) {
       this.scenarios = [...scenarios];
+      this.publicScenarios = [...publicScenarios];
       this.reset();
     }
 
@@ -601,7 +602,7 @@
 
     find(query) {
       if (SKIXChat.corporateReply(query)) return [];
-      return rankedScenarios(this.scenarios, String(query ?? '')).map(({ scenario }) => scenario);
+      return rankedScenarios(this.publicScenarios, String(query ?? '')).map(({ scenario }) => scenario);
     }
 
     remember() {
@@ -624,7 +625,7 @@
     }
 
     start(no, customerText) {
-      if (!this.scenarios.some((scenario) => scenario.no === Number(no))) return this.getState();
+      if (!this.publicScenarios.some((scenario) => scenario.no === Number(no))) return this.getState();
       this.remember();
       this.openScenario(no, customerText, true);
       return this.getState();
@@ -1874,7 +1875,7 @@
         else this.sayBot('문의 내용을 먼저 알려주시면 적합한 상담을 안내할게요.');
         return this.getState();
       }
-      const candidates = rankedScenarios(this.scenarios.filter(({ screens }) => screens[0]?.kind !== 'internal-only'), query);
+      const candidates = rankedScenarios(this.publicScenarios.filter(({ screens }) => screens[0]?.kind !== 'internal-only'), query);
       const first = candidates[0];
       const next = candidates[1];
       if (first && first.score >= 6 && (!next || first.score >= 200 || first.score - next.score > 0.015)) return this.start(first.scenario.no, query);
@@ -2586,7 +2587,9 @@
     execute(target, label = '', values = {}) {
       if (!target) return;
       if (target.startsWith('@')) {
-        this.openScenario(target.slice(1), label, false);
+        const no = Number(target.slice(1));
+        if (this.scenarios.some((scenario) => scenario.no === no)) this.openScenario(no, label, false);
+        else if (this.scenario && this.publicScenarios.length < this.scenarios.length) this.command('$handoff', label, values);
         return;
       }
       if (target.startsWith('$')) {

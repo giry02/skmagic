@@ -3,6 +3,7 @@
 
   const byId = (id) => document.getElementById(id);
   const app = byId("app");
+  const phaseOne = app.hasAttribute("data-phase-one");
   const chatScroll = byId("chat-scroll");
   const log = byId("chat-log");
   const controls = byId("chat-controls");
@@ -15,8 +16,9 @@
   const secureInput = byId("secure-input");
   const inputLabel = byId("compose-input-label");
   const sendButton = byId("send-chat");
-  const engine = new window.SKIXChat(window.SKIX_SCENARIOS);
-  const scenarios = new Map(window.SKIX_SCENARIOS.map((scenario) => [scenario.no, scenario]));
+  const publicScenarios = window.SKIX_SCENARIOS.filter(({ phase }) => !phaseOne || phase === "1차");
+  const engine = new window.SKIXChat(window.SKIX_SCENARIOS, { publicScenarios });
+  const scenarios = new Map(publicScenarios.map((scenario) => [scenario.no, scenario]));
   const partnerCards = new Map((window.SKIX_PARTNER_CARDS ?? []).map((card) => [card.id, card]));
   const partnerBenefitsUrl = "https://www.skmagic.com/event/skmagic-card-benefits";
   const cardDetails = new Set([...partnerCards.values()].map((card) => card.href));
@@ -39,7 +41,7 @@
     { id: 2, label: "2차", phase: "2차" },
     { id: 3, label: "3차", phase: "3차" },
     { id: 4, label: "4차", phase: "별도 검토", note: "별도 검토" },
-  ];
+  ].filter(({ id }) => !phaseOne || id === 1);
   const recordPickers = new Map([
     [["1:S02", "2:S02", "3:changeContract", "4:chargeContract", "5:arrearsContract", "7:S02", "7:S04", "10:S03"], ["contract", "계약 선택"]],
     [["13:S02", "14:S01", "15:S02", "34:visitList"], ["appointment", "방문 접수 선택"]],
@@ -68,7 +70,7 @@
   const openPhases = new Set([defaultCatalogPhase]);
   let drawerOpen = false;
 
-  let demoMode = localFile;
+  let demoMode = localFile || phaseOne;
   let liveRows = [];
   let apiHistory = [];
   let offer = null;
@@ -142,19 +144,19 @@
       shortcut.setAttribute("aria-controls", groupId);
       shortcut.setAttribute("aria-expanded", String(expanded));
       if (note) shortcut.title = note;
-      shortcuts.append(shortcut);
+      if (!phaseOne) shortcuts.append(shortcut);
 
       const section = element("section");
       section.id = groupId;
       section.setAttribute("aria-label", `${label} 상담 업무`);
       section.hidden = !expanded;
       if (expanded) {
-        const heading = term ? element("h3", "catalog-group") : button("", "catalog-group");
+        const heading = term || phaseOne ? element("h3", "catalog-group") : button("", "catalog-group");
         const mark = icon("folder");
         mark.classList.add("catalog-group-icon");
         heading.append(mark, element("span", "", label));
         if (note) heading.append(element("span", "catalog-phase-note", note));
-        if (!term) {
+        if (!term && !phaseOne) {
           heading.dataset.collapsePhase = String(id);
           heading.setAttribute("aria-label", `${label} 업무 접기`);
           heading.setAttribute("aria-expanded", "true");
@@ -1156,6 +1158,11 @@
     }
   });
 
+  if (phaseOne) {
+    catalogAll.hidden = true;
+    catalogPhaseButtons.hidden = true;
+    byId("catalog-title").textContent = "1차 상담 메뉴";
+  }
   renderCatalog();
   setDrawer(mobileCatalog.matches, false);
   update();
