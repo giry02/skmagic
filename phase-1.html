@@ -68,6 +68,17 @@ p, h1, h2, h3 { margin: 0; }
   fill: none;
 }
 
+.guide-icon {
+  display: block;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  background: center / contain no-repeat;
+}
+.guide-next { background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJAAAACQCAIAAABoJHXvAAAACXBIWXMAAEJwAABCcAFu8l9tAAAC60lEQVR4nO3dQWrbYBCG4VwmdygxvYlXbnoG7c3vQ3ghcgfdwlcoOLvgkk28MELgMVNKs2oNjZ2F5535XnQAwYPE/Fpo7lyhurv1DajLEhgsgcESGCyBwRIYLIHBEhgsgcESGCyBwRIYLIHBEhgsgcESGCyBwRIYLIHBEhgsgcESGCyBwRIYLIHBEhgsgcESGKy4YMftZhra2C/GfjEN7bjd3PqOQhQR7LTfjev5obv/6xrX89N+57ULB3Z6ezmsvv6r9X61B3t99sKFAzv7bMksKNhxu/mPVlf9OYsFNg2rD4F1dc1igY39t4+CdfeH5Rf7+cOLFQzs6fECsK6iGfaV2BV9NzKHjq6uGXCs70qb0Q7OXXWzcGDubq/Phza7xmyZfwaJCCYzHpjMeGAy44HJjAcmMx6YzHhgMuOByYwH5jpT48C8vBkPzGubIcG8sBkVzKuagcG8pBkbzOuZ4cG8mFkGMK9klgTMy5jlAfMaZqnAvIBZNjDPbpYQzFOb5QTzvGZpwTypWWYwz2iWHMzfzR6uMWuz09uLBys/mH/CbFzPPVglwPwTZtH+D1IFzK81m4aVR6oQmF9lNj49eqQKgs0uBPvukSoEZnolgjINHaBMYz0o08EZlOnTFChLp5V5SrSMWmnBLKlWTjDLq5UQzFJrZQOz7FqpwKyAVh4wq6GVBMzKaGUAs0paeDArpsUGs3paYDArqUUFs6paSDArrMUDs9paMDArr0UCkxYJTFokMGmRwKRFApMWCUxaJDBpkcCkRQLTOioYmBa+kcC0UhEGpqWlqfc4d3m+wdfY47wspxUOTKvtkw4drcRC2SxjfaurBTw4t9JaEcF+m+13Z5+zcT0/7Xdeu4hgfzpuN9PQxn4x9otpaNF+0nWr4oKpswkMlsBgCQyWwGAJDJbAYAkMlsBgCQyWwGAJDJbAYAkMlsBgCQyWwGAJDJbAYAkMlsBgCQyWwGAJDJbAYAkMlsBgCQyWwJzVL4ydr+5KaqHEAAAAAElFTkSuQmCC"); }
+.guide-back { background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJAAAACQCAIAAABoJHXvAAADx0lEQVR4nO3dzU4aURjG8VfTcAlVB7ArdeBeWiV+QMCmXfSqmtpWKwSkih/3otiuCszR3sKklS5IXNRGmUXD+7zv81/KmEz4OYczMidnbjweC8NpftYnwLJFMLAIBhbBwCIYWAQDi2BgEQwsgoFFMLAIBhbBwCIYWAQDi2BgEQwsgoFFMLAIBhbBwCIYWAQDi2BgEQwsgoFFMLAIBhbBwCIYWM9mfQKzL03TZqvdOz3r97+LSByvVDbWG/VaLpcTfc05X250e/vzzdt3l1f9v35eLsUH+3sLC89FWa7BkhC2q43hYPTPV8ul+OL8WNt15vczLHlUS0Qur/rNVluU5RQseUprUu/0TJTlESyEm53a7pNaIjKZhqjKHVgIN9u1xuDHcJqD5/W9Pb6m9cl0I+F9q6sroix9f0JqtESksrEuyvIyrU+ya3Faj6RVXC7sf/6g7SbMxZAYpp4T3leI8p3Wl8XFBdGXcbCQZU44qRDlj44Oi8WCqMwyWDCnZRksWNQyCxaMatkEC3a1DIIF01rWwIJ1LVNgwYGWHbDgQ8sIWHCjZQEseNKCBwvOtLDBgj8tYLDgUgsVLHjVggQLjrXwwIJvLTCw4F4LCYxaSGDUQgKjFhIYtZDAqIUERi0kMGohrV4J4WarWs/6ZHW308xHkVhP3WKINE1fvtp8uEr8kYputDQOic1Wm1pIYJmWFRc9XVtKwa6vv015ZNGflkaw6Rv/Gt/9vhNnqQNbW1ud8shRSKr110kI4il1YJmWFQ8Ho+1qw5UZp/VgqbvCcrncp4/vi8sZviAeerrO1IGJSBQtfe20ll8Up/+V4WC0tVkfDjP8cwQ0jWATs267mclsFJKdnV3zZkrBaIYHRjM8MJrhgdEMD4xmeGA0wwOjGR6Y8P4MDkzcm+GBiW8zSDBxbIYKJl7NgMHEpRk2mPgzgwcTZ2YWwMSTmREwcWNmB0x8mJkCEwdm1sDEuplBMDFtZhNM7JqZBROjZpbBxKKZumfr9WxHddJtK9zgyAWYcMM3uPJR1O00M62x4D7OeGY97uM82/JRlGldDPdxBps3zuubROs7o/9fFC0dtQ+nGRu5jzPY51mF+zgD3Z+VS/HF+bG2nYE9Don35aPopNsul2J5ULkUH+zvadNydOP8SGmaNlvt3unZZE4YxyuVjfVGvaZQi2B4uR4SESMYWAQDi2BgEQwsgoFFMLAIBhbBwCIYWAQDi2BgEQwsgoFFMLAIBhbBwCIYWAQDi2BgEQwsgoFFMLAIBhbBwCIYWAQDi2BgEUyw+gNd+OWLlcO5MgAAAABJRU5ErkJggg=="); }
+.guide-close { background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJAAAACQCAIAAABoJHXvAAAFD0lEQVR4nO3d3U4TQRjG8aGQvQRLpx8eAYV7UUA+iq2KiV4VERW0zZZSPvRekMQj2+5b6iXsgZjQxBhB2N3u7LzP9P0fQlGWH+0OuzOdmevrayXhlLP9DUjxEjCwBAwsAQNLwMASMLAEDCwBA0vAwBIwsAQMLAEDS8DAEjCwBAwsAQNLwMASMLAEDCwBA0vAwBIwsAQMLAEDS8DAEjCwBAwsAQNLwMCaM/0fhGHYbPmnZ+eXl9+VUtXqwvraaqO+43meQi60dFwzRpcbjUY/X+2+ufh2+c/HV5arH97vaV1QmF1djXZfv73zuA4P9vP5R5BgYRg+ebpx+6jGlSulTrtZ1FqhFRBt1Rr93uDOz64sV79+6Zp7nhk8hzVb/v+0lFL93mCr1giIlENaSqmLb5fNlm/uGzAIdnp2fv8D4MyCh7QiHjhTsPHZ+P76vcHmRr3ff+BHwCGi4fbOiwe1Ih44R7CZmUhnxwEF29svmJsRDbd2Gr0f/SgPzpn8W8ngv720tBjxkQMKavWXbF8bA6LNWj2illJqcXEBEmx9bTX6g9mez4Jo563EBw4zrIcY6wfxtYCH9Z7nfXi/V66UQJ9nQXytcqV08PGd0YsdZq8lal04brcqj8vRv4TJuJEijwn/VNLFduvT/Hwe++Kv1oWO34xlZn3cSHHGhONKunh09LlcjvFywvdqPZYZMdbK7vYKihnx1sr0fhh/M2KvlfUNTM5mhKBl4Y4zTzMC0bIzRYCbGeFoWZvTwceMoLRsTsLhYEZoWpZnTdk1I0At+9PcbJkRppZ9MCtmBKvFAixjM0LW4gKWmRmBazECy8CM8LV4gRk1Iye02IEZMiNXtDiCpW5GDmkxBUvRjNzS4guWihk5p2V8udHkJf6hz87OuqcFAJbMLJ9/NDc7F2u6HIQWBlgys1ihaLE+h014PnNSCwbMnFkJSgsJzIRZCU0LDEylaoaohQemUjID1YIEUxOb4WrBDOvvjGj4bON5QEGsryrM57vHPqgW6jPsr2L/tv1C/f0EB6ObP6UTLP0bjUb818C7BkaTXfiwvv5susAojctUuGZgYJTeRUVQMyQwSvsSMKIZDJihC/YDNDMMMKO3VwZQZgBgyW5gFuO8OwuQGXewZFMETrvtk67PYf3ZdIFNMotGM1h/Nl1gk8950i6aMQVLa4aads6MI1i68wm1W2bswEzM/tQOmfECMzdXV7tixgjM9Mxq7YQZF7Bs5sFrfDMWYFmuWtDgZvbBsl9jopHNLIPZWhGkYc1sgtldv6UxzayBcVhtpwHNclOrBWqWm2YtRLPclGvBmWUKxlMLyyw7MM5aQGYZgfHXQjHLAgxFC8LMOBiWFn8zs+vDiIabtXrcHZ2YbCEWJNqO6qTjG93gSDZ8u6/p2vDt/n2cOT+3/lTUutNuxtqzzuV9nJlrJTZzeR/nv/e2Y6g1rqh1rH0GHd/H2fqYMPVxo8v7OJcrpeNui7nWOK0LR/7nKK+Nzu7jzPa8NeH5zM19nOG0Io71gYf1nucdHuyvLFdvf2pluXrcbiFqqZvn2UnH/99xHR7sG93H2fg74YRh2Gz5p2fn47FTtbqwvrbaqO8YPaoMsnVcwG9dNJ3Zn5coxUrAwBIwsAQMLAEDS8DAEjCwBAwsAQNLwMASMLAEDCwBA0vAwBIwsAQMLAEDS8DAEjCwBAwsAQNLwMASMLAEDCwBA0vAwBIwsAQMLAFTWP0GZQszUVyIQlUAAAAASUVORK5CYII="); }
+
 .app {
   --chat-width: 736px;
   --avatar-width: 24px;
@@ -279,11 +290,14 @@ button.catalog-group:hover, .catalog-group[aria-expanded="true"] { background: v
 .catalog-item {
   min-height: 34px;
   padding: 6px 8px;
+  gap: 7px;
   color: var(--quiet);
   font-size: 13px;
   line-height: 1.45;
   letter-spacing: -.02em;
 }
+.catalog-item .icon { width: 15px; height: 15px; color: var(--muted); }
+.catalog-item[aria-current="true"] .icon { color: var(--selection); }
 .catalog-item:hover:not(:disabled) { background: var(--soft); color: var(--ink); }
 .catalog-item[aria-current="true"] {
   background: var(--user-bubble);
@@ -501,6 +515,9 @@ button.catalog-group:hover, .catalog-group[aria-expanded="true"] { background: v
 .result-records .result-card { border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
 .result-records .result-card :is(h3, h4, p) { font-variant-numeric: tabular-nums; }
 .result-record-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   padding: 12px 0 8px;
   border-bottom: 1px solid var(--line);
   font-size: 15px;
@@ -637,6 +654,140 @@ a.choice-card { color: inherit; text-decoration: none; }
   font-weight: 700;
 }
 .selected-date .icon { width: 16px; height: 16px; color: var(--selection); }
+.calendar-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--ink);
+}
+.calendar-trigger > .icon { width: 17px; height: 17px; color: var(--selection); }
+.calendar-trigger > .guide-icon { width: 14px; height: 14px; }
+.controls > .calendar-trigger { margin-top: 9px; }
+
+.schedule-sheet {
+  position: fixed;
+  inset: auto 0 0;
+  width: min(500px, calc(100% - 16px));
+  max-width: none;
+  max-height: min(90dvh, 740px);
+  margin: 0 auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  color: var(--ink);
+  background: var(--white);
+}
+.schedule-sheet::backdrop { background: rgb(28 30 36 / 34%); }
+.schedule-sheet-inner {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+  padding: 12px 16px max(16px, env(safe-area-inset-bottom));
+}
+.sheet-handle {
+  width: 28px;
+  height: 2px;
+  flex: none;
+  align-self: center;
+  margin-bottom: 8px;
+  border-radius: 20px;
+  background: var(--line);
+}
+.schedule-sheet-header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+.schedule-sheet-header > .icon { color: var(--selection); }
+.schedule-sheet-header h2 { font-size: 19px; }
+.schedule-sheet-header h2:focus-visible { outline: 2px solid var(--selection); outline-offset: 3px; }
+.schedule-sheet-header .sheet-icon-button { margin-left: auto; }
+.sheet-icon-button {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+}
+.sheet-icon-button:hover:not(:disabled) { background: var(--soft); }
+.sheet-icon-button:disabled { opacity: .35; }
+.schedule-sheet-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.schedule-month-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.schedule-month-heading { font-size: 16px; font-weight: 700; }
+.schedule-month-navigation { display: flex; }
+.schedule-calendar-grid {
+  width: 100%;
+  table-layout: fixed;
+  border-spacing: 0;
+  color: var(--ink);
+  text-align: center;
+}
+.schedule-calendar-grid th {
+  height: 30px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+.schedule-calendar-grid td { height: 42px; padding: 0; }
+.schedule-calendar-day {
+  width: min(100% - 4px, 42px);
+  height: 38px;
+  margin: 0;
+  padding: 0;
+  border: 1.2px solid transparent;
+  border-radius: 0;
+  background: var(--white);
+  color: var(--ink);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.schedule-calendar-day:hover:not(:disabled) { background: var(--soft); }
+.schedule-calendar-day:focus-visible { outline-offset: 0; }
+.schedule-calendar-day:disabled { color: var(--muted); }
+.schedule-calendar-day[data-calendar-state="unavailable"] { background: var(--soft); }
+.schedule-calendar-day[aria-current="date"] { font-weight: 700; }
+.schedule-calendar-day[aria-pressed="true"] {
+  border-color: var(--selection);
+  font-weight: 700;
+}
+.schedule-calendar-hint {
+  min-height: 48px;
+  padding: 12px 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.schedule-sheet .selected-date {
+  margin-top: 7px;
+  outline: 0;
+  border-block: 1px solid var(--line);
+  padding: 7px 0;
+}
+.schedule-sheet-footer {
+  flex: none;
+  padding-top: 10px;
+  background: var(--white);
+}
+.schedule-sheet-footer .action { width: 100%; }
+
 .symptom-progress {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -982,6 +1133,20 @@ noscript { position: fixed; inset: 73px 0 auto; padding: 10px; background: var(-
         </section>
       </main>
     </div>
+    <dialog class="schedule-sheet" id="schedule-sheet" aria-labelledby="schedule-sheet-title">
+      <div class="schedule-sheet-inner">
+        <span class="sheet-handle" aria-hidden="true"></span>
+        <header class="schedule-sheet-header">
+          <svg class="icon" aria-hidden="true"><use href="#i-calendar"></use></svg>
+          <h2 id="schedule-sheet-title" tabindex="-1">예약 가능일 선택</h2>
+          <button type="button" class="sheet-icon-button" id="schedule-sheet-close" aria-label="달력 닫기">
+            <span class="guide-icon guide-close" aria-hidden="true"></span>
+          </button>
+        </header>
+        <div id="schedule-sheet-content" class="schedule-sheet-content"></div>
+        <footer id="schedule-sheet-footer" class="schedule-sheet-footer"></footer>
+      </div>
+    </dialog>
   </div>
   <noscript>챗봇 상담을 이용하려면 브라우저에서 JavaScript를 켜 주세요.</noscript>
   <script>
@@ -4102,6 +4267,7 @@ window.SKIX_PARTNER_CARDS = [
   const dateScenarios = new Set([8, 9, 12, 14, 17]);
   const schedulingScreens = { 8: 'S05', 9: 'S05', 12: 'S05', 14: 'S04', 17: 'S05', 36: 's6' };
   const pairedDateKeys = { split: 'splitDate', reinstall: 'reinstallDate' };
+  const scheduleRequests = new Set(['S06', 'pairResult', '$commitVisitChange', '$commitDeliveryChange', 's7']);
   const addressScreens = new Set(['8:S04', '9:S04', '12:S04', '14:S03', '17:S04']);
 
   const fromLabel = (label, placeholder, type = 'text', sample = '') => ({ label, placeholder, type, sample });
@@ -4463,6 +4629,7 @@ window.SKIX_PARTNER_CARDS = [
         screen: this.screen,
         selection: this.activeSelection(),
         selectedDate: this.selectedScheduleDate(),
+        scheduleCalendar: this.scheduleCalendar(actions),
         bookingReview: this.serviceBookingReview(),
         messages: [...this.messages],
         actions: actions.map(({ target, ...action }) => action),
@@ -5430,6 +5597,32 @@ window.SKIX_PARTNER_CARDS = [
       return key ? (this.context[key] ? dateLabel(this.context[key]) : '') : this.context.date || '';
     }
 
+    scheduleCalendar(actions) {
+      const { no } = this.scenario ?? {};
+      const screen = this.screen;
+      if (!screen || this.candidates.length || !(screen.id === schedulingScreens[no] || screen.bookingStage)) return null;
+      const key = pairedDateKeys[screen.bookingStage];
+      const selected = key ? this.context[key] : this.context.dateIso;
+      if (!selected && !actions.some(({ target }) => target === '$date')) return null;
+      const dates = this.scheduleDates(true);
+      if (!dates.length) return null;
+      return {
+        key: `${no}:${screen.id}`,
+        today: estimateDateRange().today,
+        dates,
+        selected: dates.includes(selected) ? selected : undefined,
+        preferred: no === 17 ? this.context.deliveryDate : undefined,
+        moreActionId: actions.find(({ target }) => target === '$moreDates')?.id,
+        requestId: actions.find(({ target }) => scheduleRequests.has(target))?.id
+      };
+    }
+
+    chooseCalendarDate(iso) {
+      const calendar = this.scheduleCalendar(this.actionList());
+      if (!calendar?.dates.includes(iso) || calendar.selected === iso) return this.getState();
+      return this.applyAction({ id: 'calendar:' + iso, label: dateLabel(iso) + ' 선택', target: '$date' }, {});
+    }
+
     serviceBookingReview() {
       if (this.scenario?.no !== 12 || this.screen?.id !== 'S05' || !this.context.date) return [];
       return [
@@ -5444,13 +5637,12 @@ window.SKIX_PARTNER_CARDS = [
     saveScheduleDate(label, stage = this.screen.bookingStage) {
       const date = label.replace(/ 선택$/, '');
       const key = pairedDateKeys[stage];
+      const iso = this.scheduleDates(true, stage).find((day) => dateLabel(day) === date);
       if (key) {
-        this.context[key] = this.scheduleDates(true, stage).find((day) => dateLabel(day) === date);
+        this.context[key] = iso;
       } else {
         this.context.date = date;
-        if ([14, 17].includes(this.scenario.no)) {
-          this.context.dateIso = this.scheduleDates(true).find((day) => dateLabel(day) === date);
-        }
+        this.context.dateIso = iso;
       }
       return date;
     }
@@ -5462,8 +5654,7 @@ window.SKIX_PARTNER_CARDS = [
         this.execute(nextScreen);
         return;
       }
-      const commits = ['S06', 'pairResult', '$commitVisitChange', '$commitDeliveryChange', 's7'];
-      const request = this.actionList().find(({ target, disabled }) => !disabled && commits.includes(target));
+      const request = this.actionList().find(({ target, disabled }) => !disabled && scheduleRequests.has(target));
       this.sayBot(request ? `${date}을 선택했어요. ‘${request.label}’을 눌러 주세요.` : `${date}을 선택했어요.`, { demo: true });
     }
 
@@ -7167,6 +7358,10 @@ window.SKIX_PARTNER_CARDS = [
   const chatScroll = byId("chat-scroll");
   const log = byId("chat-log");
   const controls = byId("chat-controls");
+  const scheduleSheet = byId("schedule-sheet");
+  const scheduleSheetTitle = byId("schedule-sheet-title");
+  const scheduleSheetContent = byId("schedule-sheet-content");
+  const scheduleSheetFooter = byId("schedule-sheet-footer");
   const status = byId("chat-status");
   const assistantStatus = byId("assistant-status");
   const chatTime = new Intl.DateTimeFormat("ko-KR", { hour: "numeric", minute: "2-digit", hour12: true });
@@ -7213,6 +7408,9 @@ window.SKIX_PARTNER_CARDS = [
   const schedulePickers = new Set(["8:S05", "9:S05", "12:S05", "14:S04", "17:S05", "36:s6"]);
   const dateChoice = /^(\d{1,2}월\s+\d{1,2}일)\s*\(([월화수목금토일])\)(?:\s+선택)?$/u;
   const monthlyChoice = /^매월 \d{1,2}일$/u;
+  const calendarDayLabel = new Intl.DateTimeFormat("ko-KR", {
+    month: "long", day: "numeric", weekday: "long", timeZone: "UTC",
+  });
   const deliveryChoice = /^(?:알림톡|이메일|팩스|이메일과 팩스|우편|문자로 받기|등록된 번호로 받기|이메일로 받기)$/u;
   const pickerIcons = {
     "service-symptom": "tool", product: "bag", contract: "folder", appointment: "tool", order: "truck",
@@ -7226,6 +7424,10 @@ window.SKIX_PARTNER_CARDS = [
     ["식기세척기", "dishwasher"],
     ["전자레인지", "microwave"],
   ];
+  const categoryIcons = {
+    "결제·납부": "card", "계약·해약": "folder", "AS·케어": "tool", "배송·설치": "truck",
+    "고객·명의": "user", "문서·증빙": "file", "가입·변경": "bag", "쿠폰·혜택": "wallet",
+  };
   const defaultCatalogPhase = catalogPhases[0].id;
   const openPhases = new Set([defaultCatalogPhase]);
   let drawerOpen = false;
@@ -7242,6 +7444,7 @@ window.SKIX_PARTNER_CARDS = [
   let inputProgress = null;
   let inputMessages = [];
   let revealedCode = null;
+  let calendarView = null;
 
   function element(tag, className = "", text = "") {
     const node = document.createElement(tag);
@@ -7266,9 +7469,17 @@ window.SKIX_PARTNER_CARDS = [
     return svg;
   }
 
+  function guideIcon(name) {
+    const symbol = element("span", "guide-icon guide-" + name);
+    symbol.setAttribute("aria-hidden", "true");
+    return symbol;
+  }
+
   function catalogItem(scenario) {
     const reviewOnly = scenario.screens[0]?.kind === "internal-only";
-    const item = button(reviewOnly ? `${scenario.displayTitle} (운영 검토)` : scenario.displayTitle, "catalog-item");
+    const label = reviewOnly ? `${scenario.displayTitle} (운영 검토)` : scenario.displayTitle;
+    const item = button("", "catalog-item");
+    item.append(icon(categoryIcons[scenario.category] || "file"), element("span", "", label));
     item.dataset.scenario = String(scenario.no);
     const number = String(scenario.no).padStart(2, "0");
     const details = `No.${number} · ${scenario.phase} · 상담코드 ${scenario.consultationCode}`;
@@ -7385,13 +7596,16 @@ window.SKIX_PARTNER_CARDS = [
     return img;
   }
 
-  function renderResultCards(items, title, compact = false) {
+  function renderResultCards(items, title, compact = false, product) {
     const hasArtwork = items.some(({ mediaKey }) => Boolean(mediaKey));
     const group = element(title ? "section" : "div", hasArtwork ? "result-cards" : "result-cards result-records");
     if (!hasArtwork && (compact || items.length > 1)) group.classList.add("result-records-compact");
     if (title) {
       group.setAttribute("aria-label", title);
-      group.append(element("h3", "result-record-title", title));
+      const heading = element("h3", "result-record-title");
+      if (product) heading.append(productIcon(product));
+      heading.append(element("span", "", title));
+      group.append(heading);
     }
     for (const item of items) {
       const card = element("article", "result-card");
@@ -7661,13 +7875,11 @@ window.SKIX_PARTNER_CARDS = [
     option.setAttribute("aria-label", action.label);
     const selected = action.variant === "selected";
     if (card.kind === "reason" || selected) option.setAttribute("aria-pressed", String(selected));
-    if (card.kind !== "date" && (card.kind !== "symptom" || card.icon)) {
+    if (card.kind !== "date") {
       const image = cardImage(card.mediaKey);
-      const mark = image || element("span", "choice-card-icon");
-      if (card.kind === "product") {
-        mark.dataset.productIcon = productIcons.find(([family]) => (card.title || action.label).includes(family))?.[1] || "other-product";
-      } else if (!image) {
-        const symbols = { transfer: "transfer", virtual: "wallet", "payment-record": "file" };
+      const mark = image || (card.kind === "product" ? productIcon(card.title || action.label) : element("span", "choice-card-icon"));
+      if (!image && card.kind !== "product") {
+        const symbols = { transfer: "transfer", virtual: "wallet", "payment-record": "file", symptom: "tool" };
         const symbol = card.icon === "tools" ? "tool" : card.icon;
         mark.append(icon(symbol || pickerIcons[card.kind] || symbols[card.kind] || "card"));
       }
@@ -7687,11 +7899,18 @@ window.SKIX_PARTNER_CARDS = [
     if (card.phone) caption.append(element("span", "choice-card-phone", `${card.phoneLabel || "카드사 문의"} ${card.phone}`));
     option.append(caption);
     if (selected || card.kind !== "partner" && card.kind !== "date") {
-      const mark = icon(selected ? "check" : "chevron");
+      const mark = selected ? icon("check") : guideIcon("next");
       mark.classList.add("choice-card-arrow");
       option.append(mark);
     }
     return option;
+  }
+
+  function productIcon(title) {
+    const mark = element("span", "choice-card-icon");
+    mark.dataset.productIcon = productIcons.find(([family]) => title.includes(family))?.[1] || "other-product";
+    mark.setAttribute("aria-hidden", "true");
+    return mark;
   }
 
   function renderCardOptions(actions, selection) {
@@ -7865,9 +8084,7 @@ window.SKIX_PARTNER_CARDS = [
     header.append(copy);
     section.append(header);
     if (selection.selectedDate) {
-      const date = element("p", "selected-date");
-      date.append(element("span", "", `선택한 날짜 · ${selection.selectedDate}`), icon("check"));
-      section.append(date);
+      section.append(renderSelectedDate(selection.selectedDate));
     }
 
     if (symptom) {
@@ -7891,6 +8108,144 @@ window.SKIX_PARTNER_CARDS = [
       section.append(cards);
     }
     return section;
+  }
+
+  function renderSelectedDate(label) {
+    const date = element("p", "selected-date");
+    date.append(element("span", "", `선택한 날짜 · ${label}`), icon("check"));
+    return date;
+  }
+
+  function calendarTrigger(flow, selection, label) {
+    const trigger = button("", "action calendar-trigger");
+    trigger.dataset.calendarTrigger = "";
+    trigger.setAttribute("aria-haspopup", "dialog");
+    trigger.setAttribute("aria-controls", scheduleSheet.id);
+    trigger.append(icon("calendar"), element("span", "", label), guideIcon("next"));
+    trigger.addEventListener("click", () => {
+      const calendar = flow.scheduleCalendar;
+      const first = calendar.selected || (calendar.dates.includes(calendar.preferred) ? calendar.preferred : calendar.dates[0]);
+      calendarView = { key: calendar.key, month: first.slice(0, 7) };
+      syncScheduleSheet(flow, selection);
+      scheduleSheet.showModal();
+      scheduleSheetTitle.focus();
+    });
+    return trigger;
+  }
+
+  function closeScheduleSheet(restoreFocus = false) {
+    calendarView = null;
+    if (scheduleSheet.open) scheduleSheet.close();
+    if (restoreFocus) controls.querySelector("[data-calendar-trigger]")?.focus();
+  }
+
+  function renderCalendarMonth(flow, selection) {
+    const calendar = flow.scheduleCalendar;
+    const month = calendarView.month;
+    const [year, monthNumber] = month.split("-").map(Number);
+    const first = new Date(Date.UTC(year, monthNumber - 1, 1));
+    const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+    const monthLabel = `${year}년 ${monthNumber}월`;
+    const wrapper = element("div", "schedule-month");
+    const toolbar = element("div", "schedule-month-toolbar");
+    const heading = element("p", "schedule-month-heading", monthLabel);
+    heading.setAttribute("aria-live", "polite");
+    const navigation = element("div", "schedule-month-navigation");
+    for (const [offset, label, symbol, disabled] of [
+      [-1, "이전 달", "back", month <= calendar.today.slice(0, 7)],
+      [1, "다음 달", "next", month >= calendar.dates.at(-1).slice(0, 7)],
+    ]) {
+      const change = button("", "sheet-icon-button");
+      change.dataset.calendarDirection = String(offset);
+      change.setAttribute("aria-label", label);
+      change.disabled = disabled;
+      change.append(guideIcon(symbol));
+      change.addEventListener("click", () => {
+        calendarView.month = new Date(Date.UTC(year, monthNumber - 1 + offset, 1)).toISOString().slice(0, 7);
+        syncScheduleSheet(flow, selection);
+      });
+      navigation.append(change);
+    }
+    toolbar.append(heading, navigation);
+    const dates = new Set(calendar.dates);
+    const grid = element("table", "schedule-calendar-grid");
+    grid.setAttribute("aria-label", monthLabel + " 달력");
+    const weekdays = element("tr");
+    for (const weekday of "일월화수목금토") {
+      const header = element("th", "", weekday);
+      header.scope = "col";
+      weekdays.append(header);
+    }
+    const head = element("thead");
+    head.append(weekdays);
+    const body = element("tbody");
+    for (let start = 1 - first.getUTCDay(); start <= lastDay; start += 7) {
+      const row = element("tr");
+      for (let day = start; day < start + 7; day += 1) {
+        const cell = element("td");
+        if (day >= 1 && day <= lastDay) {
+          const iso = `${month}-${String(day).padStart(2, "0")}`;
+          const selected = calendar.selected === iso;
+          const available = dates.has(iso);
+          const state = selected ? "selected" : available ? "available" : iso < calendar.today ? "past" : "unavailable";
+          const name = { selected: "선택한 날짜", available: "예약 가능", past: "지난 날짜", unavailable: "예약 불가" }[state];
+          const date = button(String(day), "schedule-calendar-day");
+          date.dataset.calendarDay = iso;
+          date.dataset.calendarState = state;
+          date.setAttribute("aria-label", calendarDayLabel.format(new Date(iso + "T12:00:00Z")) + " · " + name);
+          if (iso === calendar.today) date.setAttribute("aria-current", "date");
+          if (available) date.setAttribute("aria-pressed", String(selected));
+          date.disabled = !available;
+          date.addEventListener("click", () => finishWorkflowAction(engine.chooseCalendarDate(iso)));
+          cell.append(date);
+        }
+        row.append(cell);
+      }
+      body.append(row);
+    }
+    grid.append(head, body);
+    wrapper.append(toolbar, grid);
+    return wrapper;
+  }
+
+  function syncScheduleSheet(flow, selection) {
+    if (!calendarView) return;
+    const calendar = flow?.scheduleCalendar;
+    if (calendar?.key !== calendarView.key) {
+      closeScheduleSheet();
+      return;
+    }
+    const active = document.activeElement;
+    const activeDay = active?.dataset.calendarDay;
+    const activeDirection = active?.dataset.calendarDirection;
+    const wasInFooter = scheduleSheetFooter.contains(active);
+    scheduleSheetTitle.textContent = selection?.title || "예약 가능일 선택";
+    scheduleSheetContent.replaceChildren(renderCalendarMonth(flow, selection));
+    if (calendar.selected) {
+      scheduleSheetContent.append(renderSelectedDate(flow.selectedDate));
+    } else {
+      scheduleSheetContent.append(element("p", "schedule-calendar-hint", "예약할 날짜를 선택해 주세요."));
+    }
+    if (flow.bookingReview?.length) scheduleSheetContent.append(bookingReviewCard(flow.bookingReview));
+    const request = flow.actions.find((action) => action.id === calendar.requestId);
+    scheduleSheetFooter.replaceChildren();
+    scheduleSheetFooter.hidden = !request;
+    if (request) {
+      const confirm = actionButton({ ...request, primary: true, disabled: !calendar.selected || request.disabled });
+      confirm.addEventListener("click", () => applyWorkflowAction(request));
+      scheduleSheetFooter.append(confirm);
+    }
+    if (scheduleSheet.open && (activeDay || activeDirection || wasInFooter)) {
+      const restored = activeDay ? scheduleSheetContent.querySelector(`[data-calendar-day="${activeDay}"]`)
+        : activeDirection ? scheduleSheetContent.querySelector(`[data-calendar-direction="${activeDirection}"]`)
+          : scheduleSheetFooter.firstElementChild;
+      (restored && !restored.disabled ? restored : scheduleSheetTitle).focus({ preventScroll: true });
+    }
+  }
+
+  function bookingReviewCard(items) {
+    const product = items.find(({ title }) => title === "제품")?.detail;
+    return renderResultCards(items, "A/S 방문 예약 정보", true, product);
   }
 
   function singleFieldAction(actions) {
@@ -7920,7 +8275,7 @@ window.SKIX_PARTNER_CARDS = [
     if (picker) choices.append(renderWorkflowPicker(visual, picker.selection));
     else if (visual.length) choices.append(renderCardOptions(visual, flow.selection));
     if (flow.bookingReview?.length) {
-      choices.append(renderResultCards(flow.bookingReview, "A/S 방문 예약 정보", true));
+      choices.append(bookingReviewCard(flow.bookingReview));
     }
     if (plain.length) {
       const list = element("div", "action-list");
@@ -7928,8 +8283,17 @@ window.SKIX_PARTNER_CARDS = [
       const primary = plain.find(({ label, requiresFields }) => (!isResult || requiresFields)
         && /^(?:다음|계속|확인)(?: 단계)?$|(?:요청|접수|예약|납부|결제|발송|발급|변경|저장|인증 확인|전자서명 확인)$/u.test(label)
         && !/조회|다른|다시|내역|방법|없이|나중|유지|보기/u.test(label));
-      for (const action of plain) list.append(actionButton({ ...action, primary: action === primary }));
+      for (const action of plain) {
+        const calendar = flow.scheduleCalendar;
+        const disabled = action.disabled || action.id === calendar?.requestId && !calendar.selected;
+        list.append(action.id === calendar?.moreActionId
+          ? calendarTrigger(flow, picker?.selection, action.label)
+          : actionButton({ ...action, primary: action === primary, disabled }));
+      }
       choices.append(list);
+    }
+    if (flow.scheduleCalendar && !flow.scheduleCalendar.moreActionId) {
+      choices.append(calendarTrigger(flow, picker?.selection, "달력 보기"));
     }
     choices.addEventListener("click", (event) => {
       const option = event.target.closest("[data-action]");
@@ -7976,13 +8340,17 @@ window.SKIX_PARTNER_CARDS = [
       }
     }
     const next = engine.choose(action.id, progress?.values ?? {}, { echo: !automatic });
+    finishWorkflowAction(next, progress, action.requiresFields);
+  }
+
+  function finishWorkflowAction(next, progress = null, submitted = false) {
     const length = Math.max(0, next.messages.length - 1);
     inputMessages = inputMessages.filter((item) => item.after <= length);
     const failures = next.screen === progress?.screen ? next.fields.filter((field) => field.error) : [];
     if (failures.length && progress) {
       for (const field of failures) delete progress.values[field.id];
       promptForField(failures[0].error);
-    } else if (next.screen !== progress?.screen || (action.requiresFields && !pendingField())) {
+    } else if (next.screen !== progress?.screen || (submitted && !pendingField())) {
       inputProgress = null;
     }
     update({ focus: true });
@@ -8053,6 +8421,7 @@ window.SKIX_PARTNER_CARDS = [
     byId("starters").hidden = !empty;
     renderLog(messages);
     renderControls(flow, picker);
+    syncScheduleSheet(flow, picker?.selection);
     renderStatus();
     syncCatalogSelection(flow);
 
@@ -8082,7 +8451,7 @@ window.SKIX_PARTNER_CARDS = [
       : ready ? "위에서 다음 단계를 선택해 주세요."
         : empty ? "궁금한 내용을 입력해 주세요." : (flow?.screen?.placeholder || "이어서 질문해 보세요");
     resizeInput();
-    if (focus) {
+    if (focus && !scheduleSheet.open) {
       const pickerHeading = controls.querySelector("#workflow-picker-title");
       const target = pickerHeading || (blocked || ready
         ? controls.querySelector(".action:not(:disabled), button:not(:disabled)") || byId("new-chat")
@@ -8250,6 +8619,25 @@ window.SKIX_PARTNER_CARDS = [
     renderCatalog();
     setDrawer(mobileCatalog.matches, false);
     update({ focus: !drawerOpen });
+  });
+  byId("schedule-sheet-close").addEventListener("click", () => closeScheduleSheet(true));
+  scheduleSheet.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeScheduleSheet(true);
+  });
+  scheduleSheet.addEventListener("click", (event) => {
+    if (event.target === scheduleSheet) closeScheduleSheet(true);
+  });
+  scheduleSheet.addEventListener("keydown", (event) => {
+    if (event.key !== "Tab") return;
+    const focusable = [...scheduleSheet.querySelectorAll("button:not(:disabled)")]
+      .filter((item) => item.getClientRects().length);
+    const active = document.activeElement;
+    const edge = event.shiftKey ? focusable[0] : focusable.at(-1);
+    if (!focusable.includes(active) || active === edge) {
+      event.preventDefault();
+      (event.shiftKey ? focusable.at(-1) : focusable[0])?.focus();
+    }
   });
 
   catalogToggle.addEventListener("click", () => setDrawer(!drawerOpen));

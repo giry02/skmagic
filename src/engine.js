@@ -220,6 +220,7 @@
   const dateScenarios = new Set([8, 9, 12, 14, 17]);
   const schedulingScreens = { 8: 'S05', 9: 'S05', 12: 'S05', 14: 'S04', 17: 'S05', 36: 's6' };
   const pairedDateKeys = { split: 'splitDate', reinstall: 'reinstallDate' };
+  const scheduleRequests = new Set(['S06', 'pairResult', '$commitVisitChange', '$commitDeliveryChange', 's7']);
   const addressScreens = new Set(['8:S04', '9:S04', '12:S04', '14:S03', '17:S04']);
 
   const fromLabel = (label, placeholder, type = 'text', sample = '') => ({ label, placeholder, type, sample });
@@ -581,6 +582,7 @@
         screen: this.screen,
         selection: this.activeSelection(),
         selectedDate: this.selectedScheduleDate(),
+        scheduleCalendar: this.scheduleCalendar(actions),
         bookingReview: this.serviceBookingReview(),
         messages: [...this.messages],
         actions: actions.map(({ target, ...action }) => action),
@@ -1548,6 +1550,32 @@
       return key ? (this.context[key] ? dateLabel(this.context[key]) : '') : this.context.date || '';
     }
 
+    scheduleCalendar(actions) {
+      const { no } = this.scenario ?? {};
+      const screen = this.screen;
+      if (!screen || this.candidates.length || !(screen.id === schedulingScreens[no] || screen.bookingStage)) return null;
+      const key = pairedDateKeys[screen.bookingStage];
+      const selected = key ? this.context[key] : this.context.dateIso;
+      if (!selected && !actions.some(({ target }) => target === '$date')) return null;
+      const dates = this.scheduleDates(true);
+      if (!dates.length) return null;
+      return {
+        key: `${no}:${screen.id}`,
+        today: estimateDateRange().today,
+        dates,
+        selected: dates.includes(selected) ? selected : undefined,
+        preferred: no === 17 ? this.context.deliveryDate : undefined,
+        moreActionId: actions.find(({ target }) => target === '$moreDates')?.id,
+        requestId: actions.find(({ target }) => scheduleRequests.has(target))?.id
+      };
+    }
+
+    chooseCalendarDate(iso) {
+      const calendar = this.scheduleCalendar(this.actionList());
+      if (!calendar?.dates.includes(iso) || calendar.selected === iso) return this.getState();
+      return this.applyAction({ id: 'calendar:' + iso, label: dateLabel(iso) + ' 선택', target: '$date' }, {});
+    }
+
     serviceBookingReview() {
       if (this.scenario?.no !== 12 || this.screen?.id !== 'S05' || !this.context.date) return [];
       return [
@@ -1562,13 +1590,12 @@
     saveScheduleDate(label, stage = this.screen.bookingStage) {
       const date = label.replace(/ 선택$/, '');
       const key = pairedDateKeys[stage];
+      const iso = this.scheduleDates(true, stage).find((day) => dateLabel(day) === date);
       if (key) {
-        this.context[key] = this.scheduleDates(true, stage).find((day) => dateLabel(day) === date);
+        this.context[key] = iso;
       } else {
         this.context.date = date;
-        if ([14, 17].includes(this.scenario.no)) {
-          this.context.dateIso = this.scheduleDates(true).find((day) => dateLabel(day) === date);
-        }
+        this.context.dateIso = iso;
       }
       return date;
     }
@@ -1580,8 +1607,7 @@
         this.execute(nextScreen);
         return;
       }
-      const commits = ['S06', 'pairResult', '$commitVisitChange', '$commitDeliveryChange', 's7'];
-      const request = this.actionList().find(({ target, disabled }) => !disabled && commits.includes(target));
+      const request = this.actionList().find(({ target, disabled }) => !disabled && scheduleRequests.has(target));
       this.sayBot(request ? `${date}을 선택했어요. ‘${request.label}’을 눌러 주세요.` : `${date}을 선택했어요.`, { demo: true });
     }
 

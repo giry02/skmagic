@@ -100,6 +100,20 @@
         </section>
       </main>
     </div>
+    <dialog class="schedule-sheet" id="schedule-sheet" aria-labelledby="schedule-sheet-title">
+      <div class="schedule-sheet-inner">
+        <span class="sheet-handle" aria-hidden="true"></span>
+        <header class="schedule-sheet-header">
+          <svg class="icon" aria-hidden="true"><use href="#i-calendar"></use></svg>
+          <h2 id="schedule-sheet-title" tabindex="-1">예약 가능일 선택</h2>
+          <button type="button" class="sheet-icon-button" id="schedule-sheet-close" aria-label="달력 닫기">
+            <span class="guide-icon guide-close" aria-hidden="true"></span>
+          </button>
+        </header>
+        <div id="schedule-sheet-content" class="schedule-sheet-content"></div>
+        <footer id="schedule-sheet-footer" class="schedule-sheet-footer"></footer>
+      </div>
+    </dialog>
   </div>
   <noscript>챗봇 상담을 이용하려면 브라우저에서 JavaScript를 켜 주세요.</noscript>
   <script src="scenarios.js"></script>

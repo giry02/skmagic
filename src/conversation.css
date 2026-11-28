@@ -60,6 +60,17 @@ p, h1, h2, h3 { margin: 0; }
   fill: none;
 }
 
+.guide-icon {
+  display: block;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  background: center / contain no-repeat;
+}
+.guide-next { background-image: url("concept-c/arrow-next.png"); }
+.guide-back { background-image: url("concept-c/arrow-back.png"); }
+.guide-close { background-image: url("concept-c/close.png"); }
+
 .app {
   --chat-width: 736px;
   --avatar-width: 24px;
@@ -271,11 +282,14 @@ button.catalog-group:hover, .catalog-group[aria-expanded="true"] { background: v
 .catalog-item {
   min-height: 34px;
   padding: 6px 8px;
+  gap: 7px;
   color: var(--quiet);
   font-size: 13px;
   line-height: 1.45;
   letter-spacing: -.02em;
 }
+.catalog-item .icon { width: 15px; height: 15px; color: var(--muted); }
+.catalog-item[aria-current="true"] .icon { color: var(--selection); }
 .catalog-item:hover:not(:disabled) { background: var(--soft); color: var(--ink); }
 .catalog-item[aria-current="true"] {
   background: var(--user-bubble);
@@ -493,6 +507,9 @@ button.catalog-group:hover, .catalog-group[aria-expanded="true"] { background: v
 .result-records .result-card { border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
 .result-records .result-card :is(h3, h4, p) { font-variant-numeric: tabular-nums; }
 .result-record-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   padding: 12px 0 8px;
   border-bottom: 1px solid var(--line);
   font-size: 15px;
@@ -629,6 +646,140 @@ a.choice-card { color: inherit; text-decoration: none; }
   font-weight: 700;
 }
 .selected-date .icon { width: 16px; height: 16px; color: var(--selection); }
+.calendar-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--ink);
+}
+.calendar-trigger > .icon { width: 17px; height: 17px; color: var(--selection); }
+.calendar-trigger > .guide-icon { width: 14px; height: 14px; }
+.controls > .calendar-trigger { margin-top: 9px; }
+
+.schedule-sheet {
+  position: fixed;
+  inset: auto 0 0;
+  width: min(500px, calc(100% - 16px));
+  max-width: none;
+  max-height: min(90dvh, 740px);
+  margin: 0 auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  color: var(--ink);
+  background: var(--white);
+}
+.schedule-sheet::backdrop { background: rgb(28 30 36 / 34%); }
+.schedule-sheet-inner {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+  padding: 12px 16px max(16px, env(safe-area-inset-bottom));
+}
+.sheet-handle {
+  width: 28px;
+  height: 2px;
+  flex: none;
+  align-self: center;
+  margin-bottom: 8px;
+  border-radius: 20px;
+  background: var(--line);
+}
+.schedule-sheet-header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+.schedule-sheet-header > .icon { color: var(--selection); }
+.schedule-sheet-header h2 { font-size: 19px; }
+.schedule-sheet-header h2:focus-visible { outline: 2px solid var(--selection); outline-offset: 3px; }
+.schedule-sheet-header .sheet-icon-button { margin-left: auto; }
+.sheet-icon-button {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+}
+.sheet-icon-button:hover:not(:disabled) { background: var(--soft); }
+.sheet-icon-button:disabled { opacity: .35; }
+.schedule-sheet-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.schedule-month-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.schedule-month-heading { font-size: 16px; font-weight: 700; }
+.schedule-month-navigation { display: flex; }
+.schedule-calendar-grid {
+  width: 100%;
+  table-layout: fixed;
+  border-spacing: 0;
+  color: var(--ink);
+  text-align: center;
+}
+.schedule-calendar-grid th {
+  height: 30px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+.schedule-calendar-grid td { height: 42px; padding: 0; }
+.schedule-calendar-day {
+  width: min(100% - 4px, 42px);
+  height: 38px;
+  margin: 0;
+  padding: 0;
+  border: 1.2px solid transparent;
+  border-radius: 0;
+  background: var(--white);
+  color: var(--ink);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.schedule-calendar-day:hover:not(:disabled) { background: var(--soft); }
+.schedule-calendar-day:focus-visible { outline-offset: 0; }
+.schedule-calendar-day:disabled { color: var(--muted); }
+.schedule-calendar-day[data-calendar-state="unavailable"] { background: var(--soft); }
+.schedule-calendar-day[aria-current="date"] { font-weight: 700; }
+.schedule-calendar-day[aria-pressed="true"] {
+  border-color: var(--selection);
+  font-weight: 700;
+}
+.schedule-calendar-hint {
+  min-height: 48px;
+  padding: 12px 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.schedule-sheet .selected-date {
+  margin-top: 7px;
+  outline: 0;
+  border-block: 1px solid var(--line);
+  padding: 7px 0;
+}
+.schedule-sheet-footer {
+  flex: none;
+  padding-top: 10px;
+  background: var(--white);
+}
+.schedule-sheet-footer .action { width: 100%; }
+
 .symptom-progress {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

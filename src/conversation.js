@@ -7,6 +7,10 @@
   const chatScroll = byId("chat-scroll");
   const log = byId("chat-log");
   const controls = byId("chat-controls");
+  const scheduleSheet = byId("schedule-sheet");
+  const scheduleSheetTitle = byId("schedule-sheet-title");
+  const scheduleSheetContent = byId("schedule-sheet-content");
+  const scheduleSheetFooter = byId("schedule-sheet-footer");
   const status = byId("chat-status");
   const assistantStatus = byId("assistant-status");
   const chatTime = new Intl.DateTimeFormat("ko-KR", { hour: "numeric", minute: "2-digit", hour12: true });
@@ -53,6 +57,9 @@
   const schedulePickers = new Set(["8:S05", "9:S05", "12:S05", "14:S04", "17:S05", "36:s6"]);
   const dateChoice = /^(\d{1,2}월\s+\d{1,2}일)\s*\(([월화수목금토일])\)(?:\s+선택)?$/u;
   const monthlyChoice = /^매월 \d{1,2}일$/u;
+  const calendarDayLabel = new Intl.DateTimeFormat("ko-KR", {
+    month: "long", day: "numeric", weekday: "long", timeZone: "UTC",
+  });
   const deliveryChoice = /^(?:알림톡|이메일|팩스|이메일과 팩스|우편|문자로 받기|등록된 번호로 받기|이메일로 받기)$/u;
   const pickerIcons = {
     "service-symptom": "tool", product: "bag", contract: "folder", appointment: "tool", order: "truck",
@@ -66,6 +73,10 @@
     ["식기세척기", "dishwasher"],
     ["전자레인지", "microwave"],
   ];
+  const categoryIcons = {
+    "결제·납부": "card", "계약·해약": "folder", "AS·케어": "tool", "배송·설치": "truck",
+    "고객·명의": "user", "문서·증빙": "file", "가입·변경": "bag", "쿠폰·혜택": "wallet",
+  };
   const defaultCatalogPhase = catalogPhases[0].id;
   const openPhases = new Set([defaultCatalogPhase]);
   let drawerOpen = false;
@@ -82,6 +93,7 @@
   let inputProgress = null;
   let inputMessages = [];
   let revealedCode = null;
+  let calendarView = null;
 
   function element(tag, className = "", text = "") {
     const node = document.createElement(tag);
@@ -106,9 +118,17 @@
     return svg;
   }
 
+  function guideIcon(name) {
+    const symbol = element("span", "guide-icon guide-" + name);
+    symbol.setAttribute("aria-hidden", "true");
+    return symbol;
+  }
+
   function catalogItem(scenario) {
     const reviewOnly = scenario.screens[0]?.kind === "internal-only";
-    const item = button(reviewOnly ? `${scenario.displayTitle} (운영 검토)` : scenario.displayTitle, "catalog-item");
+    const label = reviewOnly ? `${scenario.displayTitle} (운영 검토)` : scenario.displayTitle;
+    const item = button("", "catalog-item");
+    item.append(icon(categoryIcons[scenario.category] || "file"), element("span", "", label));
     item.dataset.scenario = String(scenario.no);
     const number = String(scenario.no).padStart(2, "0");
     const details = `No.${number} · ${scenario.phase} · 상담코드 ${scenario.consultationCode}`;
@@ -225,13 +245,16 @@
     return img;
   }
 
-  function renderResultCards(items, title, compact = false) {
+  function renderResultCards(items, title, compact = false, product) {
     const hasArtwork = items.some(({ mediaKey }) => Boolean(mediaKey));
     const group = element(title ? "section" : "div", hasArtwork ? "result-cards" : "result-cards result-records");
     if (!hasArtwork && (compact || items.length > 1)) group.classList.add("result-records-compact");
     if (title) {
       group.setAttribute("aria-label", title);
-      group.append(element("h3", "result-record-title", title));
+      const heading = element("h3", "result-record-title");
+      if (product) heading.append(productIcon(product));
+      heading.append(element("span", "", title));
+      group.append(heading);
     }
     for (const item of items) {
       const card = element("article", "result-card");
@@ -501,13 +524,11 @@
     option.setAttribute("aria-label", action.label);
     const selected = action.variant === "selected";
     if (card.kind === "reason" || selected) option.setAttribute("aria-pressed", String(selected));
-    if (card.kind !== "date" && (card.kind !== "symptom" || card.icon)) {
+    if (card.kind !== "date") {
       const image = cardImage(card.mediaKey);
-      const mark = image || element("span", "choice-card-icon");
-      if (card.kind === "product") {
-        mark.dataset.productIcon = productIcons.find(([family]) => (card.title || action.label).includes(family))?.[1] || "other-product";
-      } else if (!image) {
-        const symbols = { transfer: "transfer", virtual: "wallet", "payment-record": "file" };
+      const mark = image || (card.kind === "product" ? productIcon(card.title || action.label) : element("span", "choice-card-icon"));
+      if (!image && card.kind !== "product") {
+        const symbols = { transfer: "transfer", virtual: "wallet", "payment-record": "file", symptom: "tool" };
         const symbol = card.icon === "tools" ? "tool" : card.icon;
         mark.append(icon(symbol || pickerIcons[card.kind] || symbols[card.kind] || "card"));
       }
@@ -527,11 +548,18 @@
     if (card.phone) caption.append(element("span", "choice-card-phone", `${card.phoneLabel || "카드사 문의"} ${card.phone}`));
     option.append(caption);
     if (selected || card.kind !== "partner" && card.kind !== "date") {
-      const mark = icon(selected ? "check" : "chevron");
+      const mark = selected ? icon("check") : guideIcon("next");
       mark.classList.add("choice-card-arrow");
       option.append(mark);
     }
     return option;
+  }
+
+  function productIcon(title) {
+    const mark = element("span", "choice-card-icon");
+    mark.dataset.productIcon = productIcons.find(([family]) => title.includes(family))?.[1] || "other-product";
+    mark.setAttribute("aria-hidden", "true");
+    return mark;
   }
 
   function renderCardOptions(actions, selection) {
@@ -705,9 +733,7 @@
     header.append(copy);
     section.append(header);
     if (selection.selectedDate) {
-      const date = element("p", "selected-date");
-      date.append(element("span", "", `선택한 날짜 · ${selection.selectedDate}`), icon("check"));
-      section.append(date);
+      section.append(renderSelectedDate(selection.selectedDate));
     }
 
     if (symptom) {
@@ -731,6 +757,144 @@
       section.append(cards);
     }
     return section;
+  }
+
+  function renderSelectedDate(label) {
+    const date = element("p", "selected-date");
+    date.append(element("span", "", `선택한 날짜 · ${label}`), icon("check"));
+    return date;
+  }
+
+  function calendarTrigger(flow, selection, label) {
+    const trigger = button("", "action calendar-trigger");
+    trigger.dataset.calendarTrigger = "";
+    trigger.setAttribute("aria-haspopup", "dialog");
+    trigger.setAttribute("aria-controls", scheduleSheet.id);
+    trigger.append(icon("calendar"), element("span", "", label), guideIcon("next"));
+    trigger.addEventListener("click", () => {
+      const calendar = flow.scheduleCalendar;
+      const first = calendar.selected || (calendar.dates.includes(calendar.preferred) ? calendar.preferred : calendar.dates[0]);
+      calendarView = { key: calendar.key, month: first.slice(0, 7) };
+      syncScheduleSheet(flow, selection);
+      scheduleSheet.showModal();
+      scheduleSheetTitle.focus();
+    });
+    return trigger;
+  }
+
+  function closeScheduleSheet(restoreFocus = false) {
+    calendarView = null;
+    if (scheduleSheet.open) scheduleSheet.close();
+    if (restoreFocus) controls.querySelector("[data-calendar-trigger]")?.focus();
+  }
+
+  function renderCalendarMonth(flow, selection) {
+    const calendar = flow.scheduleCalendar;
+    const month = calendarView.month;
+    const [year, monthNumber] = month.split("-").map(Number);
+    const first = new Date(Date.UTC(year, monthNumber - 1, 1));
+    const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+    const monthLabel = `${year}년 ${monthNumber}월`;
+    const wrapper = element("div", "schedule-month");
+    const toolbar = element("div", "schedule-month-toolbar");
+    const heading = element("p", "schedule-month-heading", monthLabel);
+    heading.setAttribute("aria-live", "polite");
+    const navigation = element("div", "schedule-month-navigation");
+    for (const [offset, label, symbol, disabled] of [
+      [-1, "이전 달", "back", month <= calendar.today.slice(0, 7)],
+      [1, "다음 달", "next", month >= calendar.dates.at(-1).slice(0, 7)],
+    ]) {
+      const change = button("", "sheet-icon-button");
+      change.dataset.calendarDirection = String(offset);
+      change.setAttribute("aria-label", label);
+      change.disabled = disabled;
+      change.append(guideIcon(symbol));
+      change.addEventListener("click", () => {
+        calendarView.month = new Date(Date.UTC(year, monthNumber - 1 + offset, 1)).toISOString().slice(0, 7);
+        syncScheduleSheet(flow, selection);
+      });
+      navigation.append(change);
+    }
+    toolbar.append(heading, navigation);
+    const dates = new Set(calendar.dates);
+    const grid = element("table", "schedule-calendar-grid");
+    grid.setAttribute("aria-label", monthLabel + " 달력");
+    const weekdays = element("tr");
+    for (const weekday of "일월화수목금토") {
+      const header = element("th", "", weekday);
+      header.scope = "col";
+      weekdays.append(header);
+    }
+    const head = element("thead");
+    head.append(weekdays);
+    const body = element("tbody");
+    for (let start = 1 - first.getUTCDay(); start <= lastDay; start += 7) {
+      const row = element("tr");
+      for (let day = start; day < start + 7; day += 1) {
+        const cell = element("td");
+        if (day >= 1 && day <= lastDay) {
+          const iso = `${month}-${String(day).padStart(2, "0")}`;
+          const selected = calendar.selected === iso;
+          const available = dates.has(iso);
+          const state = selected ? "selected" : available ? "available" : iso < calendar.today ? "past" : "unavailable";
+          const name = { selected: "선택한 날짜", available: "예약 가능", past: "지난 날짜", unavailable: "예약 불가" }[state];
+          const date = button(String(day), "schedule-calendar-day");
+          date.dataset.calendarDay = iso;
+          date.dataset.calendarState = state;
+          date.setAttribute("aria-label", calendarDayLabel.format(new Date(iso + "T12:00:00Z")) + " · " + name);
+          if (iso === calendar.today) date.setAttribute("aria-current", "date");
+          if (available) date.setAttribute("aria-pressed", String(selected));
+          date.disabled = !available;
+          date.addEventListener("click", () => finishWorkflowAction(engine.chooseCalendarDate(iso)));
+          cell.append(date);
+        }
+        row.append(cell);
+      }
+      body.append(row);
+    }
+    grid.append(head, body);
+    wrapper.append(toolbar, grid);
+    return wrapper;
+  }
+
+  function syncScheduleSheet(flow, selection) {
+    if (!calendarView) return;
+    const calendar = flow?.scheduleCalendar;
+    if (calendar?.key !== calendarView.key) {
+      closeScheduleSheet();
+      return;
+    }
+    const active = document.activeElement;
+    const activeDay = active?.dataset.calendarDay;
+    const activeDirection = active?.dataset.calendarDirection;
+    const wasInFooter = scheduleSheetFooter.contains(active);
+    scheduleSheetTitle.textContent = selection?.title || "예약 가능일 선택";
+    scheduleSheetContent.replaceChildren(renderCalendarMonth(flow, selection));
+    if (calendar.selected) {
+      scheduleSheetContent.append(renderSelectedDate(flow.selectedDate));
+    } else {
+      scheduleSheetContent.append(element("p", "schedule-calendar-hint", "예약할 날짜를 선택해 주세요."));
+    }
+    if (flow.bookingReview?.length) scheduleSheetContent.append(bookingReviewCard(flow.bookingReview));
+    const request = flow.actions.find((action) => action.id === calendar.requestId);
+    scheduleSheetFooter.replaceChildren();
+    scheduleSheetFooter.hidden = !request;
+    if (request) {
+      const confirm = actionButton({ ...request, primary: true, disabled: !calendar.selected || request.disabled });
+      confirm.addEventListener("click", () => applyWorkflowAction(request));
+      scheduleSheetFooter.append(confirm);
+    }
+    if (scheduleSheet.open && (activeDay || activeDirection || wasInFooter)) {
+      const restored = activeDay ? scheduleSheetContent.querySelector(`[data-calendar-day="${activeDay}"]`)
+        : activeDirection ? scheduleSheetContent.querySelector(`[data-calendar-direction="${activeDirection}"]`)
+          : scheduleSheetFooter.firstElementChild;
+      (restored && !restored.disabled ? restored : scheduleSheetTitle).focus({ preventScroll: true });
+    }
+  }
+
+  function bookingReviewCard(items) {
+    const product = items.find(({ title }) => title === "제품")?.detail;
+    return renderResultCards(items, "A/S 방문 예약 정보", true, product);
   }
 
   function singleFieldAction(actions) {
@@ -760,7 +924,7 @@
     if (picker) choices.append(renderWorkflowPicker(visual, picker.selection));
     else if (visual.length) choices.append(renderCardOptions(visual, flow.selection));
     if (flow.bookingReview?.length) {
-      choices.append(renderResultCards(flow.bookingReview, "A/S 방문 예약 정보", true));
+      choices.append(bookingReviewCard(flow.bookingReview));
     }
     if (plain.length) {
       const list = element("div", "action-list");
@@ -768,8 +932,17 @@
       const primary = plain.find(({ label, requiresFields }) => (!isResult || requiresFields)
         && /^(?:다음|계속|확인)(?: 단계)?$|(?:요청|접수|예약|납부|결제|발송|발급|변경|저장|인증 확인|전자서명 확인)$/u.test(label)
         && !/조회|다른|다시|내역|방법|없이|나중|유지|보기/u.test(label));
-      for (const action of plain) list.append(actionButton({ ...action, primary: action === primary }));
+      for (const action of plain) {
+        const calendar = flow.scheduleCalendar;
+        const disabled = action.disabled || action.id === calendar?.requestId && !calendar.selected;
+        list.append(action.id === calendar?.moreActionId
+          ? calendarTrigger(flow, picker?.selection, action.label)
+          : actionButton({ ...action, primary: action === primary, disabled }));
+      }
       choices.append(list);
+    }
+    if (flow.scheduleCalendar && !flow.scheduleCalendar.moreActionId) {
+      choices.append(calendarTrigger(flow, picker?.selection, "달력 보기"));
     }
     choices.addEventListener("click", (event) => {
       const option = event.target.closest("[data-action]");
@@ -816,13 +989,17 @@
       }
     }
     const next = engine.choose(action.id, progress?.values ?? {}, { echo: !automatic });
+    finishWorkflowAction(next, progress, action.requiresFields);
+  }
+
+  function finishWorkflowAction(next, progress = null, submitted = false) {
     const length = Math.max(0, next.messages.length - 1);
     inputMessages = inputMessages.filter((item) => item.after <= length);
     const failures = next.screen === progress?.screen ? next.fields.filter((field) => field.error) : [];
     if (failures.length && progress) {
       for (const field of failures) delete progress.values[field.id];
       promptForField(failures[0].error);
-    } else if (next.screen !== progress?.screen || (action.requiresFields && !pendingField())) {
+    } else if (next.screen !== progress?.screen || (submitted && !pendingField())) {
       inputProgress = null;
     }
     update({ focus: true });
@@ -893,6 +1070,7 @@
     byId("starters").hidden = !empty;
     renderLog(messages);
     renderControls(flow, picker);
+    syncScheduleSheet(flow, picker?.selection);
     renderStatus();
     syncCatalogSelection(flow);
 
@@ -922,7 +1100,7 @@
       : ready ? "위에서 다음 단계를 선택해 주세요."
         : empty ? "궁금한 내용을 입력해 주세요." : (flow?.screen?.placeholder || "이어서 질문해 보세요");
     resizeInput();
-    if (focus) {
+    if (focus && !scheduleSheet.open) {
       const pickerHeading = controls.querySelector("#workflow-picker-title");
       const target = pickerHeading || (blocked || ready
         ? controls.querySelector(".action:not(:disabled), button:not(:disabled)") || byId("new-chat")
@@ -1090,6 +1268,25 @@
     renderCatalog();
     setDrawer(mobileCatalog.matches, false);
     update({ focus: !drawerOpen });
+  });
+  byId("schedule-sheet-close").addEventListener("click", () => closeScheduleSheet(true));
+  scheduleSheet.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeScheduleSheet(true);
+  });
+  scheduleSheet.addEventListener("click", (event) => {
+    if (event.target === scheduleSheet) closeScheduleSheet(true);
+  });
+  scheduleSheet.addEventListener("keydown", (event) => {
+    if (event.key !== "Tab") return;
+    const focusable = [...scheduleSheet.querySelectorAll("button:not(:disabled)")]
+      .filter((item) => item.getClientRects().length);
+    const active = document.activeElement;
+    const edge = event.shiftKey ? focusable[0] : focusable.at(-1);
+    if (!focusable.includes(active) || active === edge) {
+      event.preventDefault();
+      (event.shiftKey ? focusable.at(-1) : focusable[0])?.focus();
+    }
   });
 
   catalogToggle.addEventListener("click", () => setDrawer(!drawerOpen));
