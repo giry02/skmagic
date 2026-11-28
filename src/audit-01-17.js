@@ -29,6 +29,13 @@
     ['결제정보 변경', '@3'], ['미납요금 조회', '@5'], ['상담사 연결', '$handoff'], ['다른 문의', '$menu']
   ];
   const paymentSchedule = [item('이체·결제 예정일', '매월 25일')];
+  const paymentDetailMenu = {
+    '결제정보 변경': 'card',
+    '위약금 문의': 'folder',
+    '당월 납부 결과 확인': 'wallet',
+    '구독료 입금 내역 확인': 'file',
+    '다른 계약 확인': 'transfer'
+  };
   const waterPayment = {
     target: '직수 정수기 · WPU-1000', amount: '29,900원', method: '신용카드 자동납부 · 신한카드 · 끝자리 1234'
   };
@@ -79,7 +86,11 @@
       screens: {
         S01: { actions: [['PASS 본인인증', 'exampleLookup']], auth: { failure: 'S08' } },
         S02: { actions: [['직수 정수기 선택', 'paymentPurpose'], ['공기청정기 선택', 'airPaymentPurpose']] },
-        S03: { items: waterDetails('0원', paymentDay >= 25), addActions: [['당월 납부 결과 확인', 'waterPaymentStatus'], ['구독료 입금 내역 확인', '@39'], ['다른 계약 확인', 'S02']] },
+        S03: {
+          actionMenu: paymentDetailMenu,
+          items: waterDetails('0원', paymentDay >= 25),
+          addActions: [['당월 납부 결과 확인', 'waterPaymentStatus'], ['구독료 입금 내역 확인', '@39'], ['다른 계약 확인', 'S02']]
+        },
         S04: {
           actions: [['구독료 입금 내역 확인', '@39'], ['다른 계약 확인', 'S02'], ['다른 문의', '$menu']],
           items: paidResultItems(waterPayment)
@@ -93,9 +104,12 @@
         payerDenied: handoff('결제 정보는 계약자 본인에게 안내해 드려요. 납부자가 계약자와 다른 경우 상담에서 확인해 주세요.'),
         paymentPurpose: choice('직수 정수기의 어떤 결제 정보를 확인할까요?', [['결제정보 상세 조회', 'S03'], ['당월 납부 결과', 'waterPaymentStatus']]),
         airPaymentPurpose: choice('공기청정기의 어떤 결제 정보를 확인할까요?', [['결제정보 상세 조회', 'airPaymentDetails'], ['당월 납부 결과', 'airPaymentStatus']]),
-        airPaymentDetails: result('선택하신 공기청정기 계약의 결제정보예요.', [
-          ['결제정보 변경', '@3'], ['위약금 문의', '@7'], ['당월 납부 결과 확인', 'airPaymentStatus'], ['다른 계약 확인', 'S02']
-        ], airDetails()),
+        airPaymentDetails: {
+          ...result('선택하신 공기청정기 계약의 결제정보예요.', [
+            ['결제정보 변경', '@3'], ['위약금 문의', '@7'], ['당월 납부 결과 확인', 'airPaymentStatus'], ['다른 계약 확인', 'S02']
+          ], airDetails()),
+          actionMenu: paymentDetailMenu
+        },
         airPaymentStatus: resolved('@5'),
         waterPaymentStatus: resolved(paymentDay < 25 ? 'paymentBefore' : 'S04'),
         paymentBefore: result('아직 이번 달 결제일 전이라 당월 요금이 납부되지 않았어요.', [

@@ -577,7 +577,7 @@ button.catalog-group:hover, .catalog-group[aria-expanded="true"] { background: v
 .text-button:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 .action-list { display: flex; flex-wrap: wrap; gap: 8px; }
-.app[data-phase-one] .action-list:has(> .action:nth-child(2):last-child):not(:has(> .primary, > .calendar-trigger)) {
+.app[data-phase-one] .action-list:not(.action-list--navigation):has(> .action:nth-child(2):last-child):not(:has(> .primary, > .calendar-trigger)) {
   --action-inline-padding: 10px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -601,6 +601,27 @@ button.catalog-group:hover, .catalog-group[aria-expanded="true"] { background: v
 }
 .action-list > .action:only-child { width: 100%; }
 .action-list > .primary { flex: 1 1 auto; }
+.action-list--navigation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  max-width: 335px;
+}
+.action-list--navigation > .action {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-inline: 14px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  text-align: left;
+}
+.action-list--navigation > .action:is(:hover, :focus-visible):not(:disabled) { background: var(--soft); }
+.action-list--navigation > .action:focus-visible { outline-offset: -2px; }
+.action-list--navigation > .action:active:not(:disabled) { background: var(--user-bubble); }
+.action-menu-icon { color: var(--selection); }
+.action-menu-chevron { width: 16px; height: 16px; margin-inline-start: auto; }
 .choice-cards { display: grid; min-width: 0; }
 :is(.card-picker, .result-records) + .action-list { margin-top: 9px; }
 .action.choice-card {
@@ -13013,6 +13034,13 @@ window.SKIX_PARTNER_CARDS = [
     ['결제정보 변경', '@3'], ['미납요금 조회', '@5'], ['상담사 연결', '$handoff'], ['다른 문의', '$menu']
   ];
   const paymentSchedule = [item('이체·결제 예정일', '매월 25일')];
+  const paymentDetailMenu = {
+    '결제정보 변경': 'card',
+    '위약금 문의': 'folder',
+    '당월 납부 결과 확인': 'wallet',
+    '구독료 입금 내역 확인': 'file',
+    '다른 계약 확인': 'transfer'
+  };
   const waterPayment = {
     target: '직수 정수기 · WPU-1000', amount: '29,900원', method: '신용카드 자동납부 · 신한카드 · 끝자리 1234'
   };
@@ -13063,7 +13091,11 @@ window.SKIX_PARTNER_CARDS = [
       screens: {
         S01: { actions: [['PASS 본인인증', 'exampleLookup']], auth: { failure: 'S08' } },
         S02: { actions: [['직수 정수기 선택', 'paymentPurpose'], ['공기청정기 선택', 'airPaymentPurpose']] },
-        S03: { items: waterDetails('0원', paymentDay >= 25), addActions: [['당월 납부 결과 확인', 'waterPaymentStatus'], ['구독료 입금 내역 확인', '@39'], ['다른 계약 확인', 'S02']] },
+        S03: {
+          actionMenu: paymentDetailMenu,
+          items: waterDetails('0원', paymentDay >= 25),
+          addActions: [['당월 납부 결과 확인', 'waterPaymentStatus'], ['구독료 입금 내역 확인', '@39'], ['다른 계약 확인', 'S02']]
+        },
         S04: {
           actions: [['구독료 입금 내역 확인', '@39'], ['다른 계약 확인', 'S02'], ['다른 문의', '$menu']],
           items: paidResultItems(waterPayment)
@@ -13077,9 +13109,12 @@ window.SKIX_PARTNER_CARDS = [
         payerDenied: handoff('결제 정보는 계약자 본인에게 안내해 드려요. 납부자가 계약자와 다른 경우 상담에서 확인해 주세요.'),
         paymentPurpose: choice('직수 정수기의 어떤 결제 정보를 확인할까요?', [['결제정보 상세 조회', 'S03'], ['당월 납부 결과', 'waterPaymentStatus']]),
         airPaymentPurpose: choice('공기청정기의 어떤 결제 정보를 확인할까요?', [['결제정보 상세 조회', 'airPaymentDetails'], ['당월 납부 결과', 'airPaymentStatus']]),
-        airPaymentDetails: result('선택하신 공기청정기 계약의 결제정보예요.', [
-          ['결제정보 변경', '@3'], ['위약금 문의', '@7'], ['당월 납부 결과 확인', 'airPaymentStatus'], ['다른 계약 확인', 'S02']
-        ], airDetails()),
+        airPaymentDetails: {
+          ...result('선택하신 공기청정기 계약의 결제정보예요.', [
+            ['결제정보 변경', '@3'], ['위약금 문의', '@7'], ['당월 납부 결과 확인', 'airPaymentStatus'], ['다른 계약 확인', 'S02']
+          ], airDetails()),
+          actionMenu: paymentDetailMenu
+        },
         airPaymentStatus: resolved('@5'),
         waterPaymentStatus: resolved(paymentDay < 25 ? 'paymentBefore' : 'S04'),
         paymentBefore: result('아직 이번 달 결제일 전이라 당월 요금이 납부되지 않았어요.', [
@@ -20022,7 +20057,12 @@ window.SKIX_PARTNER_CARDS = [
       choices.append(bookingReviewCard(flow.bookingReview));
     }
     if (plain.length) {
-      const list = element("div", "action-list");
+      const actionMenu = phaseOne ? flow.screen?.actionMenu : null;
+      const list = element("div", actionMenu ? "action-list action-list--navigation" : "action-list");
+      if (actionMenu) {
+        list.setAttribute("role", "group");
+        list.setAttribute("aria-label", "결제정보 관련 메뉴");
+      }
       const isResult = ["result", "closed"].includes(flow.screen?.kind);
       const primary = plain.find(({ label, requiresFields }) => (!isResult || requiresFields)
         && /^(?:다음|계속|확인)(?: 단계)?$|(?:요청|접수|예약|납부|결제|발송|발급|변경|저장|인증 확인|전자서명 확인)$/u.test(label)
@@ -20030,9 +20070,18 @@ window.SKIX_PARTNER_CARDS = [
       for (const action of plain) {
         const calendar = flow.scheduleCalendar;
         const disabled = action.disabled || action.id === calendar?.requestId && !calendar.selected;
-        list.append(action.id === calendar?.moreActionId
+        const option = action.id === calendar?.moreActionId
           ? calendarTrigger(flow, picker?.selection, action.label)
-          : actionButton({ ...action, primary: action === primary, disabled }));
+          : actionButton({ ...action, primary: action === primary, disabled });
+        if (actionMenu) {
+          const mark = icon(actionMenu[action.label] ?? "arrow");
+          const chevron = guideIcon("next");
+          mark.classList.add("action-menu-icon");
+          chevron.classList.add("action-menu-chevron");
+          option.prepend(mark);
+          option.append(chevron);
+        }
+        list.append(option);
       }
       choices.append(list);
     }

@@ -569,7 +569,7 @@ button.catalog-group:hover, .catalog-group[aria-expanded="true"] { background: v
 .text-button:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 .action-list { display: flex; flex-wrap: wrap; gap: 8px; }
-.app[data-phase-one] .action-list:has(> .action:nth-child(2):last-child):not(:has(> .primary, > .calendar-trigger)) {
+.app[data-phase-one] .action-list:not(.action-list--navigation):has(> .action:nth-child(2):last-child):not(:has(> .primary, > .calendar-trigger)) {
   --action-inline-padding: 10px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -593,6 +593,27 @@ button.catalog-group:hover, .catalog-group[aria-expanded="true"] { background: v
 }
 .action-list > .action:only-child { width: 100%; }
 .action-list > .primary { flex: 1 1 auto; }
+.action-list--navigation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  max-width: 335px;
+}
+.action-list--navigation > .action {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-inline: 14px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  text-align: left;
+}
+.action-list--navigation > .action:is(:hover, :focus-visible):not(:disabled) { background: var(--soft); }
+.action-list--navigation > .action:focus-visible { outline-offset: -2px; }
+.action-list--navigation > .action:active:not(:disabled) { background: var(--user-bubble); }
+.action-menu-icon { color: var(--selection); }
+.action-menu-chevron { width: 16px; height: 16px; margin-inline-start: auto; }
 .choice-cards { display: grid; min-width: 0; }
 :is(.card-picker, .result-records) + .action-list { margin-top: 9px; }
 .action.choice-card {

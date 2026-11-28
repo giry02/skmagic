@@ -927,7 +927,12 @@
       choices.append(bookingReviewCard(flow.bookingReview));
     }
     if (plain.length) {
-      const list = element("div", "action-list");
+      const actionMenu = phaseOne ? flow.screen?.actionMenu : null;
+      const list = element("div", actionMenu ? "action-list action-list--navigation" : "action-list");
+      if (actionMenu) {
+        list.setAttribute("role", "group");
+        list.setAttribute("aria-label", "결제정보 관련 메뉴");
+      }
       const isResult = ["result", "closed"].includes(flow.screen?.kind);
       const primary = plain.find(({ label, requiresFields }) => (!isResult || requiresFields)
         && /^(?:다음|계속|확인)(?: 단계)?$|(?:요청|접수|예약|납부|결제|발송|발급|변경|저장|인증 확인|전자서명 확인)$/u.test(label)
@@ -935,9 +940,18 @@
       for (const action of plain) {
         const calendar = flow.scheduleCalendar;
         const disabled = action.disabled || action.id === calendar?.requestId && !calendar.selected;
-        list.append(action.id === calendar?.moreActionId
+        const option = action.id === calendar?.moreActionId
           ? calendarTrigger(flow, picker?.selection, action.label)
-          : actionButton({ ...action, primary: action === primary, disabled }));
+          : actionButton({ ...action, primary: action === primary, disabled });
+        if (actionMenu) {
+          const mark = icon(actionMenu[action.label] ?? "arrow");
+          const chevron = guideIcon("next");
+          mark.classList.add("action-menu-icon");
+          chevron.classList.add("action-menu-chevron");
+          option.prepend(mark);
+          option.append(chevron);
+        }
+        list.append(option);
       }
       choices.append(list);
     }
