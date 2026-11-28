@@ -488,6 +488,11 @@ button.catalog-group:hover, .catalog-group[aria-expanded="true"] { background: v
   white-space: pre-wrap;
 }
 .turn.user .bubble { border-color: transparent; background: var(--user-bubble); }
+.guidance-word {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
 .turn-meta, .turn-time { color: var(--muted); font-size: 12px; line-height: 1.3; }
 .turn.user .turn-time { text-align: right; }
 .turn-meta { font-weight: 700; }

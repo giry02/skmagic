@@ -225,12 +225,23 @@
     }
   }
 
-  function friendlyText(node, text) {
-    for (const part of text.split(/(\*\*[^*\n]{1,180}\*\*)/g)) {
-      if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
-        node.append(element("strong", "", part.slice(2, -2)));
-      } else {
-        node.append(document.createTextNode(part));
+  function appendGuidanceText(node, text, formatted = false) {
+    const parts = formatted ? text.split(/(\*\*[^*\n]{1,180}\*\*)/g) : [text];
+    let word;
+    for (const part of parts) {
+      const bold = formatted && part.length > 4 && part.startsWith("**") && part.endsWith("**");
+      const content = bold ? part.slice(2, -2) : part;
+      for (const token of content.match(/\s+|\S+/gu) ?? []) {
+        if (/^\s/u.test(token)) {
+          node.append(token);
+          word = undefined;
+          continue;
+        }
+        if (!word) {
+          word = element("span", "guidance-word");
+          node.append(word);
+        }
+        word.append(bold ? element("strong", "", token) : token);
       }
     }
   }
@@ -264,7 +275,11 @@
         card.append(art);
       }
       if (item.title) card.append(element(title ? "h4" : "h3", "", item.title));
-      if (item.detail) card.append(element("p", "", item.detail));
+      if (item.detail) {
+        const detail = element("p");
+        appendGuidanceText(detail, String(item.detail));
+        card.append(detail);
+      }
       group.append(card);
     }
     return group;
@@ -289,8 +304,8 @@
     if (turnStatus) content.append(element("p", "turn-meta", turnStatus));
     if (message.text) {
       const bubble = element("p", "bubble");
-      if (message.source === "api") friendlyText(bubble, message.text);
-      else bubble.textContent = message.text;
+      if (user) bubble.textContent = message.text;
+      else appendGuidanceText(bubble, message.text, message.source === "api");
       content.append(bubble);
       const sentAt = message.sentAt || messageTime(message);
       const time = element("time", "turn-time", chatTime.format(sentAt));
