@@ -4,7 +4,7 @@
   const demoPhone = '010-0000-1234';
   const demoIdentity = { name: '김매직', phone: demoPhone };
   const demoAddress = '서울 영등포구 문래동';
-  const welcome = '안녕하세요. SK매직 상담 챗봇입니다. 궁금한 내용을 입력하거나 상담 메뉴에서 선택해 주세요.';
+  const welcome = '안녕하세요. SK매직 상담 챗봇이에요. 궁금한 내용을 입력해 주세요.';
   const defaultPlaceholder = '메시지를 입력하세요';
   const auditFlows = window.SKIX_FLOW_OVERLAYS ?? {};
   const billingContractScreens = { 1: 'S02', 2: 'S02', 3: 'changeContract', 4: 'chargeContract', 5: 'arrearsContract', 7: 'S04' };
@@ -2618,7 +2618,7 @@
         case '$finish':
           this.#pendingIdentity = null;
           this.context = {};
-          this.synthetic('상담을 마쳤어요. 이용해 주셔서 감사합니다.', { kind: 'closed', demo: false });
+          this.synthetic('상담을 마쳤어요. 도움이 필요하시면 다시 찾아와 주세요.', { kind: 'closed', demo: false });
           break;
         case '$handoff': {
           const items = [{ title: '상담 분류', detail: this.scenario.displayTitle || this.scenario.title }];

@@ -1553,7 +1553,7 @@ window.SKIX_SCENARIOS = [
         "id": "S06",
         "stepId": "z",
         "condition": "상담 종료",
-        "message": "이용해 주셔서 감사합니다.",
+        "message": "이용해 주셔서 고마워요.",
         "kind": "result"
       }
     ],
@@ -4642,7 +4642,7 @@ window.SKIX_SCENARIOS = [
         "items": [
           {
             "title": "요청사항",
-            "detail": "방문 전에 전화 부탁드립니다."
+            "detail": "방문 전에 전화해 주세요."
           }
         ],
         "demo": true

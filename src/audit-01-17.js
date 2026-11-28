@@ -851,7 +851,7 @@
           verifiedDeliveryRule('S02')
         ] } },
         S03: {
-          message: '고객님, 제품 배송 정보 안내드립니다.',
+          message: '제품 배송 정보를 확인해 드릴게요.',
           actions: [['계속하기', 'S07']]
         },
         pending5: { ...handoff('배송 주문을 확인하려면 상담사에게 문의해 주세요.'), condition: '배송 주문 상담 확인' }
@@ -903,7 +903,7 @@
           { label: '전달 요청 사항', placeholder: '전달 요청 사항을 입력해 주세요', sample: '방문 전에 연락해 주세요.' }
         ], [['전달 요청', '$commitDeliveryMemo'], ['뒤로', '$deliveryOrder']]),
         S07: { actions: close },
-        S08: { message: '요청하신 사항은 설치 예정일 설치마스터가 확인할 수 있습니다. 추가로 문의하실 내용이 있으신가요?', actions: close },
+        S08: { message: '설치마스터가 설치 예정일에 요청 사항을 확인할 수 있어요. 더 궁금한 점이 있나요?', actions: close },
         subscriptionOrder: choice('구독 주문의 배송주소는 구독 주문처에 변경을 요청해 주세요. 배송일 문의나 설치 요청 전달을 계속할 수 있어요.', [
           ['배송주소 변경 안내', 'subscriptionAddress'], ['배송일정 수정 문의', '$deliveryEditDate'], ['설치마스터 전달 요청', 'S06'], ['다른 문의', '$menu']
         ]),

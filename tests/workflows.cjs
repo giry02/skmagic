@@ -790,7 +790,7 @@ test("delivery inquiry details continue to additional questions without an edit 
   verifyPhone(chat);
   const detail = chooseAvailable(chat, "직수 정수기 주문 선택");
   assert.equal(detail.screen.id, "S03");
-  assert.equal(detail.messages.at(-1).text, "고객님, 제품 배송 정보 안내드립니다.");
+  assert.equal(detail.messages.at(-1).text, "제품 배송 정보를 확인해 드릴게요.");
   assert.deepEqual(Array.from(detail.actions, ({ label }) => label), ["계속하기"]);
   assert.equal(chooseAvailable(chat, "계속하기").screen.id, "S07");
 });
@@ -834,7 +834,7 @@ test("delivery changes follow the original address, order update, and installer 
   chooseAvailable(installer, "설치마스터 전달 요청");
   const noted = chooseAvailable(installer, "전달 요청", { "전달 요청 사항": "방문 전에 연락해 주세요" });
   assert.equal(noted.screen.id, "S08");
-  assert.match(noted.messages.at(-1).text, /요청하신 사항은 설치 예정일 설치마스터가 확인할 수 있습니다\./);
+  assert.match(noted.messages.at(-1).text, /설치마스터가 설치 예정일에 요청 사항을 확인할 수 있어요\./);
   assert.equal(noted.messages.at(-1).items.find(({ title }) => title === "요청사항")?.detail, "방문 전에 연락해 주세요");
   assert.deepEqual(Array.from(installer.context.deliveryEvents), ["IF_AICC_P005", "IF_AICC_P021", "S08"]);
 
