@@ -3,9 +3,12 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const sourceDir = path.join(__dirname, "src");
-const phaseOne = process.argv.includes("--phase-one");
-const output = process.argv.slice(2).find((argument) => argument !== "--phase-one");
-const target = path.resolve(output || path.join(__dirname, phaseOne ? "phase-1.html" : "index.html"));
+const args = process.argv.slice(2);
+const phaseOne = args.includes("--phase-one");
+const standalone = args.includes("--standalone");
+const output = args.find((argument) => !["--phase-one", "--standalone"].includes(argument));
+const defaultFile = phaseOne ? "phase-1.html" : standalone ? "standalone.html" : "index.html";
+const target = path.resolve(output || path.join(__dirname, defaultFile));
 const read = (file) => fs.readFileSync(path.join(sourceDir, file), "utf8");
 const sharedPhaseOneFlows = new Set([34, 39, 41]);
 const scripts = [
@@ -23,6 +26,7 @@ if (phaseOne) {
   html = replaceOnce(html, 'id="app"', 'id="app" data-phase-one');
   html = replaceOnce(html, '상담봇 델리 | SK매직', '상담봇 델리 | 1차 시나리오');
 }
+if (standalone) html = replaceOnce(html, 'id="app"', 'id="app" data-standalone');
 const css = read("conversation.css").replace(/url\("concept-c\/([a-z-]+\.png)"\)/g, (_, file) => {
   const image = fs.readFileSync(path.join(sourceDir, "concept-c", file)).toString("base64");
   return `url("data:image/png;base64,${image}")`;

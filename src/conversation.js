@@ -70,7 +70,7 @@
   const openPhases = new Set([defaultCatalogPhase]);
   let drawerOpen = false;
 
-  let demoMode = localFile || phaseOne;
+  let demoMode = localFile || phaseOne || app.hasAttribute("data-standalone");
   let liveRows = [];
   let apiHistory = [];
   let offer = null;

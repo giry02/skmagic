@@ -504,7 +504,7 @@
           ['배송 확인 상담', '$handoff'], ['다른 문의', '$menu']
         ]),
         filterChangedAddress: form('필터를 다시 받을 주소를 입력해 주세요.', ['address'], 's5', '재발송 요청'),
-        filterAddressScope: choice('어떤 주소를 바꾸시겠어요? 필터 배송 주소만 바꾸시면 계약자 주소는 기존 정보로 유지됩니다.', [
+        filterAddressScope: choice('어떤 주소를 바꾸시겠어요? 필터 배송 주소만 바꾸시면 계약자 주소는 그대로 유지돼요.', [
           ['제품 사용·필터 배송 주소만 변경', 'filterAddressOnly'], ['계약자 주소도 변경', '@28'], ['뒤로', 'filterIssue']
         ]),
         filterAddressOnly: form('앞으로 필터를 받을 주소를 입력해 주세요.', ['address'], 'filterAddressSaved', '주소 변경'),

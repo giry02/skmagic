@@ -25,7 +25,7 @@ Ollama는 기본 주소 `http://127.0.0.1:11434/`에서 실행해야 합니다. 
 
 ## 화면과 상담 흐름 수정
 
-화면과 상담 로직은 `src/`에서 수정합니다. `node build.cjs`는 전체판 `index.html`을, `node build.cjs --phase-one`은 1차 전용판 `phase-1.html`을 갱신합니다.
+화면과 상담 로직은 `src/`에서 수정합니다. `node build.cjs`는 전체판 `index.html`을, `node build.cjs --phase-one`은 1차 전용판 `phase-1.html`을 갱신합니다. `node build.cjs --standalone <파일경로>`는 브라우저에서 서버 없이 실행하는 전체 공개용 HTML을 만듭니다.
 
 고객 범위, 인증 및 업무 조회의 회귀 검사는 `node --test tests/workflows.cjs`로 실행합니다.
 
