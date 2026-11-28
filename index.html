@@ -13049,7 +13049,6 @@ window.SKIX_PARTNER_CARDS = [
   const waterPayment = {
     target: '직수 정수기 · WPU-1000', amount: '29,900원', method: '신용카드 자동납부 · 신한카드 · 끝자리 1234'
   };
-  const paymentContractHandoff = handoff('상담사 연결을 통해 안내해드릴 수 있어요.', [['상담사 연결', '$handoff']]);
   const bidetPayment = {
     target: '비데 · BID-1000', amount: '16,900원', method: '네이버페이 정기결제'
   };
@@ -13147,7 +13146,8 @@ window.SKIX_PARTNER_CARDS = [
           item('결제정보', '신용카드 자동납부\n신한카드 · ••••-••••-••••-1234\n매월 25일'),
           item('멤버십료', '월 16,900원'), item('미납금(당월 미포함)', '0원')]),
         S05: paymentUnavailable('S01'),
-        S06: { actions: [['PASS 본인인증', 'exampleLookup']], auth: { failure: 'S07' } },
+        S06: { actions: [['PASS 본인인증', 'exampleLookup']], auth: { failure: 'lookupRetryExhausted' } },
+        lookupRetryExhausted: handoff('계약자 본인 확인을 완료하지 못했어요. 상담사를 통해 확인해 주세요.', [['상담사 연결', '$handoff']]),
         exampleLookup: resolved('S02'),
       }
     },
@@ -13165,17 +13165,18 @@ window.SKIX_PARTNER_CARDS = [
           message: '신청하신 정보로 결제수단 변경을 처리했어요.',
           actions: [['다른 계약 변경', 'changeContract'], ['다른 문의', '$menu']]
         },
-        changeContract: choice('변경할 계약을 선택해 주세요.', [
-          ['직수 정수기 선택', 'ordinaryPaymentDetails'], ['공기청정기 선택', 'airPaymentDetails'],
-          ['정수기·공기청정기 묶음 선택', 'bundlePaymentDetails'], ['비데 선택', 'naverContract'],
-          ['식기세척기 선택', 'dishwasherPaymentDetails']
-        ], [
-          item('직수 정수기', 'WPU-1000 · 개별 결제 · 신한카드'),
-          item('공기청정기', 'ACL-1000 · 개별 결제 · KB국민은행'),
-          item('정수기·공기청정기 묶음', '묶음 결제 · 대표 계약 결제일 매월 25일'),
-          item('비데', 'BID-1000 · 네이버 구독'),
-          item('식기세척기', 'DWA-1000 · 개별 결제 · KB국민은행')
-        ]),
+        changeContract: {
+          ...choice('변경할 계약을 선택해 주세요.', [
+            ['직수 정수기 선택', 'ordinaryPaymentDetails'], ['공기청정기 선택', 'airPaymentDetails'],
+            ['정수기·공기청정기 묶음 선택', 'bundlePaymentDetails'], ['비데 선택', 'naverContract']
+          ], [
+            item('직수 정수기', 'WPU-1000 · 개별 결제 · 신한카드'),
+            item('공기청정기', 'ACL-1000 · 개별 결제 · KB국민은행'),
+            item('정수기·공기청정기 묶음', '묶음 결제 · 대표 계약 결제일 매월 25일'),
+            item('비데', 'BID-1000 · 네이버 구독')
+          ]),
+          singleContract: { action: ['식기세척기 선택', 'dishwasherPaymentDetails'], item: item('식기세척기', 'DWA-1000 · 개별 결제 · KB국민은행') }
+        },
         ordinaryPaymentDetails: result('직수 정수기에 등록된 결제정보를 확인해 주세요.', [
           ['결제정보 변경', paymentDay >= 25 ? 'applyNextMonth' : 'applyThisMonthSingle'], ['위약금 조회', '@7'], ['다른 계약 확인', 'changeContract']
         ], waterDetails('0원', paymentDay >= 25)),
@@ -13227,7 +13228,6 @@ window.SKIX_PARTNER_CARDS = [
             item('비데', 'BID-1000 · 문래동 · 당월 납부 완료'), item('매트리스', 'MAT-1000 · 문래동 · 네이버 구독')]),
           singleContract: { action: ['전기레인지 선택', 'chargeOtherPayer'], item: item('전기레인지', 'ERA-1000 · 문래동 · 당월 24,900원') }
         },
-        paymentContractHandoff,
         chargeDetails: result('직수 정수기의 이번 달 요금이 아직 납부되지 않았어요.', [
           ['요금 납부', 'S02'], ['결제정보 변경', '@3'], ['위약금 조회', '@7'], ['다른 계약 확인', 'chargeContract']
         ], waterDetails('0원', false)),
@@ -13278,7 +13278,6 @@ window.SKIX_PARTNER_CARDS = [
             item('매트리스', 'MAT-2000 · 문래동 · 네이버 구독')]),
           singleContract: { action: ['식기세척기 선택', 'dishwasherArrears'], item: item('식기세척기', 'DWA-1000 · 문래동 · 24,900원 (당월 미포함)') }
         },
-        paymentContractHandoff,
         airArrears: result('공기청정기의 지난달까지 미납요금을 확인했어요.', [
           ['미납금 납부', 'highArrearsPayment'], ['결제정보 변경', '@3'], ['다른 계약 확인', 'arrearsContract']
         ], [...airDetails(), item('미납 회차', '3회')]),
@@ -15843,7 +15842,7 @@ window.SKIX_PARTNER_CARDS = [
   const defaultPlaceholder = '메시지를 입력하세요';
   const auditFlows = window.SKIX_FLOW_OVERLAYS ?? {};
   const billingContractScreens = { 1: 'S02', 2: 'S02', 3: 'changeContract', 4: 'chargeContract', 5: 'arrearsContract', 7: 'S04' };
-  const demoPaymentContractCounts = { '01000000012': 1, '01000000013': 5, '01000000014': 6 };
+  const demoBillingContractCounts = { '01000000012': 1, '01000000013': 5, '01000000014': 6 };
   const otpAttemptLimit = 5;
   const otpValidityMs = 180_000;
   const phoneConsent = '휴대폰 확인을 위해 이름과 휴대폰 번호를 이용해요. 개인정보 수집 및 이용에 동의하시겠어요?';
@@ -16279,6 +16278,10 @@ window.SKIX_PARTNER_CARDS = [
     return auditFlows[no]?.screens?.S01?.actions?.find(([label]) => label === 'PASS 본인인증')?.[1];
   }
 
+  function isBillingContractList(no, screenId) {
+    return screenId === billingContractScreens[no] || no === 7 && screenId === 'S02';
+  }
+
   function serviceProviderFor(product) {
     const key = normalize(product ?? '');
     if (/필립스|커피머신|에스프레소머신/.test(key)) return '필립스';
@@ -16483,7 +16486,10 @@ window.SKIX_PARTNER_CARDS = [
         || previousNo === 12 && this.isKnownSessionOwner()))
         || ([13, 14].includes(previousNo) && [14, 15].includes(scenario.no) && previous.serviceVisit) || visitCallbackLink);
       const billingEntry = billingLookupTarget(scenario.no);
-      const reuseBilling = !echo && previous.billingVerified && billingEntry;
+      const singleContract = this.demoBillingContractCount(scenario.no) === 1
+        ? auditFlows[scenario.no].screens[billingContractScreens[scenario.no]].singleContract : null;
+      const reuseBilling = !echo && previous.billingVerified && billingEntry
+        && (this.demoBillingContractCount(previousNo) !== 1 || singleContract);
       const reuseDepositInquiry = !echo && previousNo === 1 && scenario.no === 39 && previous.billingVerified && previous.product === '직수 정수기';
       this.scenario = scenario;
       this.context = { request: customerText || '' };
@@ -16524,7 +16530,7 @@ window.SKIX_PARTNER_CARDS = [
       if (reuseBilling) {
         Object.assign(this.context, { billingVerified: true, product: previous.product });
         const contractScreen = billingContractScreens[scenario.no];
-        const choices = auditFlows[scenario.no]?.screens?.[contractScreen]?.actions;
+        const choices = singleContract ? [singleContract.action] : auditFlows[scenario.no]?.screens?.[contractScreen]?.actions;
         const selected = previous.product && choices?.find(([label]) => label === previous.product + ' 선택');
         if (scenario.no === 3 && this.screen?.naverRegistrationRequired) {
           entry = 'naverArrearsApplication';
@@ -16576,10 +16582,12 @@ window.SKIX_PARTNER_CARDS = [
         if (actions) screen.explicitActions = actions;
         if (fields) screen.explicitFields = fields;
       }
-      if (screen.singleContract && !properties.demo) {
-        const count = this.demoPaymentContractCount();
+      if (!properties.demo && isBillingContractList(this.scenario.no, screen.id)) {
+        const count = this.demoBillingContractCount(this.scenario.no);
         if (count >= 5) {
-          this.execute('paymentContractHandoff');
+          this.synthetic('상담사 연결을 통해 안내해드릴 수 있어요.', {
+            id: 'paymentContractHandoff', kind: 'handoff', actions: [['상담사 연결', '$handoff']], demo: false
+          });
           return;
         }
         if (count === 1) {
@@ -17997,7 +18005,7 @@ window.SKIX_PARTNER_CARDS = [
           };
         }
       }
-      if ((screen === billingContractScreens[no] || no === 7 && screen === 'S02') && / 선택$/.test(label)) {
+      if (isBillingContractList(no, screen) && / 선택$/.test(label)) {
         this.context.product = label.replace(/ 선택$/, '');
         if ([4, 5].includes(no) && this.context.product !== '공기청정기') this.context.transferPaymentReturn = false;
       } else if (/정수기 선택|공기청정기 선택/.test(label)) {
@@ -18345,9 +18353,11 @@ window.SKIX_PARTNER_CARDS = [
         && normalize(this.#sessionIdentity.phone) === normalize(demoIdentity.phone);
     }
 
-    demoPaymentContractCount() {
-      if (this.#sessionIdentity?.name !== demoIdentity.name) return undefined;
-      return demoPaymentContractCounts[normalize(this.#sessionIdentity.phone)];
+    demoBillingContractCount(no) {
+      const screen = billingContractScreens[no];
+      if (!screen || this.#sessionIdentity?.name !== demoIdentity.name) return undefined;
+      const count = demoBillingContractCounts[normalize(this.#sessionIdentity.phone)];
+      return count === 1 && !auditFlows[no]?.screens?.[screen]?.singleContract ? undefined : count;
     }
 
     applyVerifiedIdentity() {
@@ -18416,7 +18426,7 @@ window.SKIX_PARTNER_CARDS = [
       if (method === 'PASS 본인인증' && this.isReusablePass(source)) {
         this.#sessionIdentity ??= { ...demoIdentity };
         const billingLookup = target === billingLookupTarget(no);
-        const demoContractCount = billingLookup && [4, 5].includes(no) ? this.demoPaymentContractCount() : undefined;
+        const demoContractCount = billingLookup ? this.demoBillingContractCount(no) : undefined;
         if (billingLookup && unavailableBillingScreens[no] && normalize(this.#sessionIdentity.phone) === '01000000000') {
           this.execute(unavailableBillingScreens[no]);
           return;
@@ -18435,7 +18445,11 @@ window.SKIX_PARTNER_CARDS = [
           return;
         }
         this.applyVerifiedIdentity();
-        if (target === billingLookupTarget(no)) this.context.billingVerified = true;
+        if (demoContractCount >= 5) {
+          this.execute(target);
+          return;
+        }
+        if (billingLookup) this.context.billingVerified = true;
       }
       if (no === 28) this.saveCustomerChange(source, target);
       if (no === 4 && target === 'chargeContract' && this.context.carePaymentReturn) {

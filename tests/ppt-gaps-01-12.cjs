@@ -83,32 +83,53 @@ test('third-party current tender is blocked and invoices skip the optional cash 
   assert.equal(choose(late, '가상계좌').screen.id, 'S06');
 });
 
-test('payment contract lookup shows one to four contracts and hands off at five', () => {
-  const names = ['직수 정수기', '공기청정기', '비데', '매트리스'];
-  for (const [no, screen, single] of [[4, 'chargeContract', '전기레인지'], [5, 'arrearsContract', '식기세척기']]) {
-    const normal = pass(start(no));
-    assert.equal(normal.screen.id, screen);
-    assert.deepEqual(Array.from(normal.actions, ({ label }) => label), names.map((name) => `${name} 선택`));
-    assert.deepEqual(Array.from(normal.messages.at(-1).items, ({ title }) => title), names);
-
-    for (const phone of ['010-0000-0012', '010-0000-0013', '010-0000-0014']) {
+test('shared billing contract lookup shows one to four contracts and hands off at five', () => {
+  const paymentContracts = ['직수 정수기', '공기청정기', '비데', '매트리스'];
+  const cases = [
+    [1, 'S02', ['직수 정수기', '공기청정기']],
+    [2, 'S02', ['직수 정수기', '공기청정기', '정수기 멤버십']],
+    [3, 'changeContract', ['직수 정수기', '공기청정기', '정수기·공기청정기 묶음', '비데']],
+    [4, 'chargeContract', paymentContracts], [5, 'arrearsContract', paymentContracts],
+    [7, 'S02', ['직수 정수기']]
+  ];
+  const checkList = (state, screen, names) => {
+    assert.equal(state.screen.id, screen);
+    assert.deepEqual(Array.from(state.actions, ({ label }) => label), names.map((name) => `${name} 선택`));
+    assert.deepEqual(Array.from(state.messages.at(-1).items, ({ title }) => title), names);
+  };
+  for (const [no, screen, names] of cases) {
+    checkList(pass(start(no)), screen, names);
+    for (const phone of ['010-0000-0013', '010-0000-0014']) {
       const chat = start(8);
       choose(chat, '분리 접수');
       verify(chat, phone);
       const state = chat.start(no);
-      if (phone.endsWith('12')) {
-        assert.equal(state.screen.id, screen);
-        assert.deepEqual(Array.from(state.actions, ({ label }) => label), [`${single} 선택`]);
-        assert.deepEqual(Array.from(state.messages.at(-1).items, ({ title }) => title), [single]);
-      } else {
-        assert.equal(state.screen.id, 'paymentContractHandoff');
-        assert.deepEqual(Array.from(state.actions, ({ label }) => label), ['상담사 연결']);
-        assert.match(state.messages.at(-1).text, /상담사 연결을 통해 안내해드릴 수 있어요/);
-        assert.equal(state.messages.at(-1).items.length, 0);
-        assert.equal(choose(chat, '상담사 연결').screen.id, '$handoff');
-      }
+      assert.equal(state.screen.id, 'paymentContractHandoff');
+      assert.deepEqual(Array.from(state.actions, ({ label }) => label), ['상담사 연결']);
+      assert.match(state.messages.at(-1).text, /상담사 연결을 통해 안내해드릴 수 있어요/);
+      assert.equal(state.messages.at(-1).items.length, 0);
+      assert.equal(choose(chat, '상담사 연결').screen.id, '$handoff');
     }
   }
+
+  const penalty = start(7);
+  pass(penalty);
+  choose(penalty, '직수 정수기 선택');
+  checkList(choose(penalty, '위약금 조회'), 'S04', ['직수 정수기', '비데', '공기청정기', '매트리스']);
+
+  const single = start(8);
+  choose(single, '분리 접수');
+  verify(single, '010-0000-0012');
+  checkList(single.start(4), 'chargeContract', ['전기레인지']);
+  checkList(single.start(5), 'arrearsContract', ['식기세척기']);
+  choose(single, '식기세척기 선택');
+  const change = choose(single, '결제정보 변경');
+  assert.equal(change.screen.id, 'dishwasherPaymentDetails');
+  assert.match(item(change, '식기세척기'), /DWA-1000/);
+  checkList(choose(single, '다른 계약 확인'), 'changeContract', ['식기세척기']);
+  const unverifiedForMembership = single.start(2);
+  assert.equal(unverifiedForMembership.screen.id, 'lookupRetryExhausted');
+  assert.match(unverifiedForMembership.messages.at(-1).text, /본인 확인을 완료하지 못했어요/);
 });
 
 test('move workflows route outsourced products before a visit can be booked', () => {

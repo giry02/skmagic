@@ -39,7 +39,6 @@
   const waterPayment = {
     target: '직수 정수기 · WPU-1000', amount: '29,900원', method: '신용카드 자동납부 · 신한카드 · 끝자리 1234'
   };
-  const paymentContractHandoff = handoff('상담사 연결을 통해 안내해드릴 수 있어요.', [['상담사 연결', '$handoff']]);
   const bidetPayment = {
     target: '비데 · BID-1000', amount: '16,900원', method: '네이버페이 정기결제'
   };
@@ -137,7 +136,8 @@
           item('결제정보', '신용카드 자동납부\n신한카드 · ••••-••••-••••-1234\n매월 25일'),
           item('멤버십료', '월 16,900원'), item('미납금(당월 미포함)', '0원')]),
         S05: paymentUnavailable('S01'),
-        S06: { actions: [['PASS 본인인증', 'exampleLookup']], auth: { failure: 'S07' } },
+        S06: { actions: [['PASS 본인인증', 'exampleLookup']], auth: { failure: 'lookupRetryExhausted' } },
+        lookupRetryExhausted: handoff('계약자 본인 확인을 완료하지 못했어요. 상담사를 통해 확인해 주세요.', [['상담사 연결', '$handoff']]),
         exampleLookup: resolved('S02'),
       }
     },
@@ -155,17 +155,18 @@
           message: '신청하신 정보로 결제수단 변경을 처리했어요.',
           actions: [['다른 계약 변경', 'changeContract'], ['다른 문의', '$menu']]
         },
-        changeContract: choice('변경할 계약을 선택해 주세요.', [
-          ['직수 정수기 선택', 'ordinaryPaymentDetails'], ['공기청정기 선택', 'airPaymentDetails'],
-          ['정수기·공기청정기 묶음 선택', 'bundlePaymentDetails'], ['비데 선택', 'naverContract'],
-          ['식기세척기 선택', 'dishwasherPaymentDetails']
-        ], [
-          item('직수 정수기', 'WPU-1000 · 개별 결제 · 신한카드'),
-          item('공기청정기', 'ACL-1000 · 개별 결제 · KB국민은행'),
-          item('정수기·공기청정기 묶음', '묶음 결제 · 대표 계약 결제일 매월 25일'),
-          item('비데', 'BID-1000 · 네이버 구독'),
-          item('식기세척기', 'DWA-1000 · 개별 결제 · KB국민은행')
-        ]),
+        changeContract: {
+          ...choice('변경할 계약을 선택해 주세요.', [
+            ['직수 정수기 선택', 'ordinaryPaymentDetails'], ['공기청정기 선택', 'airPaymentDetails'],
+            ['정수기·공기청정기 묶음 선택', 'bundlePaymentDetails'], ['비데 선택', 'naverContract']
+          ], [
+            item('직수 정수기', 'WPU-1000 · 개별 결제 · 신한카드'),
+            item('공기청정기', 'ACL-1000 · 개별 결제 · KB국민은행'),
+            item('정수기·공기청정기 묶음', '묶음 결제 · 대표 계약 결제일 매월 25일'),
+            item('비데', 'BID-1000 · 네이버 구독')
+          ]),
+          singleContract: { action: ['식기세척기 선택', 'dishwasherPaymentDetails'], item: item('식기세척기', 'DWA-1000 · 개별 결제 · KB국민은행') }
+        },
         ordinaryPaymentDetails: result('직수 정수기에 등록된 결제정보를 확인해 주세요.', [
           ['결제정보 변경', paymentDay >= 25 ? 'applyNextMonth' : 'applyThisMonthSingle'], ['위약금 조회', '@7'], ['다른 계약 확인', 'changeContract']
         ], waterDetails('0원', paymentDay >= 25)),
@@ -217,7 +218,6 @@
             item('비데', 'BID-1000 · 문래동 · 당월 납부 완료'), item('매트리스', 'MAT-1000 · 문래동 · 네이버 구독')]),
           singleContract: { action: ['전기레인지 선택', 'chargeOtherPayer'], item: item('전기레인지', 'ERA-1000 · 문래동 · 당월 24,900원') }
         },
-        paymentContractHandoff,
         chargeDetails: result('직수 정수기의 이번 달 요금이 아직 납부되지 않았어요.', [
           ['요금 납부', 'S02'], ['결제정보 변경', '@3'], ['위약금 조회', '@7'], ['다른 계약 확인', 'chargeContract']
         ], waterDetails('0원', false)),
@@ -268,7 +268,6 @@
             item('매트리스', 'MAT-2000 · 문래동 · 네이버 구독')]),
           singleContract: { action: ['식기세척기 선택', 'dishwasherArrears'], item: item('식기세척기', 'DWA-1000 · 문래동 · 24,900원 (당월 미포함)') }
         },
-        paymentContractHandoff,
         airArrears: result('공기청정기의 지난달까지 미납요금을 확인했어요.', [
           ['미납금 납부', 'highArrearsPayment'], ['결제정보 변경', '@3'], ['다른 계약 확인', 'arrearsContract']
         ], [...airDetails(), item('미납 회차', '3회')]),

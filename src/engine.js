@@ -8,7 +8,7 @@
   const defaultPlaceholder = '메시지를 입력하세요';
   const auditFlows = window.SKIX_FLOW_OVERLAYS ?? {};
   const billingContractScreens = { 1: 'S02', 2: 'S02', 3: 'changeContract', 4: 'chargeContract', 5: 'arrearsContract', 7: 'S04' };
-  const demoPaymentContractCounts = { '01000000012': 1, '01000000013': 5, '01000000014': 6 };
+  const demoBillingContractCounts = { '01000000012': 1, '01000000013': 5, '01000000014': 6 };
   const otpAttemptLimit = 5;
   const otpValidityMs = 180_000;
   const phoneConsent = '휴대폰 확인을 위해 이름과 휴대폰 번호를 이용해요. 개인정보 수집 및 이용에 동의하시겠어요?';
@@ -444,6 +444,10 @@
     return auditFlows[no]?.screens?.S01?.actions?.find(([label]) => label === 'PASS 본인인증')?.[1];
   }
 
+  function isBillingContractList(no, screenId) {
+    return screenId === billingContractScreens[no] || no === 7 && screenId === 'S02';
+  }
+
   function serviceProviderFor(product) {
     const key = normalize(product ?? '');
     if (/필립스|커피머신|에스프레소머신/.test(key)) return '필립스';
@@ -648,7 +652,10 @@
         || previousNo === 12 && this.isKnownSessionOwner()))
         || ([13, 14].includes(previousNo) && [14, 15].includes(scenario.no) && previous.serviceVisit) || visitCallbackLink);
       const billingEntry = billingLookupTarget(scenario.no);
-      const reuseBilling = !echo && previous.billingVerified && billingEntry;
+      const singleContract = this.demoBillingContractCount(scenario.no) === 1
+        ? auditFlows[scenario.no].screens[billingContractScreens[scenario.no]].singleContract : null;
+      const reuseBilling = !echo && previous.billingVerified && billingEntry
+        && (this.demoBillingContractCount(previousNo) !== 1 || singleContract);
       const reuseDepositInquiry = !echo && previousNo === 1 && scenario.no === 39 && previous.billingVerified && previous.product === '직수 정수기';
       this.scenario = scenario;
       this.context = { request: customerText || '' };
@@ -689,7 +696,7 @@
       if (reuseBilling) {
         Object.assign(this.context, { billingVerified: true, product: previous.product });
         const contractScreen = billingContractScreens[scenario.no];
-        const choices = auditFlows[scenario.no]?.screens?.[contractScreen]?.actions;
+        const choices = singleContract ? [singleContract.action] : auditFlows[scenario.no]?.screens?.[contractScreen]?.actions;
         const selected = previous.product && choices?.find(([label]) => label === previous.product + ' 선택');
         if (scenario.no === 3 && this.screen?.naverRegistrationRequired) {
           entry = 'naverArrearsApplication';
@@ -741,10 +748,12 @@
         if (actions) screen.explicitActions = actions;
         if (fields) screen.explicitFields = fields;
       }
-      if (screen.singleContract && !properties.demo) {
-        const count = this.demoPaymentContractCount();
+      if (!properties.demo && isBillingContractList(this.scenario.no, screen.id)) {
+        const count = this.demoBillingContractCount(this.scenario.no);
         if (count >= 5) {
-          this.execute('paymentContractHandoff');
+          this.synthetic('상담사 연결을 통해 안내해드릴 수 있어요.', {
+            id: 'paymentContractHandoff', kind: 'handoff', actions: [['상담사 연결', '$handoff']], demo: false
+          });
           return;
         }
         if (count === 1) {
@@ -2162,7 +2171,7 @@
           };
         }
       }
-      if ((screen === billingContractScreens[no] || no === 7 && screen === 'S02') && / 선택$/.test(label)) {
+      if (isBillingContractList(no, screen) && / 선택$/.test(label)) {
         this.context.product = label.replace(/ 선택$/, '');
         if ([4, 5].includes(no) && this.context.product !== '공기청정기') this.context.transferPaymentReturn = false;
       } else if (/정수기 선택|공기청정기 선택/.test(label)) {
@@ -2510,9 +2519,11 @@
         && normalize(this.#sessionIdentity.phone) === normalize(demoIdentity.phone);
     }
 
-    demoPaymentContractCount() {
-      if (this.#sessionIdentity?.name !== demoIdentity.name) return undefined;
-      return demoPaymentContractCounts[normalize(this.#sessionIdentity.phone)];
+    demoBillingContractCount(no) {
+      const screen = billingContractScreens[no];
+      if (!screen || this.#sessionIdentity?.name !== demoIdentity.name) return undefined;
+      const count = demoBillingContractCounts[normalize(this.#sessionIdentity.phone)];
+      return count === 1 && !auditFlows[no]?.screens?.[screen]?.singleContract ? undefined : count;
     }
 
     applyVerifiedIdentity() {
@@ -2581,7 +2592,7 @@
       if (method === 'PASS 본인인증' && this.isReusablePass(source)) {
         this.#sessionIdentity ??= { ...demoIdentity };
         const billingLookup = target === billingLookupTarget(no);
-        const demoContractCount = billingLookup && [4, 5].includes(no) ? this.demoPaymentContractCount() : undefined;
+        const demoContractCount = billingLookup ? this.demoBillingContractCount(no) : undefined;
         if (billingLookup && unavailableBillingScreens[no] && normalize(this.#sessionIdentity.phone) === '01000000000') {
           this.execute(unavailableBillingScreens[no]);
           return;
@@ -2600,7 +2611,11 @@
           return;
         }
         this.applyVerifiedIdentity();
-        if (target === billingLookupTarget(no)) this.context.billingVerified = true;
+        if (demoContractCount >= 5) {
+          this.execute(target);
+          return;
+        }
+        if (billingLookup) this.context.billingVerified = true;
       }
       if (no === 28) this.saveCustomerChange(source, target);
       if (no === 4 && target === 'chargeContract' && this.context.carePaymentReturn) {
