@@ -8,6 +8,7 @@
   const defaultPlaceholder = '메시지를 입력하세요';
   const auditFlows = window.SKIX_FLOW_OVERLAYS ?? {};
   const billingContractScreens = { 1: 'S02', 2: 'S02', 3: 'changeContract', 4: 'chargeContract', 5: 'arrearsContract', 7: 'S04' };
+  const demoPaymentContractCounts = { '01000000012': 1, '01000000013': 5, '01000000014': 6 };
   const otpAttemptLimit = 5;
   const otpValidityMs = 180_000;
   const phoneConsent = '휴대폰 확인을 위해 이름과 휴대폰 번호를 이용해요. 개인정보 수집 및 이용에 동의하시겠어요?';
@@ -739,6 +740,18 @@
         screen = { ...screen, ...display };
         if (actions) screen.explicitActions = actions;
         if (fields) screen.explicitFields = fields;
+      }
+      if (screen.singleContract && !properties.demo) {
+        const count = this.demoPaymentContractCount();
+        if (count >= 5) {
+          this.execute('paymentContractHandoff');
+          return;
+        }
+        if (count === 1) {
+          const { action, item } = screen.singleContract;
+          screen.explicitActions = [action];
+          screen.items = [item];
+        }
       }
       if (this.scenario.no === 42 && this.#membershipOptOut && !properties.demo && ['s3', 'E7'].includes(screen.id)) {
         this.execute('optOutStatus');
@@ -2149,7 +2162,7 @@
           };
         }
       }
-      if ((screen === billingContractScreens[no] || no === 4 && screen === 'chargeMoreContracts' || no === 7 && screen === 'S02') && / 선택$/.test(label)) {
+      if ((screen === billingContractScreens[no] || no === 7 && screen === 'S02') && / 선택$/.test(label)) {
         this.context.product = label.replace(/ 선택$/, '');
         if ([4, 5].includes(no) && this.context.product !== '공기청정기') this.context.transferPaymentReturn = false;
       } else if (/정수기 선택|공기청정기 선택/.test(label)) {
@@ -2497,6 +2510,11 @@
         && normalize(this.#sessionIdentity.phone) === normalize(demoIdentity.phone);
     }
 
+    demoPaymentContractCount() {
+      if (this.#sessionIdentity?.name !== demoIdentity.name) return undefined;
+      return demoPaymentContractCounts[normalize(this.#sessionIdentity.phone)];
+    }
+
     applyVerifiedIdentity() {
       const { name, phone } = this.#sessionIdentity;
       const no = this.scenario.no;
@@ -2562,12 +2580,14 @@
       const no = this.scenario.no;
       if (method === 'PASS 본인인증' && this.isReusablePass(source)) {
         this.#sessionIdentity ??= { ...demoIdentity };
-        if (target === billingLookupTarget(no) && unavailableBillingScreens[no] && normalize(this.#sessionIdentity.phone) === '01000000000') {
+        const billingLookup = target === billingLookupTarget(no);
+        const demoContractCount = billingLookup && [4, 5].includes(no) ? this.demoPaymentContractCount() : undefined;
+        if (billingLookup && unavailableBillingScreens[no] && normalize(this.#sessionIdentity.phone) === '01000000000') {
           this.execute(unavailableBillingScreens[no]);
           return;
         }
         // The demo contract holder and a service address's eligibility are separate checks.
-        if (!this.isKnownSessionOwner() && ![8, 9, 12].includes(no)) {
+        if (!this.isKnownSessionOwner() && !demoContractCount && ![8, 9, 12].includes(no)) {
           const rejected = failure ?? authFailures[no]?.[source];
           if (rejected && rejected !== source) {
             this.execute(rejected);

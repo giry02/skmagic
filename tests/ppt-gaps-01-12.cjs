@@ -57,9 +57,10 @@ test('billing distinguishes a verified zero-contract customer from the membershi
 });
 
 test('third-party current tender is blocked and invoices skip the optional cash receipt', () => {
-  const current = start(4);
-  pass(current);
-  choose(current, '다른 계약 더 보기');
+  const current = start(8);
+  choose(current, '분리 접수');
+  verify(current, '010-0000-0012');
+  current.start(4);
   choose(current, '전기레인지 선택');
   const blocked = choose(current, '등록 결제수단');
   assert.equal(blocked.screen.id, 'S03');
@@ -71,13 +72,43 @@ test('third-party current tender is blocked and invoices skip the optional cash 
   assert.equal(charge.screen.id, 'S05');
   assert.ok(!charge.actions.some(({ label }) => /현금영수증/.test(label)));
 
-  const late = start(5);
-  pass(late);
+  const late = start(8);
+  choose(late, '분리 접수');
+  verify(late, '010-0000-0012');
+  late.start(5);
   const arrears = choose(late, '식기세척기 선택');
   assert.equal(item(arrears, '미납 회차'), '1회');
   choose(late, '미납금 납부');
   choose(late, '일회성 납부수단');
   assert.equal(choose(late, '가상계좌').screen.id, 'S06');
+});
+
+test('payment contract lookup shows one to four contracts and hands off at five', () => {
+  const names = ['직수 정수기', '공기청정기', '비데', '매트리스'];
+  for (const [no, screen, single] of [[4, 'chargeContract', '전기레인지'], [5, 'arrearsContract', '식기세척기']]) {
+    const normal = pass(start(no));
+    assert.equal(normal.screen.id, screen);
+    assert.deepEqual(Array.from(normal.actions, ({ label }) => label), names.map((name) => `${name} 선택`));
+    assert.deepEqual(Array.from(normal.messages.at(-1).items, ({ title }) => title), names);
+
+    for (const phone of ['010-0000-0012', '010-0000-0013', '010-0000-0014']) {
+      const chat = start(8);
+      choose(chat, '분리 접수');
+      verify(chat, phone);
+      const state = chat.start(no);
+      if (phone.endsWith('12')) {
+        assert.equal(state.screen.id, screen);
+        assert.deepEqual(Array.from(state.actions, ({ label }) => label), [`${single} 선택`]);
+        assert.deepEqual(Array.from(state.messages.at(-1).items, ({ title }) => title), [single]);
+      } else {
+        assert.equal(state.screen.id, 'paymentContractHandoff');
+        assert.deepEqual(Array.from(state.actions, ({ label }) => label), ['상담사 연결']);
+        assert.match(state.messages.at(-1).text, /상담사 연결을 통해 안내해드릴 수 있어요/);
+        assert.equal(state.messages.at(-1).items.length, 0);
+        assert.equal(choose(chat, '상담사 연결').screen.id, '$handoff');
+      }
+    }
+  }
 });
 
 test('move workflows route outsourced products before a visit can be booked', () => {

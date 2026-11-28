@@ -39,6 +39,7 @@
   const waterPayment = {
     target: '직수 정수기 · WPU-1000', amount: '29,900원', method: '신용카드 자동납부 · 신한카드 · 끝자리 1234'
   };
+  const paymentContractHandoff = handoff('상담사 연결을 통해 안내해드릴 수 있어요.', [['상담사 연결', '$handoff']]);
   const bidetPayment = {
     target: '비데 · BID-1000', amount: '16,900원', method: '네이버페이 정기결제'
   };
@@ -209,14 +210,14 @@
         S07: { message: '[납부 금액]이 납부됐어요. 아래에서 처리 결과를 확인해 주세요.', items: [item('처리 상태', '납부 완료'), item('납부 금액', '[납부 금액]')], actions: [['다른 계약 보기', 'chargeContract'], ['다른 문의', '$menu']] },
         S07V: { actions: [['다른 계약 보기', 'chargeContract'], ['다른 문의', '$menu']] },
         S09: { actions: [['다른 계약 보기', 'chargeContract'], ['상담사 연결', '$handoff'], ['다른 문의', '$menu']] },
-        chargeContract: choice('납부할 계약을 선택해 주세요.', [
-          ['직수 정수기 선택', 'chargeDetails'], ['공기청정기 선택', 'paymentScope'], ['비데 선택', 'chargePaid'], ['매트리스 선택', 'naverPayment'],
-          ['다른 계약 더 보기', 'chargeMoreContracts']
-        ], [item('직수 정수기', 'WPU-1000 · 문래동 · 월 29,900원'), item('공기청정기', 'ACL-1000 · 문래동 · 월 19,900원'),
-          item('비데', 'BID-1000 · 문래동 · 당월 납부 완료'), item('매트리스', 'MAT-1000 · 문래동 · 네이버 구독')]),
-        chargeMoreContracts: choice('나머지 계약에서 납부 대상을 선택해 주세요.', [
-          ['전기레인지 선택', 'chargeOtherPayer'], ['이전 계약 보기', 'chargeContract']
-        ], [item('전기레인지', 'ERA-1000 · 문래동 · 당월 24,900원')]),
+        chargeContract: {
+          ...choice('납부할 계약을 선택해 주세요.', [
+            ['직수 정수기 선택', 'chargeDetails'], ['공기청정기 선택', 'paymentScope'], ['비데 선택', 'chargePaid'], ['매트리스 선택', 'naverPayment']
+          ], [item('직수 정수기', 'WPU-1000 · 문래동 · 월 29,900원'), item('공기청정기', 'ACL-1000 · 문래동 · 월 19,900원'),
+            item('비데', 'BID-1000 · 문래동 · 당월 납부 완료'), item('매트리스', 'MAT-1000 · 문래동 · 네이버 구독')]),
+          singleContract: { action: ['전기레인지 선택', 'chargeOtherPayer'], item: item('전기레인지', 'ERA-1000 · 문래동 · 당월 24,900원') }
+        },
+        paymentContractHandoff,
         chargeDetails: result('직수 정수기의 이번 달 요금이 아직 납부되지 않았어요.', [
           ['요금 납부', 'S02'], ['결제정보 변경', '@3'], ['위약금 조회', '@7'], ['다른 계약 확인', 'chargeContract']
         ], waterDetails('0원', false)),
@@ -259,12 +260,15 @@
         S07: { message: '미납요금 [납부 금액]이 납부됐어요.', items: [item('처리 상태', '납부 완료'), item('납부 금액', '[납부 금액]')], actions: [['다른 계약 보기', 'arrearsContract'], ['다른 문의', '$menu']] },
         S08: { actions: [['다른 계약 보기', 'arrearsContract'], ['다른 문의', '$menu']] },
         S09: { actions: [['다른 계약 보기', 'arrearsContract'], ['상담사 연결', '$handoff'], ['다른 문의', '$menu']] },
-        arrearsContract: choice('미납요금을 조회할 계약을 선택해 주세요.', [
-          ['직수 정수기 선택', 'S02'], ['공기청정기 선택', 'airArrears'], ['비데 선택', 'S03'],
-          ['매트리스 선택', 'naverPayment'], ['식기세척기 선택', 'dishwasherArrears']
-        ], [item('직수 정수기', 'WPU-1000 · 문래동 · 29,900원 (당월 미포함)'),
-          item('공기청정기', 'ACL-1000 · 문래동 · 59,700원 (당월 미포함)'), item('비데', 'BID-1000 · 문래동 · 0원 (당월 미포함)'),
-          item('매트리스', 'MAT-2000 · 문래동 · 네이버 구독'), item('식기세척기', 'DWA-1000 · 문래동 · 24,900원 (당월 미포함)')]),
+        arrearsContract: {
+          ...choice('미납요금을 조회할 계약을 선택해 주세요.', [
+            ['직수 정수기 선택', 'S02'], ['공기청정기 선택', 'airArrears'], ['비데 선택', 'S03'], ['매트리스 선택', 'naverPayment']
+          ], [item('직수 정수기', 'WPU-1000 · 문래동 · 29,900원 (당월 미포함)'),
+            item('공기청정기', 'ACL-1000 · 문래동 · 59,700원 (당월 미포함)'), item('비데', 'BID-1000 · 문래동 · 0원 (당월 미포함)'),
+            item('매트리스', 'MAT-2000 · 문래동 · 네이버 구독')]),
+          singleContract: { action: ['식기세척기 선택', 'dishwasherArrears'], item: item('식기세척기', 'DWA-1000 · 문래동 · 24,900원 (당월 미포함)') }
+        },
+        paymentContractHandoff,
         airArrears: result('공기청정기의 지난달까지 미납요금을 확인했어요.', [
           ['미납금 납부', 'highArrearsPayment'], ['결제정보 변경', '@3'], ['다른 계약 확인', 'arrearsContract']
         ], [...airDetails(), item('미납 회차', '3회')]),

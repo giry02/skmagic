@@ -454,8 +454,14 @@ test("registered bank payment requires a transaction e-signature", () => {
   for (const [no, contract, pay] of [
     [4, "공기청정기 선택", "미납요금과 당월 요금 납부"], [5, "식기세척기 선택", "미납금 납부"],
   ]) {
-    const chat = begin(no);
-    approvePass(chat);
+    const chat = begin(no === 5 ? 8 : no);
+    if (no === 5) {
+      chooseAvailable(chat, "분리 접수");
+      verifyPhone(chat, "010-0000-0012");
+      chat.start(no);
+    } else {
+      approvePass(chat);
+    }
     chooseAvailable(chat, contract);
     chooseAvailable(chat, pay);
     chooseAvailable(chat, "등록 결제수단");
