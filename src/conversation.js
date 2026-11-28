@@ -24,7 +24,7 @@
   const cardDetails = new Set([...partnerCards.values()].map((card) => card.href));
   cardDetails.add(partnerBenefitsUrl);
   cardDetails.add("https://www.skmagic.com/event/cardbenefit");
-  const localFile = location.protocol === "file:";
+  const staticPage = location.protocol === "file:" || location.hostname.endsWith(".github.io");
   const timeoutMs = 100_000;
   const catalog = byId("catalog");
   const catalogList = byId("catalog-list");
@@ -70,7 +70,7 @@
   const openPhases = new Set([defaultCatalogPhase]);
   let drawerOpen = false;
 
-  let demoMode = localFile || phaseOne || app.hasAttribute("data-standalone");
+  let demoMode = staticPage || phaseOne || app.hasAttribute("data-standalone");
   let liveRows = [];
   let apiHistory = [];
   let offer = null;
