@@ -613,7 +613,12 @@ button.catalog-group:hover, .catalog-group[aria-expanded="true"] { background: v
 .action-list--navigation > .action:focus-visible { outline-offset: -2px; }
 .action-list--navigation > .action:active:not(:disabled) { background: var(--user-bubble); }
 .action-menu-icon { color: var(--selection); }
-.action-menu-chevron { width: 16px; height: 16px; margin-inline-start: auto; }
+.action-menu-chevron {
+  width: 16px;
+  height: 16px;
+  margin-inline-start: auto;
+  mix-blend-mode: multiply;
+}
 .choice-cards { display: grid; min-width: 0; }
 :is(.card-picker, .result-records) + .action-list { margin-top: 9px; }
 .action.choice-card {
